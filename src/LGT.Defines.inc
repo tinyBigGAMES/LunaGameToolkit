@@ -1,0 +1,46 @@
+(* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+        .
+     .--:         :
+    ----        :---:
+  .-----         .-.
+ .------          .
+ -------.
+.--------               :
+.---------             .:.
+ ----------:            .
+ :-----------:
+  --------------:.         .:.
+   :------------------------
+    .---------------------.
+       :---------------:.
+          ..:::::::..
+              ...
+     _
+    | |    _  _  _ _   __ _
+    | |__ | || || ' \ / _` |
+    |____| \_,_||_||_|\__,_|
+         Game Toolkit™
+
+Copyright © 2022-present tinyBigGAMES™ LLC
+         All Rights Reserved.
+
+Website: https://tinybiggames.com
+Email  : support@tinybiggames.com
+
+See LICENSE for license information
+* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *)
+
+{$WARN SYMBOL_DEPRECATED OFF}
+{$WARN SYMBOL_PLATFORM OFF}
+
+{$WARN UNIT_PLATFORM OFF}
+{$WARN UNIT_DEPRECATED OFF}
+
+{$Z4}
+{$A8}
+
+{$INLINE AUTO}
+
+{$IFNDEF WIN64}
+  {$MESSAGE Error 'Unsupported platform'}
+{$ENDIF}

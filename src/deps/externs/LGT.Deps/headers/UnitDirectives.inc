@@ -1,0 +1,18 @@
+{$REGION ' Compiler Directives '}
+
+{$WARN SYMBOL_DEPRECATED OFF}
+{$WARN SYMBOL_PLATFORM OFF}
+
+{$WARN UNIT_PLATFORM OFF}
+{$WARN UNIT_DEPRECATED OFF}
+
+{$Z4}
+{$A8}
+
+{$INLINE AUTO}
+
+{$IFNDEF WIN64}
+  {$MESSAGE Error 'Unsupported platform'}
+{$ENDIF}
+
+{$ENDREGION}

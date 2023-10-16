@@ -1,0 +1,9 @@
+LGT can use upx.exe to compress LGT.Deps.dll.
+
+1. Download here:
+https://github.com/upx/upx/releases (win64 version)
+
+2. Place upx.exe in the [tools] folder.
+
+3. makeres.bat will try to compress LGT.Deps.dll during the post-build
+   process if it is found.

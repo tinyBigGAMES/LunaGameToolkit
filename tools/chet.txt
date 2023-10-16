@@ -1,0 +1,9 @@
+LGT uses Chet to convert C library dependencies headers to Delphi.
+
+1. Download here:
+https://github.com/neslib/Chet
+
+2. Install to desired location.
+
+3. You can now open LGT.Deps.chet in the [headers] that will 
+   generate LGT.Deps.pas in the [src] folder.

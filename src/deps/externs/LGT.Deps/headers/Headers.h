@@ -1,0 +1,11 @@
+#include <GLFW/glfw3.h>
+#include <GLFW/glfw3native.h>
+#include <AL/al.h>
+#include <AL/alc.h>
+#include <inc/minivorbis.h>
+#include <inc/minizip.h>
+#include <cute_c2.h>
+#include <pl_mpeg.h>
+#include <stb_image.h>
+#include <stb_image_write.h>
+#include <stb_truetype.h>
