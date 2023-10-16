@@ -469,4 +469,5 @@ FodyWeavers.xsd
 
 # Luna Game Toolkit
 src/deps/externs/LGT.Deps/post/LGT.Deps.txt
+!src/deps/externs/LGT.Deps/libs/*.lib
 
