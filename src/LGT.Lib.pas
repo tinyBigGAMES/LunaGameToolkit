@@ -1619,6 +1619,7 @@ begin
   GetConsoleMode(LStdIn, LOldMode);
   SetConsoleMode(LStdIn, 0);
   repeat
+    Sleep(1); // prevent tight loop, allowing background task to run
     ReadConsoleInput(LStdIn, LInputRec, 1, LNumRead);
   until (LInputRec.EventType and KEY_EVENT <> 0) and
     LInputRec.Event.KeyEvent.bKeyDown;
@@ -2031,7 +2032,7 @@ begin
   Result := False;
 
   LPassword := PAnsiChar(AnsiString(APassword));
-  LZipFilename := PAnsiChar(AnsiString(TPath.ChangeExtension(StringReplace(string(AZipFilename), '/', '\', [rfReplaceAll]), 'arc')));
+  LZipFilename := PAnsiChar(AnsiString(StringReplace(string(AZipFilename), '/', '\', [rfReplaceAll])));
   LFilename := PAnsiChar(AnsiString(StringReplace(string(AFilename), '/', '\', [rfReplaceAll])));
 
   LFile := unzOpen64(LZipFilename);
@@ -2119,7 +2120,7 @@ begin
   LFileList := TDirectory.GetFiles(ADirectoryName, '*',
     TSearchOption.soAllDirectories);
 
-  LArchive := PAnsiChar(AnsiString(TPath.ChangeExtension(AZipFilename, 'arc')));
+  LArchive := PAnsiChar(AnsiString(AZipFilename));
   LPassword := PAnsiChar(AnsiString(APassword));
 
   // create a zip file

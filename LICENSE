@@ -29,6 +29,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 Includes the following open-sources libraries:
 -----------------------------------------------------------------------------
+* clog          - https://github.com/mmueller/clog
 * cute_headers  - https://github.com/RandyGaul/cute_headers
 * glfw          - https://github.com/glfw/glfw
 * minivorbis    - https://github.com/edubart/minivorbis
