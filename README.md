@@ -19,6 +19,6 @@ More info coming soon!
 - <a href="https://github.com/tinyBigGAMES/LunaGameToolkit/discussions" target="_blank">Discussions</a>
 
 <p align="center">
- <a href="https://www.embarcadero.com/products/delphi" target="_blank"><img src="media/delphi.png"></a><br/>
+ <a href="https://www.embarcadero.com/products/delphi" target="_blank"><img src="media/Delphi.png"></a><br/>
  <b>Made with ♥ for Delphi</b>
 </p>
