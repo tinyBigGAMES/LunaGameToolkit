@@ -139,7 +139,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableUAC>false</EnableUAC>
       <AdditionalLibraryDirectories>.\libs</AdditionalLibraryDirectories>
-      <AdditionalDependencies>glfw3.lib;OpenAL32.lib;zlibstatic.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>winmm.lib;glfw3.lib;OpenAL32.lib;zlibstatic.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <ModuleDefinitionFile>exports.def</ModuleDefinitionFile>
     </Link>
     <PostBuildEvent>
@@ -152,6 +152,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="dllmain.cpp" />
+    <ClCompile Include="libs\clog.c" />
     <ClCompile Include="libs\cute_c2.c" />
     <ClCompile Include="libs\minivorbis.c" />
     <ClCompile Include="libs\pl_mpeg.cpp" />

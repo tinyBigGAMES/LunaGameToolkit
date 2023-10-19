@@ -39,7 +39,8 @@ program Testbed;
 uses
   System.SysUtils,
   UTestbed in 'UTestbed.pas',
-  LGT.Lib in '..\..\src\LGT.Lib.pas';
+  LGT.Lib in '..\..\src\LGT.Lib.pas',
+  LGT.Deps in '..\..\src\LGT.Deps.pas';
 
 begin
   try

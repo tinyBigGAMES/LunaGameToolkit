@@ -503,6 +503,12 @@ const
   STBTT_MACSTYLE_ITALIC = 2;
   STBTT_MACSTYLE_UNDERSCORE = 4;
   STBTT_MACSTYLE_NONE = 8;
+  CLOG_MAX_LOGGERS = 16;
+  CLOG_FORMAT_LENGTH = 256;
+  CLOG_DATETIME_LENGTH = 256;
+  CLOG_DEFAULT_FORMAT = '%d %t %f(%n): %l: %m'#10;
+  CLOG_DEFAULT_DATE_FORMAT = '%Y-%m-%d';
+  CLOG_DEFAULT_TIME_FORMAT = '%H:%M:%S';
 
 type
   C2_TYPE = Integer;
@@ -587,6 +593,16 @@ const
   STBTT_MAC_LANG_CHINESE_TRAD = 19;
 
 type
+  clog_level = Integer;
+  Pclog_level = ^clog_level;
+
+const
+  CLOG_DEBUG_ = 0;
+  CLOG_INFO_ = 1;
+  CLOG_WARN_ = 2;
+  CLOG_ERROR_ = 3;
+
+type
   PPUTF8Char = ^PUTF8Char;
   PPInteger = ^PInteger;
   PPSingle = ^PSingle;
@@ -643,6 +659,7 @@ type
   Pstbtt_vertex = ^stbtt_vertex;
   PPstbtt_vertex = ^Pstbtt_vertex;
   Pstbtt__bitmap = ^stbtt__bitmap;
+  Pclog = ^clog;
 
   GLFWglproc = procedure(); cdecl;
 
@@ -1227,6 +1244,15 @@ type
     pixels: PByte;
   end;
 
+  clog = record
+    level: clog_level;
+    fd: Integer;
+    fmt: array [0..255] of UTF8Char;
+    date_fmt: array [0..255] of UTF8Char;
+    time_fmt: array [0..255] of UTF8Char;
+    opened: Integer;
+  end;
+
 const
   PLM_DEMUX_PACKET_PRIVATE: Integer = $BD;
   PLM_DEMUX_PACKET_AUDIO_1: Integer = $C0;
@@ -1728,6 +1754,16 @@ var
   stbtt_FindMatchingFont: function(const fontdata: PByte; const name: PUTF8Char; flags: Integer): Integer; cdecl;
   stbtt_CompareUTF8toUTF16_bigendian: function(const s1: PUTF8Char; len1: Integer; const s2: PUTF8Char; len2: Integer): Integer; cdecl;
   stbtt_GetFontNameString: function(const font: Pstbtt_fontinfo; length: PInteger; platformID: Integer; encodingID: Integer; languageID: Integer; nameID: Integer): PUTF8Char; cdecl;
+  clog_init_path: function(id: Integer; const path: PUTF8Char): Integer; cdecl;
+  clog_free: procedure(id: Integer); cdecl;
+  clog_debug: procedure(const sfile: PUTF8Char; sline: Integer; id: Integer; const fmt: PUTF8Char) varargs; cdecl;
+  clog_info: procedure(const sfile: PUTF8Char; sline: Integer; id: Integer; const fmt: PUTF8Char) varargs; cdecl;
+  clog_warn: procedure(const sfile: PUTF8Char; sline: Integer; id: Integer; const fmt: PUTF8Char) varargs; cdecl;
+  clog_error: procedure(const sfile: PUTF8Char; sline: Integer; id: Integer; const fmt: PUTF8Char) varargs; cdecl;
+  clog_set_level: function(id: Integer; level: clog_level): Integer; cdecl;
+  clog_set_time_fmt: function(id: Integer; const fmt: PUTF8Char): Integer; cdecl;
+  clog_set_date_fmt: function(id: Integer; const fmt: PUTF8Char): Integer; cdecl;
+  clog_set_fmt: function(id: Integer; const fmt: PUTF8Char): Integer; cdecl;
 
 procedure GetExports(const aDLLHandle: THandle);
 
@@ -1862,6 +1898,16 @@ begin
   c2RaytoCircle := GetProcAddress(aDLLHandle, 'c2RaytoCircle');
   c2RaytoPoly := GetProcAddress(aDLLHandle, 'c2RaytoPoly');
   c2TOI := GetProcAddress(aDLLHandle, 'c2TOI');
+  clog_debug := GetProcAddress(aDLLHandle, 'clog_debug');
+  clog_error := GetProcAddress(aDLLHandle, 'clog_error');
+  clog_free := GetProcAddress(aDLLHandle, 'clog_free');
+  clog_info := GetProcAddress(aDLLHandle, 'clog_info');
+  clog_init_path := GetProcAddress(aDLLHandle, 'clog_init_path');
+  clog_set_date_fmt := GetProcAddress(aDLLHandle, 'clog_set_date_fmt');
+  clog_set_fmt := GetProcAddress(aDLLHandle, 'clog_set_fmt');
+  clog_set_level := GetProcAddress(aDLLHandle, 'clog_set_level');
+  clog_set_time_fmt := GetProcAddress(aDLLHandle, 'clog_set_time_fmt');
+  clog_warn := GetProcAddress(aDLLHandle, 'clog_warn');
   crc32 := GetProcAddress(aDLLHandle, 'crc32');
   glfwCreateCursor := GetProcAddress(aDLLHandle, 'glfwCreateCursor');
   glfwCreateStandardCursor := GetProcAddress(aDLLHandle, 'glfwCreateStandardCursor');

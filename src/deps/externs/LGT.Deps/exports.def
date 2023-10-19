@@ -2,6 +2,18 @@ LIBRARY LGT.Deps.dll
 
 EXPORTS
 
+;=== clog ===
+clog_init_path
+clog_free
+clog_debug
+clog_info
+clog_warn
+clog_error
+clog_set_level
+clog_set_time_fmt
+clog_set_date_fmt
+clog_set_fmt
+
 ;=== minizip ===
 crc32
 unzOpen64
