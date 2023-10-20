@@ -281,3 +281,4 @@ glfwExtensionSupported
 glfwGetProcAddress
 glfwVulkanSupported
 glfwGetRequiredInstanceExtensions
+glfwGetWin32Window

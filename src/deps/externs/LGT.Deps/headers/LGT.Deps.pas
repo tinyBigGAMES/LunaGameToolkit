@@ -40,6 +40,7 @@ uses
   WinApi.Windows;
 
 const
+  GLFW_EXPOSE_NATIVE_WIN32 = 1;
   GLFW_VERSION_MAJOR = 3;
   GLFW_VERSION_MINOR = 4;
   GLFW_VERSION_REVISION = 0;
@@ -1384,6 +1385,9 @@ var
   glfwGetProcAddress: function(const procname: PUTF8Char): GLFWglproc; cdecl;
   glfwVulkanSupported: function(): Integer; cdecl;
   glfwGetRequiredInstanceExtensions: function(count: PUInt32): PPUTF8Char; cdecl;
+  glfwGetWin32Adapter: function(monitor: PGLFWmonitor): PUTF8Char; cdecl;
+  glfwGetWin32Monitor: function(monitor: PGLFWmonitor): PUTF8Char; cdecl;
+  glfwGetWin32Window: function(window: PGLFWwindow): HWND; cdecl;
   alEnable: procedure(capability: ALenum); cdecl;
   alDisable: procedure(capability: ALenum); cdecl;
   alIsEnabled: function(capability: ALenum): ALboolean; cdecl;
@@ -1954,6 +1958,9 @@ begin
   glfwGetVersionString := GetProcAddress(aDLLHandle, 'glfwGetVersionString');
   glfwGetVideoMode := GetProcAddress(aDLLHandle, 'glfwGetVideoMode');
   glfwGetVideoModes := GetProcAddress(aDLLHandle, 'glfwGetVideoModes');
+  glfwGetWin32Adapter := GetProcAddress(aDLLHandle, 'glfwGetWin32Adapter');
+  glfwGetWin32Monitor := GetProcAddress(aDLLHandle, 'glfwGetWin32Monitor');
+  glfwGetWin32Window := GetProcAddress(aDLLHandle, 'glfwGetWin32Window');
   glfwGetWindowAttrib := GetProcAddress(aDLLHandle, 'glfwGetWindowAttrib');
   glfwGetWindowContentScale := GetProcAddress(aDLLHandle, 'glfwGetWindowContentScale');
   glfwGetWindowFrameSize := GetProcAddress(aDLLHandle, 'glfwGetWindowFrameSize');

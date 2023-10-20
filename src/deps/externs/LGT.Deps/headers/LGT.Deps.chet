@@ -58,7 +58,7 @@ Prefix=
 
 [ParseOptions]
 IgnoreParseErrors=0
-CmdLineArgs=-IC:\Dev\Delphi\Projects\LGT\repo\main\src\deps\externs\LGT.Deps\libs\include,-IC:\Dev\Delphi\Projects\LGT\repo\main\src\deps\externs\LGT.Deps\libs
+CmdLineArgs=-IC:\Dev\Delphi\Projects\LGT\repo\main\src\deps\externs\LGT.Deps\libs\include,-IC:\Dev\Delphi\Projects\LGT\repo\main\src\deps\externs\LGT.Deps\libs,-DGLFW_EXPOSE_NATIVE_WIN32
 
 [ConvertOptions]
 CallConv=Cdecl

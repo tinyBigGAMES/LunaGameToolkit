@@ -117,8 +117,9 @@
             <MainSource>MainSource</MainSource>
         </DelphiCompile>
         <DCCReference Include="UTestbed.pas"/>
-        <DCCReference Include="..\..\src\LGT.Lib.pas"/>
+        <DCCReference Include="..\..\src\LGT.pas"/>
         <DCCReference Include="..\..\src\LGT.Deps.pas"/>
+        <DCCReference Include="..\..\src\LGT.OGL.pas"/>
         <None Include="Readme.md"/>
         <BuildConfiguration Include="Base">
             <Key>Base</Key>

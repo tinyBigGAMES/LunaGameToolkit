@@ -30,7 +30,7 @@ Email  : support@tinybiggames.com
 See LICENSE for license information
 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *)
 
-unit LGT.Lib;
+unit LGT;
 
 {$I LGT.Defines.inc}
 
@@ -45,7 +45,9 @@ uses
   System.SyncObjs,
   System.Math,
   WinApi.Windows,
-  LGT.Deps;
+  WinApi.Messages,
+  LGT.Deps,
+  LGT.OGL;
 
 { === MISC ================================================================== }
 type
@@ -61,11 +63,36 @@ type
     destructor Destroy; override;
   end;
 
+{ === UTILS ================================================================= }
+type
+  { TlgUtils }
+  TlgUtils = class
+  protected const
+    //CStaticBufferSize = 1024*4;
+    CStaticBufferSize = 8192;
+  protected class var
+    FCriticalSection: TCriticalSection;
+    FStaticBuffer: array[0..CStaticBufferSize-1] of Byte;
+    FMarshal: TMarshaller;
+  protected
+    class constructor Create();
+    class destructor Destroy();
+  public
+    class property  Marshal: TMarshaller read FMarshal;
+    class function  GetStaticBufferSize(): Int64;
+    class function  GetStaticBuffer(): PByte;
+    class procedure ClearStaticBuffer();
+    class procedure EnterCriticalSection();
+    class procedure LeaveCriticalSection();
+    class procedure SetDefaultIcon(AWindow: HWND); overload;
+    class procedure SetDefaultIcon(AWindow: PGLFWwindow); overload;
+  end;
+
 { === MATH ================================================================== }
 type
   { TlgPos }
-  PlgPos = ^TlgPos;
-  TlgPos = record
+  PlgPos = ^TlgPoint;
+  TlgPoint = record
     x,y: Single;
   end;
 
@@ -137,7 +164,7 @@ type
     EPSILON  = 0.00001;
     NAN      =  0.0 / 0.0;
   public
-    class function  Pos(const X, Y: Single): TlgPos;
+    class function  Point(const X, Y: Single): TlgPoint;
     class function  Vec(const X, Y: Single): TlgVec;
     class function  Size(const AWidth, AHeight: Single): TlgSize;
     class function  Rect(const X, Y, AWidth, AHeight: Single): TlgRect;
@@ -203,6 +230,61 @@ type
     procedure Clear(const ADispose: Boolean);
   end;
 
+{ === BUFFER ================================================================ }
+type
+  { TlgVirtualBuffer }
+  TlgVirtualBuffer = class(TCustomMemoryStream)
+  protected
+    FHandle: THandle;
+    FName: string;
+    procedure Clear;
+  public
+    constructor Create(aSize: Cardinal);
+    destructor Destroy; override;
+    function Write(const aBuffer; aCount: Longint): Longint; override;
+    function Write(const aBuffer: TBytes; aOffset, aCount: Longint): Longint; override;
+    procedure SaveToFile(aFilename: string);
+    property Name: string read FName;
+    function  Eof: Boolean;
+    function  ReadString: WideString;
+    class function LoadFromFile(const aFilename: string): TlgVirtualBuffer;
+  end;
+
+  { TlgRingBuffer }
+  TlgRingBuffer<T> = class
+  private type
+    PType = ^T;
+  private
+    FBuffer: array of T;
+    FReadIndex, FWriteIndex, FCapacity: Integer;
+  public
+    constructor Create(ACapacity: Integer);
+    function Write(const AData: array of T; ACount: Integer): Integer;
+    function Read(var AData: array of T; ACount: Integer): Integer;
+    function DirectReadPointer(ACount: Integer): Pointer;
+    function AvailableBytes: Integer;
+    procedure Clear;
+  end;
+
+  { TlgVirtualRingBuffer }
+  TlgVirtualRingBuffer<T> = class
+  private type
+    PType = ^T;
+  private
+    FBuffer: TlgVirtualBuffer;
+    FReadIndex, FWriteIndex, FCapacity: Integer;
+    function GetArrayValue(AIndex: Integer): T;
+    procedure SetArrayValue(AIndex: Integer; AValue: T);
+  public
+    constructor Create(ACapacity: Integer);
+    destructor Destroy; override;
+    function Write(const AData: array of T; ACount: Integer): Integer;
+    function Read(var AData: array of T; ACount: Integer): Integer;
+    function DirectReadPointer(ACount: Integer): Pointer;
+    function AvailableBytes: Integer;
+    procedure Clear;
+  end;
+
 { === CONSOLE =============================================================== }
 type
   { TlgConsole }
@@ -228,8 +310,8 @@ type
     class function  AnyKeyPressed(): Boolean;
     class procedure ClearKeyStates();
     class function  IsKeyPressed(AKey: Byte): Boolean;
-    class function  WasKeyPressed(AKey: Byte): Boolean;
-    class function  WasKeyReleased(AKey: Byte): Boolean;
+    class function  KeyWasPressed(AKey: Byte): Boolean;
+    class function  KeyWasReleased(AKey: Byte): Boolean;
   end;
 
 { === TIMING ================================================================ }
@@ -405,19 +487,221 @@ type
     function  GetFreq(): Integer; virtual;
   end;
 
+{ === COLOR ================================================================= }
+type
+  TlgColor = record
+    Red,Green,Blue,Alpha: Single;
+  end;
+
+{$REGION 'Common Colors'}
+const
+  ALICEBLUE           : TlgColor = (Red:$F0/$FF; Green:$F8/$FF; Blue:$FF/$FF; Alpha:$FF/$FF);
+  ANTIQUEWHITE        : TlgColor = (Red:$FA/$FF; Green:$EB/$FF; Blue:$D7/$FF; Alpha:$FF/$FF);
+  AQUA                : TlgColor = (Red:$00/$FF; Green:$FF/$FF; Blue:$FF/$FF; Alpha:$FF/$FF);
+  AQUAMARINE          : TlgColor = (Red:$7F/$FF; Green:$FF/$FF; Blue:$D4/$FF; Alpha:$FF/$FF);
+  AZURE               : TlgColor = (Red:$F0/$FF; Green:$FF/$FF; Blue:$FF/$FF; Alpha:$FF/$FF);
+  BEIGE               : TlgColor = (Red:$F5/$FF; Green:$F5/$FF; Blue:$DC/$FF; Alpha:$FF/$FF);
+  BISQUE              : TlgColor = (Red:$FF/$FF; Green:$E4/$FF; Blue:$C4/$FF; Alpha:$FF/$FF);
+  BLACK               : TlgColor = (Red:$00/$FF; Green:$00/$FF; Blue:$00/$FF; Alpha:$FF/$FF);
+  BLANCHEDALMOND      : TlgColor = (Red:$FF/$FF; Green:$EB/$FF; Blue:$CD/$FF; Alpha:$FF/$FF);
+  BLUE                : TlgColor = (Red:$00/$FF; Green:$00/$FF; Blue:$FF/$FF; Alpha:$FF/$FF);
+  BLUEVIOLET          : TlgColor = (Red:$8A/$FF; Green:$2B/$FF; Blue:$E2/$FF; Alpha:$FF/$FF);
+  BROWN               : TlgColor = (Red:$A5/$FF; Green:$2A/$FF; Blue:$2A/$FF; Alpha:$FF/$FF);
+  BURLYWOOD           : TlgColor = (Red:$DE/$FF; Green:$B8/$FF; Blue:$87/$FF; Alpha:$FF/$FF);
+  CADETBLUE           : TlgColor = (Red:$5F/$FF; Green:$9E/$FF; Blue:$A0/$FF; Alpha:$FF/$FF);
+  CHARTREUSE          : TlgColor = (Red:$7F/$FF; Green:$FF/$FF; Blue:$00/$FF; Alpha:$FF/$FF);
+  CHOCOLATE           : TlgColor = (Red:$D2/$FF; Green:$69/$FF; Blue:$1E/$FF; Alpha:$FF/$FF);
+  CORAL               : TlgColor = (Red:$FF/$FF; Green:$7F/$FF; Blue:$50/$FF; Alpha:$FF/$FF);
+  CORNFLOWERBLUE      : TlgColor = (Red:$64/$FF; Green:$95/$FF; Blue:$ED/$FF; Alpha:$FF/$FF);
+  CORNSILK            : TlgColor = (Red:$FF/$FF; Green:$F8/$FF; Blue:$DC/$FF; Alpha:$FF/$FF);
+  CRIMSON             : TlgColor = (Red:$DC/$FF; Green:$14/$FF; Blue:$3C/$FF; Alpha:$FF/$FF);
+  CYAN                : TlgColor = (Red:$00/$FF; Green:$FF/$FF; Blue:$FF/$FF; Alpha:$FF/$FF);
+  DARKBLUE            : TlgColor = (Red:$00/$FF; Green:$00/$FF; Blue:$8B/$FF; Alpha:$FF/$FF);
+  DARKCYAN            : TlgColor = (Red:$00/$FF; Green:$8B/$FF; Blue:$8B/$FF; Alpha:$FF/$FF);
+  DARKGOLDENROD       : TlgColor = (Red:$B8/$FF; Green:$86/$FF; Blue:$0B/$FF; Alpha:$FF/$FF);
+  DARKGRAY            : TlgColor = (Red:$A9/$FF; Green:$A9/$FF; Blue:$A9/$FF; Alpha:$FF/$FF);
+  DARKGREEN           : TlgColor = (Red:$00/$FF; Green:$64/$FF; Blue:$00/$FF; Alpha:$FF/$FF);
+  DARKGREY            : TlgColor = (Red:$A9/$FF; Green:$A9/$FF; Blue:$A9/$FF; Alpha:$FF/$FF);
+  DARKKHAKI           : TlgColor = (Red:$BD/$FF; Green:$B7/$FF; Blue:$6B/$FF; Alpha:$FF/$FF);
+  DARKMAGENTA         : TlgColor = (Red:$8B/$FF; Green:$00/$FF; Blue:$8B/$FF; Alpha:$FF/$FF);
+  DARKOLIVEGREEN      : TlgColor = (Red:$55/$FF; Green:$6B/$FF; Blue:$2F/$FF; Alpha:$FF/$FF);
+  DARKORANGE          : TlgColor = (Red:$FF/$FF; Green:$8C/$FF; Blue:$00/$FF; Alpha:$FF/$FF);
+  DARKORCHID          : TlgColor = (Red:$99/$FF; Green:$32/$FF; Blue:$CC/$FF; Alpha:$FF/$FF);
+  DARKRED             : TlgColor = (Red:$8B/$FF; Green:$00/$FF; Blue:$00/$FF; Alpha:$FF/$FF);
+  DARKSALMON          : TlgColor = (Red:$E9/$FF; Green:$96/$FF; Blue:$7A/$FF; Alpha:$FF/$FF);
+  DARKSEAGREEN        : TlgColor = (Red:$8F/$FF; Green:$BC/$FF; Blue:$8F/$FF; Alpha:$FF/$FF);
+  DARKSLATEBLUE       : TlgColor = (Red:$48/$FF; Green:$3D/$FF; Blue:$8B/$FF; Alpha:$FF/$FF);
+  DARKSLATEGRAY       : TlgColor = (Red:$2F/$FF; Green:$4F/$FF; Blue:$4F/$FF; Alpha:$FF/$FF);
+  DARKSLATEGREY       : TlgColor = (Red:$2F/$FF; Green:$4F/$FF; Blue:$4F/$FF; Alpha:$FF/$FF);
+  DARKTURQUOISE       : TlgColor = (Red:$00/$FF; Green:$CE/$FF; Blue:$D1/$FF; Alpha:$FF/$FF);
+  DARKVIOLET          : TlgColor = (Red:$94/$FF; Green:$00/$FF; Blue:$D3/$FF; Alpha:$FF/$FF);
+  DEEPPINK            : TlgColor = (Red:$FF/$FF; Green:$14/$FF; Blue:$93/$FF; Alpha:$FF/$FF);
+  DEEPSKYBLUE         : TlgColor = (Red:$00/$FF; Green:$BF/$FF; Blue:$FF/$FF; Alpha:$FF/$FF);
+  DIMGRAY             : TlgColor = (Red:$69/$FF; Green:$69/$FF; Blue:$69/$FF; Alpha:$FF/$FF);
+  DIMGREY             : TlgColor = (Red:$69/$FF; Green:$69/$FF; Blue:$69/$FF; Alpha:$FF/$FF);
+  DODGERBLUE          : TlgColor = (Red:$1E/$FF; Green:$90/$FF; Blue:$FF/$FF; Alpha:$FF/$FF);
+  FIREBRICK           : TlgColor = (Red:$B2/$FF; Green:$22/$FF; Blue:$22/$FF; Alpha:$FF/$FF);
+  FLORALWHITE         : TlgColor = (Red:$FF/$FF; Green:$FA/$FF; Blue:$F0/$FF; Alpha:$FF/$FF);
+  FORESTGREEN         : TlgColor = (Red:$22/$FF; Green:$8B/$FF; Blue:$22/$FF; Alpha:$FF/$FF);
+  FUCHSIA             : TlgColor = (Red:$FF/$FF; Green:$00/$FF; Blue:$FF/$FF; Alpha:$FF/$FF);
+  GAINSBORO           : TlgColor = (Red:$DC/$FF; Green:$DC/$FF; Blue:$DC/$FF; Alpha:$FF/$FF);
+  GHOSTWHITE          : TlgColor = (Red:$F8/$FF; Green:$F8/$FF; Blue:$FF/$FF; Alpha:$FF/$FF);
+  GOLD                : TlgColor = (Red:$FF/$FF; Green:$D7/$FF; Blue:$00/$FF; Alpha:$FF/$FF);
+  GOLDENROD           : TlgColor = (Red:$DA/$FF; Green:$A5/$FF; Blue:$20/$FF; Alpha:$FF/$FF);
+  GRAY                : TlgColor = (Red:$80/$FF; Green:$80/$FF; Blue:$80/$FF; Alpha:$FF/$FF);
+  GREEN               : TlgColor = (Red:$00/$FF; Green:$80/$FF; Blue:$00/$FF; Alpha:$FF/$FF);
+  GREENYELLOW         : TlgColor = (Red:$AD/$FF; Green:$FF/$FF; Blue:$2F/$FF; Alpha:$FF/$FF);
+  GREY                : TlgColor = (Red:$80/$FF; Green:$80/$FF; Blue:$80/$FF; Alpha:$FF/$FF);
+  HONEYDEW            : TlgColor = (Red:$F0/$FF; Green:$FF/$FF; Blue:$F0/$FF; Alpha:$FF/$FF);
+  HOTPINK             : TlgColor = (Red:$FF/$FF; Green:$69/$FF; Blue:$B4/$FF; Alpha:$FF/$FF);
+  INDIANRED           : TlgColor = (Red:$CD/$FF; Green:$5C/$FF; Blue:$5C/$FF; Alpha:$FF/$FF);
+  INDIGO              : TlgColor = (Red:$4B/$FF; Green:$00/$FF; Blue:$82/$FF; Alpha:$FF/$FF);
+  IVORY               : TlgColor = (Red:$FF/$FF; Green:$FF/$FF; Blue:$F0/$FF; Alpha:$FF/$FF);
+  KHAKI               : TlgColor = (Red:$F0/$FF; Green:$E6/$FF; Blue:$8C/$FF; Alpha:$FF/$FF);
+  LAVENDER            : TlgColor = (Red:$E6/$FF; Green:$E6/$FF; Blue:$FA/$FF; Alpha:$FF/$FF);
+  LAVENDERBLUSH       : TlgColor = (Red:$FF/$FF; Green:$F0/$FF; Blue:$F5/$FF; Alpha:$FF/$FF);
+  LAWNGREEN           : TlgColor = (Red:$7C/$FF; Green:$FC/$FF; Blue:$00/$FF; Alpha:$FF/$FF);
+  LEMONCHIFFON        : TlgColor = (Red:$FF/$FF; Green:$FA/$FF; Blue:$CD/$FF; Alpha:$FF/$FF);
+  LIGHTBLUE           : TlgColor = (Red:$AD/$FF; Green:$D8/$FF; Blue:$E6/$FF; Alpha:$FF/$FF);
+  LIGHTCORAL          : TlgColor = (Red:$F0/$FF; Green:$80/$FF; Blue:$80/$FF; Alpha:$FF/$FF);
+  LIGHTCYAN           : TlgColor = (Red:$E0/$FF; Green:$FF/$FF; Blue:$FF/$FF; Alpha:$FF/$FF);
+  LIGHTGOLDENRODYELLOW: TlgColor = (Red:$FA/$FF; Green:$FA/$FF; Blue:$D2/$FF; Alpha:$FF/$FF);
+  LIGHTGRAY           : TlgColor = (Red:$D3/$FF; Green:$D3/$FF; Blue:$D3/$FF; Alpha:$FF/$FF);
+  LIGHTGREEN          : TlgColor = (Red:$90/$FF; Green:$EE/$FF; Blue:$90/$FF; Alpha:$FF/$FF);
+  LIGHTGREY           : TlgColor = (Red:$D3/$FF; Green:$D3/$FF; Blue:$D3/$FF; Alpha:$FF/$FF);
+  LIGHTPINK           : TlgColor = (Red:$FF/$FF; Green:$B6/$FF; Blue:$C1/$FF; Alpha:$FF/$FF);
+  LIGHTSALMON         : TlgColor = (Red:$FF/$FF; Green:$A0/$FF; Blue:$7A/$FF; Alpha:$FF/$FF);
+  LIGHTSEAGREEN       : TlgColor = (Red:$20/$FF; Green:$B2/$FF; Blue:$AA/$FF; Alpha:$FF/$FF);
+  LIGHTSKYBLUE        : TlgColor = (Red:$87/$FF; Green:$CE/$FF; Blue:$FA/$FF; Alpha:$FF/$FF);
+  LIGHTSLATEGRAY      : TlgColor = (Red:$77/$FF; Green:$88/$FF; Blue:$99/$FF; Alpha:$FF/$FF);
+  LIGHTSLATEGREY      : TlgColor = (Red:$77/$FF; Green:$88/$FF; Blue:$99/$FF; Alpha:$FF/$FF);
+  LIGHTSTEELBLUE      : TlgColor = (Red:$B0/$FF; Green:$C4/$FF; Blue:$DE/$FF; Alpha:$FF/$FF);
+  LIGHTYELLOW         : TlgColor = (Red:$FF/$FF; Green:$FF/$FF; Blue:$E0/$FF; Alpha:$FF/$FF);
+  LIME                : TlgColor = (Red:$00/$FF; Green:$FF/$FF; Blue:$00/$FF; Alpha:$FF/$FF);
+  LIMEGREEN           : TlgColor = (Red:$32/$FF; Green:$CD/$FF; Blue:$32/$FF; Alpha:$FF/$FF);
+  LINEN               : TlgColor = (Red:$FA/$FF; Green:$F0/$FF; Blue:$E6/$FF; Alpha:$FF/$FF);
+  MAGENTA             : TlgColor = (Red:$FF/$FF; Green:$00/$FF; Blue:$FF/$FF; Alpha:$FF/$FF);
+  MAROON              : TlgColor = (Red:$80/$FF; Green:$00/$FF; Blue:$00/$FF; Alpha:$FF/$FF);
+  MEDIUMAQUAMARINE    : TlgColor = (Red:$66/$FF; Green:$CD/$FF; Blue:$AA/$FF; Alpha:$FF/$FF);
+  MEDIUMBLUE          : TlgColor = (Red:$00/$FF; Green:$00/$FF; Blue:$CD/$FF; Alpha:$FF/$FF);
+  MEDIUMORCHID        : TlgColor = (Red:$BA/$FF; Green:$55/$FF; Blue:$D3/$FF; Alpha:$FF/$FF);
+  MEDIUMPURPLE        : TlgColor = (Red:$93/$FF; Green:$70/$FF; Blue:$DB/$FF; Alpha:$FF/$FF);
+  MEDIUMSEAGREEN      : TlgColor = (Red:$3C/$FF; Green:$B3/$FF; Blue:$71/$FF; Alpha:$FF/$FF);
+  MEDIUMSLATEBLUE     : TlgColor = (Red:$7B/$FF; Green:$68/$FF; Blue:$EE/$FF; Alpha:$FF/$FF);
+  MEDIUMSPRINGGREEN   : TlgColor = (Red:$00/$FF; Green:$FA/$FF; Blue:$9A/$FF; Alpha:$FF/$FF);
+  MEDIUMTURQUOISE     : TlgColor = (Red:$48/$FF; Green:$D1/$FF; Blue:$CC/$FF; Alpha:$FF/$FF);
+  MEDIUMVIOLETRED     : TlgColor = (Red:$C7/$FF; Green:$15/$FF; Blue:$85/$FF; Alpha:$FF/$FF);
+  MIDNIGHTBLUE        : TlgColor = (Red:$19/$FF; Green:$19/$FF; Blue:$70/$FF; Alpha:$FF/$FF);
+  MINTCREAM           : TlgColor = (Red:$F5/$FF; Green:$FF/$FF; Blue:$FA/$FF; Alpha:$FF/$FF);
+  MISTYROSE           : TlgColor = (Red:$FF/$FF; Green:$E4/$FF; Blue:$E1/$FF; Alpha:$FF/$FF);
+  MOCCASIN            : TlgColor = (Red:$FF/$FF; Green:$E4/$FF; Blue:$B5/$FF; Alpha:$FF/$FF);
+  NAVAJOWHITE         : TlgColor = (Red:$FF/$FF; Green:$DE/$FF; Blue:$AD/$FF; Alpha:$FF/$FF);
+  NAVY                : TlgColor = (Red:$00/$FF; Green:$00/$FF; Blue:$80/$FF; Alpha:$FF/$FF);
+  OLDLACE             : TlgColor = (Red:$FD/$FF; Green:$F5/$FF; Blue:$E6/$FF; Alpha:$FF/$FF);
+  OLIVE               : TlgColor = (Red:$80/$FF; Green:$80/$FF; Blue:$00/$FF; Alpha:$FF/$FF);
+  OLIVEDRAB           : TlgColor = (Red:$6B/$FF; Green:$8E/$FF; Blue:$23/$FF; Alpha:$FF/$FF);
+  ORANGE              : TlgColor = (Red:$FF/$FF; Green:$A5/$FF; Blue:$00/$FF; Alpha:$FF/$FF);
+  ORANGERED           : TlgColor = (Red:$FF/$FF; Green:$45/$FF; Blue:$00/$FF; Alpha:$FF/$FF);
+  ORCHID              : TlgColor = (Red:$DA/$FF; Green:$70/$FF; Blue:$D6/$FF; Alpha:$FF/$FF);
+  PALEGOLDENROD       : TlgColor = (Red:$EE/$FF; Green:$E8/$FF; Blue:$AA/$FF; Alpha:$FF/$FF);
+  PALEGREEN           : TlgColor = (Red:$98/$FF; Green:$FB/$FF; Blue:$98/$FF; Alpha:$FF/$FF);
+  PALETURQUOISE       : TlgColor = (Red:$AF/$FF; Green:$EE/$FF; Blue:$EE/$FF; Alpha:$FF/$FF);
+  PALEVIOLETRED       : TlgColor = (Red:$DB/$FF; Green:$70/$FF; Blue:$93/$FF; Alpha:$FF/$FF);
+  PAPAYAWHIP          : TlgColor = (Red:$FF/$FF; Green:$EF/$FF; Blue:$D5/$FF; Alpha:$FF/$FF);
+  PEACHPUFF           : TlgColor = (Red:$FF/$FF; Green:$DA/$FF; Blue:$B9/$FF; Alpha:$FF/$FF);
+  PERU                : TlgColor = (Red:$CD/$FF; Green:$85/$FF; Blue:$3F/$FF; Alpha:$FF/$FF);
+  PINK                : TlgColor = (Red:$FF/$FF; Green:$C0/$FF; Blue:$CB/$FF; Alpha:$FF/$FF);
+  PLUM                : TlgColor = (Red:$DD/$FF; Green:$A0/$FF; Blue:$DD/$FF; Alpha:$FF/$FF);
+  POWDERBLUE          : TlgColor = (Red:$B0/$FF; Green:$E0/$FF; Blue:$E6/$FF; Alpha:$FF/$FF);
+  PURPLE              : TlgColor = (Red:$80/$FF; Green:$00/$FF; Blue:$80/$FF; Alpha:$FF/$FF);
+  REBECCAPURPLE       : TlgColor = (Red:$66/$FF; Green:$33/$FF; Blue:$99/$FF; Alpha:$FF/$FF);
+  RED                 : TlgColor = (Red:$FF/$FF; Green:$00/$FF; Blue:$00/$FF; Alpha:$FF/$FF);
+  ROSYBROWN           : TlgColor = (Red:$BC/$FF; Green:$8F/$FF; Blue:$8F/$FF; Alpha:$FF/$FF);
+  ROYALBLUE           : TlgColor = (Red:$41/$FF; Green:$69/$FF; Blue:$E1/$FF; Alpha:$FF/$FF);
+  SADDLEBROWN         : TlgColor = (Red:$8B/$FF; Green:$45/$FF; Blue:$13/$FF; Alpha:$FF/$FF);
+  SALMON              : TlgColor = (Red:$FA/$FF; Green:$80/$FF; Blue:$72/$FF; Alpha:$FF/$FF);
+  SANDYBROWN          : TlgColor = (Red:$F4/$FF; Green:$A4/$FF; Blue:$60/$FF; Alpha:$FF/$FF);
+  SEAGREEN            : TlgColor = (Red:$2E/$FF; Green:$8B/$FF; Blue:$57/$FF; Alpha:$FF/$FF);
+  SEASHELL            : TlgColor = (Red:$FF/$FF; Green:$F5/$FF; Blue:$EE/$FF; Alpha:$FF/$FF);
+  SIENNA              : TlgColor = (Red:$A0/$FF; Green:$52/$FF; Blue:$2D/$FF; Alpha:$FF/$FF);
+  SILVER              : TlgColor = (Red:$C0/$FF; Green:$C0/$FF; Blue:$C0/$FF; Alpha:$FF/$FF);
+  SKYBLUE             : TlgColor = (Red:$87/$FF; Green:$CE/$FF; Blue:$EB/$FF; Alpha:$FF/$FF);
+  SLATEBLUE           : TlgColor = (Red:$6A/$FF; Green:$5A/$FF; Blue:$CD/$FF; Alpha:$FF/$FF);
+  SLATEGRAY           : TlgColor = (Red:$70/$FF; Green:$80/$FF; Blue:$90/$FF; Alpha:$FF/$FF);
+  SLATEGREY           : TlgColor = (Red:$70/$FF; Green:$80/$FF; Blue:$90/$FF; Alpha:$FF/$FF);
+  SNOW                : TlgColor = (Red:$FF/$FF; Green:$FA/$FF; Blue:$FA/$FF; Alpha:$FF/$FF);
+  SPRINGGREEN         : TlgColor = (Red:$00/$FF; Green:$FF/$FF; Blue:$7F/$FF; Alpha:$FF/$FF);
+  STEELBLUE           : TlgColor = (Red:$46/$FF; Green:$82/$FF; Blue:$B4/$FF; Alpha:$FF/$FF);
+  TAN                 : TlgColor = (Red:$D2/$FF; Green:$B4/$FF; Blue:$8C/$FF; Alpha:$FF/$FF);
+  TEAL                : TlgColor = (Red:$00/$FF; Green:$80/$FF; Blue:$80/$FF; Alpha:$FF/$FF);
+  THISTLE             : TlgColor = (Red:$D8/$FF; Green:$BF/$FF; Blue:$D8/$FF; Alpha:$FF/$FF);
+  TOMATO              : TlgColor = (Red:$FF/$FF; Green:$63/$FF; Blue:$47/$FF; Alpha:$FF/$FF);
+  TURQUOISE           : TlgColor = (Red:$40/$FF; Green:$E0/$FF; Blue:$D0/$FF; Alpha:$FF/$FF);
+  VIOLET              : TlgColor = (Red:$EE/$FF; Green:$82/$FF; Blue:$EE/$FF; Alpha:$FF/$FF);
+  WHEAT               : TlgColor = (Red:$F5/$FF; Green:$DE/$FF; Blue:$B3/$FF; Alpha:$FF/$FF);
+  WHITE               : TlgColor = (Red:$FF/$FF; Green:$FF/$FF; Blue:$FF/$FF; Alpha:$FF/$FF);
+  WHITESMOKE          : TlgColor = (Red:$F5/$FF; Green:$F5/$FF; Blue:$F5/$FF; Alpha:$FF/$FF);
+  YELLOW              : TlgColor = (Red:$FF/$FF; Green:$FF/$FF; Blue:$00/$FF; Alpha:$FF/$FF);
+  YELLOWGREEN         : TlgColor = (Red:$9A/$FF; Green:$CD/$FF; Blue:$32/$FF; Alpha:$FF/$FF);
+  BLANK               : TlgColor = (Red:$00;     Green:$00;     Blue:$00;     Alpha:$00);
+  WHITE2              : TlgColor = (Red:$F5/$FF; Green:$F5/$FF; Blue:$F5/$FF; Alpha:$FF/$FF);
+  RED22               : TlgColor = (Red:$7E/$FF; Green:$32/$FF; Blue:$3F/$FF; Alpha:255/$FF);
+  COLORKEY            : TlgColor = (Red:$FF/$FF; Green:$00;     Blue:$FF/$FF; Alpha:$FF/$FF);
+  OVERLAY1            : TlgColor = (Red:$00/$FF; Green:$20/$FF; Blue:$29/$FF; Alpha:$B4/$FF);
+  OVERLAY2            : TlgColor = (Red:$01/$FF; Green:$1B/$FF; Blue:$01/$FF; Alpha:255/$FF);
+  DIMWHITE            : TlgColor = (Red:$10/$FF; Green:$10/$FF; Blue:$10/$FF; Alpha:$10/$FF);
+  DARKSLATEBROWN      : TlgColor = (Red:30/255; Green:31/255; Blue:30/255; Alpha:1/255);
+{$ENDREGION}
+
+{ === WINDOW ================================================================ }
+type
+  TlgWindow = class(TlgBaseObject)
+  protected
+    FHandle: PGLFWwindow;
+    FSize: TlgSize;
+    FScaledSize: TlgSize;
+    FScale: TlgPoint;
+  public const
+    DEFAULT_WIDTH = 1920 div 2;
+    DEFAULT_HEIGHT = 1080 div 2;
+  public
+    constructor Create(); override;
+    destructor Destroy(); override;
+    function  Open(const aTitle: string; const AWidth: Integer=DEFAULT_WIDTH; const AHeight: Integer=DEFAULT_HEIGHT): Boolean;
+    function  IsOpen(): Boolean;
+    procedure Close();
+    function  Ready(): Boolean;
+    function  GetTitle(): string;
+    procedure SetTitle(const ATitle: string);
+    function  ShouldClose(): Boolean;
+    procedure GetSize(var ASize: TlgSize);
+    procedure GetScaledSize(var ASize: TlgSize);
+    procedure GetScale(var AScale: TlgPoint);
+    procedure Clear(const AColor: TlgColor); overload;
+    procedure Clear(const ARed, AGreen, ABlue, AAlpha: Single); overload;
+    procedure StartDrawing();
+    procedure EndDrawing();
+    procedure DrawLine(const X1, Y1, X2, Y2: Single; const AColor: TlgColor; const AThickness: Single);
+    procedure DrawRect(const X, Y, AWidth, AHeight, AThickness: Single; const AColor: TlgColor; const AAngle: Single);
+    procedure DrawFilledRect(const X, Y, AWidth, AHeight: Single; const AColor: TlgColor; const AAngle: Single);
+    procedure DrawCircle(const X, Y, ARadius, AThickness: Single; const AColor: TlgColor);
+    procedure DrawFilledCircle(const X, Y, ARadius: Single; const AColor: TlgColor);
+    procedure DrawTriangle(const X1, Y1, X2, Y2, X3, Y3, AThickness: Single; const AColor: TlgColor);
+    procedure DrawFilledTriangle(const X1, Y1, X2, Y2, X3, Y3: Single; const AColor: TlgColor);
+    procedure DrawPolygon(const APoints: array of TlgPoint; const AThickness: Single; const AColor: TlgColor);
+    procedure DrawFilledPolygon(const APoints: array of TlgPoint; const AColor: TlgColor);
+    procedure DrawPolyline(const APoints: array of TlgPoint; const AThickness: Single; const AColor: TlgColor);
+  end;
+
+{ =========================================================================== }
+
 var
+  Utils: TlgUtils = nil;
   Math: TlgMath = nil;
   Console: TlgConsole = nil;
   Timer: TlgDeterministicTimer = nil;
 
 implementation
-
-const
-  CStaticBufferSize = 1024*4;
-
-var
-  CriticalSection: TCriticalSection = nil;
-  StaticBuffer: array[0..CStaticBufferSize-1] of Byte;
 
 { === BASE ================================================================== }
 constructor TlgBaseObject.Create();
@@ -428,6 +712,61 @@ end;
 destructor TlgBaseObject.Destroy();
 begin
   inherited;
+end;
+
+{ === UTILS ================================================================= }
+
+{ --- TlgUtils -------------------------------------------------------------- }
+class constructor TlgUtils.Create();
+begin
+  FCriticalSection := TCriticalSection.Create();
+  FillChar(FStaticBuffer, SizeOf(FStaticBuffer), 0);
+end;
+
+class destructor TlgUtils.Destroy();
+begin
+  FCriticalSection.Free();
+end;
+
+class function  TlgUtils.GetStaticBufferSize(): Int64;
+begin
+  Result := CStaticBufferSize;
+end;
+
+class function  TlgUtils.GetStaticBuffer(): PByte;
+begin
+  Result := @FStaticBuffer[0];
+end;
+
+class procedure  TlgUtils.ClearStaticBuffer();
+begin
+  FillChar(FStaticBuffer, SizeOf(FStaticBuffer), 0);
+end;
+
+class procedure TlgUtils.EnterCriticalSection();
+begin
+  FCriticalSection.Enter();
+end;
+
+class procedure TlgUtils.LeaveCriticalSection();
+begin
+  FCriticalSection.Leave();
+end;
+
+class procedure TlgUtils.SetDefaultIcon(AWindow: HWND);
+var
+  IconHandle: HICON;
+begin
+  IconHandle := LoadIcon(HInstance, 'MAINICON');
+  if IconHandle <> 0 then
+  begin
+    SendMessage(aWindow, WM_SETICON, ICON_BIG, IconHandle);
+  end;
+end;
+
+class procedure TlgUtils.SetDefaultIcon(AWindow: PGLFWwindow);
+begin
+  SetDefaultIcon(glfwGetWin32Window(AWindow))
 end;
 
 { === MATH ================================================================== }
@@ -617,7 +956,7 @@ class destructor TlgMath.Destroy;
 begin
 end;
 
-class function  TlgMath.Pos(const X, Y: Single): TlgPos;
+class function  TlgMath.Point(const X, Y: Single): TlgPoint;
 begin
   Result.X := X;
   Result.Y := Y;
@@ -1501,6 +1840,316 @@ begin
   end;
 end;
 
+{ === BUFFER ================================================================ }
+
+{ --- TlgVirtualBuffer ------------------------------------------------------ }
+procedure TlgVirtualBuffer.Clear;
+begin
+  if (Memory <> nil) then
+  begin
+    if not UnmapViewOfFile(Memory) then
+      raise Exception.Create('Error deallocating mapped memory');
+  end;
+
+  if (FHandle <> 0) then
+  begin
+    if not CloseHandle(FHandle) then
+      raise Exception.Create('Error freeing memory mapping handle');
+  end;
+end;
+
+constructor TlgVirtualBuffer.Create(aSize: Cardinal);
+var
+  P: Pointer;
+begin
+  inherited Create;
+  FName := TPath.GetGUIDFileName;
+  FHandle := CreateFileMapping(INVALID_HANDLE_VALUE, nil, PAGE_READWRITE, 0, aSize, PChar(FName));
+  if FHandle = 0 then
+    begin
+      Clear;
+      raise Exception.Create('Error creating memory mapping');
+      FHandle := 0;
+    end
+  else
+    begin
+      P := MapViewOfFile(FHandle, FILE_MAP_ALL_ACCESS, 0, 0, 0);
+      if P = nil then
+        begin
+          Clear;
+          raise Exception.Create('Error creating memory mapping');
+        end
+      else
+        begin
+          Self.SetPointer(P, aSize);
+          Position := 0;
+        end;
+    end;
+end;
+
+destructor TlgVirtualBuffer.Destroy;
+begin
+  Clear;
+  inherited;
+end;
+
+function TlgVirtualBuffer.Write(const aBuffer; aCount: Longint): Longint;
+var
+  Pos: Int64;
+begin
+  if (Position >= 0) and (aCount >= 0) then
+  begin
+    Pos := Position + aCount;
+    if Pos > 0 then
+    begin
+      if Pos > Size then
+      begin
+        Result := 0;
+        Exit;
+      end;
+      System.Move(aBuffer, (PByte(Memory) + Position)^, aCount);
+      Position := Pos;
+      Result := aCount;
+      Exit;
+    end;
+  end;
+  Result := 0;
+end;
+
+function TlgVirtualBuffer.Write(const aBuffer: TBytes; aOffset, aCount: Longint): Longint;
+var
+  Pos: Int64;
+begin
+  if (Position >= 0) and (aCount >= 0) then
+  begin
+    Pos := Position + aCount;
+    if Pos > 0 then
+    begin
+      if Pos > Size then
+      begin
+        Result := 0;
+        Exit;
+      end;
+      System.Move(aBuffer[aOffset], (PByte(Memory) + Position)^, aCount);
+      Position := Pos;
+      Result := aCount;
+      Exit;
+    end;
+  end;
+  Result := 0;
+end;
+
+procedure TlgVirtualBuffer.SaveToFile(aFilename: string);
+var
+  LStream: TFileStream;
+begin
+  LStream := TFile.Create(aFilename);
+  try
+    LStream.Write(Memory^, Size);
+  finally
+    LStream.Free;
+  end;
+end;
+
+class function TlgVirtualBuffer.LoadFromFile(const aFilename: string): TlgVirtualBuffer;
+var
+  LStream: TStream;
+  LBuffer: TlgVirtualBuffer;
+begin
+  Result := nil;
+  if aFilename.IsEmpty then Exit;
+  if not TFile.Exists(aFilename) then Exit;
+  LStream := TFile.OpenRead(aFilename);
+  try
+    LBuffer := TlgVirtualBuffer.Create(LStream.Size);
+    if LBuffer <> nil then
+    begin
+      LBuffer.CopyFrom(LStream);
+    end;
+  finally
+    FreeAndNil(LStream);
+  end;
+  Result := LBuffer;
+end;
+
+function  TlgVirtualBuffer.Eof: Boolean;
+begin
+  Result := Boolean(Position >= Size);
+end;
+
+function  TlgVirtualBuffer.ReadString: WideString;
+var
+  LLength: LongInt;
+begin
+  Read(LLength, SizeOf(LLength));
+  SetLength(Result, LLength);
+  if LLength > 0 then Read(Result[1], LLength * SizeOf(Char));
+end;
+
+{ --- TlgRingBuffer --------------------------------------------------------- }
+constructor TlgRingBuffer<T>.Create(ACapacity: Integer);
+begin
+  SetLength(FBuffer, ACapacity);
+  FReadIndex := 0;
+  FWriteIndex := 0;
+  FCapacity := ACapacity;
+  Clear;
+end;
+
+function TlgRingBuffer<T>.Write(const AData: array of T;
+  ACount: Integer): Integer;
+var
+  i, WritePos: Integer;
+begin
+  Utils.EnterCriticalSection();
+  try
+    for i := 0 to ACount - 1 do
+    begin
+      WritePos := (FWriteIndex + i) mod FCapacity;
+      FBuffer[WritePos] := AData[i];
+    end;
+    FWriteIndex := (FWriteIndex + ACount) mod FCapacity;
+    Result := ACount;
+  finally
+    Utils.LeaveCriticalSection();
+  end;
+end;
+
+function TlgRingBuffer<T>.Read(var AData: array of T; ACount: Integer): Integer;
+var
+  i, ReadPos: Integer;
+begin
+  for i := 0 to ACount - 1 do
+  begin
+    ReadPos := (FReadIndex + i) mod FCapacity;
+    AData[i] := FBuffer[ReadPos];
+  end;
+  FReadIndex := (FReadIndex + ACount) mod FCapacity;
+  Result := ACount;
+end;
+
+function TlgRingBuffer<T>.DirectReadPointer(ACount: Integer): Pointer;
+begin
+  Result := @FBuffer[FReadIndex mod FCapacity];
+  FReadIndex := (FReadIndex + ACount) mod FCapacity;
+end;
+
+function TlgRingBuffer<T>.AvailableBytes: Integer;
+begin
+  Result := (FCapacity + FWriteIndex - FReadIndex) mod FCapacity;
+end;
+
+procedure TlgRingBuffer<T>.Clear;
+var
+  I: Integer;
+begin
+
+  Utils.EnterCriticalSection();
+  try
+    for I := Low(FBuffer) to High(FBuffer) do
+    begin
+     FBuffer[i] := Default(T);
+    end;
+
+    FReadIndex := 0;
+    FWriteIndex := 0;
+  finally
+    Utils.LeaveCriticalSection();
+  end;
+end;
+
+{ --- TlgVirtualRingBuffer -------------------------------------------------- }
+function TlgVirtualRingBuffer<T>.GetArrayValue(AIndex: Integer): T;
+begin
+  Result := PType(PByte(FBuffer.Memory) + AIndex * SizeOf(T))^;
+end;
+
+procedure TlgVirtualRingBuffer<T>.SetArrayValue(AIndex: Integer; AValue: T);
+begin
+  PType(PByte(FBuffer.Memory) + AIndex * SizeOf(T))^ := AValue;
+end;
+
+constructor TlgVirtualRingBuffer<T>.Create(ACapacity: Integer);
+begin
+  //SetLength(FBuffer, ACapacity);
+  FBuffer := TlgVirtualBuffer.Create(ACapacity*SizeOf(T));
+  FReadIndex := 0;
+  FWriteIndex := 0;
+  FCapacity := ACapacity;
+  Clear;
+end;
+
+destructor TlgVirtualRingBuffer<T>.Destroy;
+begin
+  FBuffer.Free;
+  inherited;
+end;
+
+function TlgVirtualRingBuffer<T>.Write(const AData: array of T;
+  ACount: Integer): Integer;
+var
+  i, WritePos: Integer;
+begin
+  Utils.EnterCriticalSection();
+  try
+    for i := 0 to ACount - 1 do
+    begin
+      WritePos := (FWriteIndex + i) mod FCapacity;
+      //FBuffer[WritePos] := AData[i];
+      SetArrayValue(WritePos, AData[i]);
+    end;
+    FWriteIndex := (FWriteIndex + ACount) mod FCapacity;
+    Result := ACount;
+  finally
+    Utils.LeaveCriticalSection();
+  end;
+end;
+
+function TlgVirtualRingBuffer<T>.Read(var AData: array of T; ACount: Integer): Integer;
+var
+  i, ReadPos: Integer;
+begin
+  for i := 0 to ACount - 1 do
+  begin
+    ReadPos := (FReadIndex + i) mod FCapacity;
+    //AData[i] := FBuffer[ReadPos];
+    AData[i] := GetArrayValue(ReadPos);
+  end;
+  FReadIndex := (FReadIndex + ACount) mod FCapacity;
+  Result := ACount;
+end;
+
+function TlgVirtualRingBuffer<T>.DirectReadPointer(ACount: Integer): Pointer;
+begin
+  //Result := @FBuffer[FReadIndex mod FCapacity];
+  Result := PType(PByte(FBuffer.Memory) + (FReadIndex mod FCapacity) * SizeOf(T));
+  FReadIndex := (FReadIndex + ACount) mod FCapacity;
+end;
+
+function TlgVirtualRingBuffer<T>.AvailableBytes: Integer;
+begin
+  Result := (FCapacity + FWriteIndex - FReadIndex) mod FCapacity;
+end;
+
+procedure TlgVirtualRingBuffer<T>.Clear;
+var
+  I: Integer;
+begin
+
+  Utils.EnterCriticalSection();
+  try
+    for I := 0 to FCapacity-1 do
+    begin
+     SetArrayValue(I, Default(T));
+    end;
+
+    FReadIndex := 0;
+    FWriteIndex := 0;
+  finally
+    Utils.LeaveCriticalSection();
+  end;
+end;
+
 { === CONSOLE =============================================================== }
 class constructor TlgConsole.Create();
 begin
@@ -1672,7 +2321,7 @@ begin
   Result := (GetAsyncKeyState(AKey) and $8000) <> 0;
 end;
 
-class function  TlgConsole.WasKeyPressed(AKey: Byte): Boolean;
+class function  TlgConsole.KeyWasPressed(AKey: Byte): Boolean;
 begin
   Result := False;
   if IsKeyPressed(AKey) and (not FKeyState[1, AKey]) then
@@ -1687,7 +2336,7 @@ begin
   end;
 end;
 
-class function  TlgConsole.WasKeyReleased(AKey: Byte): Boolean;
+class function  TlgConsole.KeyWasReleased(AKey: Byte): Boolean;
 begin
   Result := False;
   if IsKeyPressed(AKey) and (not FKeyState[1, AKey]) then
@@ -1947,10 +2596,10 @@ var
     LBytesToRead := UInt64(LOffset) - unztell64(FHandle);
     while LBytesToRead > 0 do
     begin
-      if LBytesToRead > CStaticBufferSize then
-        unzReadCurrentFile(FHandle, @StaticBuffer[0], CStaticBufferSize)
+      if LBytesToRead > Utils.GetStaticBufferSize() then
+        unzReadCurrentFile(FHandle, Utils.GetStaticBuffer(), Utils.GetStaticBufferSize())
       else
-        unzReadCurrentFile(FHandle, @StaticBuffer[0], LBytesToRead);
+        unzReadCurrentFile(FHandle, Utils.GetStaticBuffer(), LBytesToRead);
 
       LBytesToRead := UInt64(LOffset) - unztell64(FHandle);
     end;
@@ -2100,8 +2749,8 @@ var
   begin
     Result := crc32(0, nil, 0);
     repeat
-      LBytesRead := AStream.Read(StaticBuffer, CStaticBufferSize);
-      Result := crc32(Result, PBytef(@StaticBuffer[0]), LBytesRead);
+      LBytesRead := AStream.Read(Utils.GetStaticBuffer()^, Utils.GetStaticBufferSize());
+      Result := crc32(Result, PBytef(Utils.GetStaticBuffer()), LBytesRead);
     until LBytesRead = 0;
 
     LBuffer := nil;
@@ -2162,10 +2811,10 @@ begin
         // read through file
         repeat
           // read in a buffer length of file
-          LBytesRead := LFile.Read(StaticBuffer, CStaticBufferSize);
+          LBytesRead := LFile.Read(Utils.GetStaticBuffer()^, Utils.GetStaticBufferSize());
 
           // write buffer out to zip file
-          zipWriteInFileInZip(LZipFile, @StaticBuffer[0], LBytesRead);
+          zipWriteInFileInZip(LZipFile, Utils.GetStaticBuffer(), LBytesRead);
 
           // calc file progress percentage
           LProgress := 100.0 * (LFile.Position / LFileSize);
@@ -2463,8 +3112,8 @@ begin
       AStream.Seek(0, smStart);
       while not AStream.Eos() do
       begin
-        AStream.Read(@StaticBuffer[0], CStaticBufferSize);
-        FStream.Write(@StaticBuffer[0], CStaticBufferSize);
+        AStream.Read(Utils.GetStaticBuffer(), Utils.GetStaticBufferSize());
+        FStream.Write(Utils.GetStaticBuffer(), Utils.GetStaticBufferSize());
       end;
       FStream.Seek(0, smStart);
     end;
@@ -2695,6 +3344,375 @@ begin
   end;
 end;
 
+{ === WINDOW ================================================================ }
+
+{ --- TlgWindow ------------------------------------------------------------- }
+constructor TlgWindow.Create();
+begin
+  inherited;
+end;
+
+destructor TlgWindow.Destroy();
+begin
+  Close();
+  inherited;
+end;
+
+function  TlgWindow.Open(const aTitle: string; const AWidth: Integer; const AHeight: Integer): Boolean;
+var
+  VideoMode: PGLFWvidmode;
+  LWidth, LHeight: Integer;
+begin
+  Result := False;
+
+  if Assigned(FHandle) then Exit;
+
+  glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
+  glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
+  glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
+  glfwWindowHint(GLFW_SCALE_TO_MONITOR, GLFW_TRUE);
+
+  glfwWindowHint(GLFW_SAMPLES, 4);
+
+  FHandle := glfwCreateWindow(AWidth, AHeight, Utils.Marshal.AsUtf8(ATitle).ToPointer, nil, nil);
+  if not Assigned(FHandle) then Exit;
+  Utils.SetDefaultIcon(FHandle);
+  VideoMode := glfwGetVideoMode(glfwGetPrimaryMonitor);
+  glfwGetWindowSize(FHandle, @LWidth, @LHeight);
+  glfwSetWindowPos(FHandle, (VideoMode.width - LWidth) div 2, (VideoMode.height - LHeight) div 2);
+  glfwMakeContextCurrent(FHandle);
+
+  glfwSwapInterval(0);
+
+  if not LoadOpenGL then
+  begin
+    glfwDestroyWindow(FHandle);
+    FHandle := nil;
+    Exit;
+  end;
+
+  // Enable Line Smoothing
+  glEnable(GL_LINE_SMOOTH);
+  glHint(GL_LINE_SMOOTH_HINT, GL_NICEST);
+
+  // Enable Polygon Smoothing
+  glEnable(GL_POLYGON_SMOOTH);
+  glHint(GL_POLYGON_SMOOTH_HINT, GL_NICEST);
+
+  // Enable Point Smoothing
+  glEnable(GL_POINT_SMOOTH);
+  glHint(GL_POINT_SMOOTH_HINT, GL_NICEST);
+
+  // Enable Multisampling for anti-aliasing (if supported)
+  glEnable(GL_MULTISAMPLE);
+
+  FSize.Width := AWidth;
+  FSize.Height := AHeight;
+
+  FScaledSize.Width := LWidth;
+  FScaledSize.Height := LHeight;
+
+  glfwGetWindowContentScale(FHandle, @FScale.X, @FScale.Y);
+end;
+
+function  TlgWindow.IsOpen(): Boolean;
+begin
+  Result := False;
+  if not Assigned(FHandle) then Exit;
+  if glfwGetCurrentContext() <> FHandle then Exit;
+  Result := True;
+end;
+
+procedure TlgWindow.Close();
+begin
+  if Assigned(FHandle) then
+  begin
+    glfwMakeContextCurrent(nil);
+    glfwDestroyWindow(FHandle);
+    FHandle := nil;
+  end;
+  FSize := Math.Size(0, 0);
+  FScaledSize := Math.Size(0, 0);
+  FScale := Math.Point(0,0);
+end;
+
+function  TlgWindow.Ready(): Boolean;
+begin
+  Result := False;
+  if not IsOpen then Exit;
+  Result := True;
+end;
+
+function  TlgWindow.GetTitle(): string;
+var
+  LHwnd: HWND;
+  LLen: Integer;
+  LTitle: PChar;
+begin
+  Result := '';
+  if not IsOpen then Exit;
+  LHwnd := glfwGetWin32Window(FHandle);
+  LLen := GetWindowTextLength(LHwnd);
+  GetMem(LTitle, LLen + 1);
+  try
+    GetWindowText(LHwnd, LTitle, LLen + 1);
+    Result := StrPas(LTitle);
+  finally
+    FreeMem(LTitle);
+  end;
+end;
+
+procedure TlgWindow.SetTitle(const ATitle: string);
+begin
+  if not IsOpen then Exit;
+  SetWindowText(glfwGetWin32Window(FHandle), ATitle);
+end;
+
+function  TlgWindow.ShouldClose(): Boolean;
+begin
+  Result := True;
+  if not IsOpen then Exit;
+  Result := Boolean(glfwWindowShouldClose(FHandle));
+end;
+
+procedure TlgWindow.GetSize(var ASize: TlgSize);
+begin
+  ASize := FSize;
+end;
+
+procedure TlgWindow.GetScaledSize(var ASize: TlgSize);
+begin
+  ASize := FScaledSize;
+end;
+
+procedure TlgWindow.GetScale(var AScale: TlgPoint);
+begin
+  AScale := FScale;
+end;
+
+procedure TlgWindow.Clear(const AColor: TlgColor);
+begin
+  Clear(AColor.Red, AColor.Green, AColor.Blue, AColor.Alpha);
+end;
+
+procedure TlgWindow.Clear(const ARed, AGreen, ABlue, AAlpha: Single);
+begin
+  if not IsOpen then Exit;
+ glClearColor(ARed, AGreen, ABlue, AAlpha);
+end;
+
+procedure TlgWindow.StartDrawing();
+begin
+  if not IsOpen then Exit;
+
+  glViewport(0, 0, Round(FScaledSize.Width), Round(FScaledSize.Height));
+  glMatrixMode(GL_PROJECTION);
+  glLoadIdentity();
+  glOrtho(0, FScaledSize.Width, FScaledSize.Height, 0, -1, 1);
+  glMatrixMode(GL_MODELVIEW);
+  glLoadIdentity();
+  glScalef(FScale.X, FScale.Y, 1.0);
+  glClear(GL_COLOR_BUFFER_BIT or GL_DEPTH_BUFFER_BIT);
+end;
+
+procedure TlgWindow.EndDrawing();
+begin
+  if not IsOpen then Exit;
+
+  glfwSwapBuffers(FHandle);
+  glfwPollEvents;
+end;
+
+procedure TlgWindow.DrawLine(const X1, Y1, X2, Y2: Single; const AColor: TlgColor; const AThickness: Single);
+begin
+  if not IsOpen then Exit;
+
+  glLineWidth(AThickness);
+  glColor4f(AColor.Red, AColor.Green, AColor.Blue, AColor.Alpha);
+  glBegin(GL_LINES);
+    glVertex2f(X1, Y1);
+    glVertex2f(X2, Y2);
+  glEnd;
+end;
+
+procedure TlgWindow.DrawRect(const X, Y, AWidth, AHeight, AThickness: Single; const AColor: TlgColor; const AAngle: Single);
+var
+  CenterX, CenterY: Single;
+begin
+  if not IsOpen then Exit;
+
+  // Calculate the center of the rectangle for rotation
+  CenterX := X + AWidth / 2;
+  CenterY := Y + AHeight / 2;
+
+  glLineWidth(AThickness);
+  glColor4f(AColor.Red, AColor.Green, AColor.Blue, AColor.Alpha);
+
+  glPushMatrix;  // Save the current matrix
+
+  // Move the drawing context to the center of the rectangle
+  glTranslatef(CenterX, CenterY, 0);
+
+  // Rotate the drawing context
+  glRotatef(AAngle, 0, 0, 1);
+
+  // Move back the drawing context to its original position
+  glTranslatef(-CenterX, -CenterY, 0);
+
+  glBegin(GL_LINE_LOOP);
+    glVertex2f(X, Y);
+    glVertex2f(X + AWidth, Y);
+    glVertex2f(X + AWidth, Y + AHeight);
+    glVertex2f(X, Y + AHeight);
+  glEnd;
+
+  glPopMatrix;  // Restore the original matrix
+end;
+
+procedure TlgWindow.DrawFilledRect(const X, Y, AWidth, AHeight: Single; const AColor: TlgColor; const AAngle: Single);
+var
+  CenterX, CenterY: Single;
+begin
+  if not IsOpen then Exit;
+
+  // Calculate the center of the rectangle for rotation
+  CenterX := X + AWidth / 2;
+  CenterY := Y + AHeight / 2;
+
+  glColor4f(AColor.Red, AColor.Green, AColor.Blue, AColor.Alpha);
+
+  glPushMatrix;  // Save the current matrix
+
+  // Move the drawing context to the center of the rectangle
+  glTranslatef(CenterX, CenterY, 0);
+
+  // Rotate the drawing context
+  glRotatef(AAngle, 0, 0, 1);
+
+  // Move back the drawing context to its original position
+  glTranslatef(-CenterX, -CenterY, 0);
+
+  glBegin(GL_QUADS);
+    glVertex2f(X, Y);
+    glVertex2f(X + AWidth, Y);
+    glVertex2f(X + AWidth, Y + AHeight);
+    glVertex2f(X, Y + AHeight);
+  glEnd;
+
+  glPopMatrix;  // Restore the original matrix
+end;
+
+
+procedure TlgWindow.DrawCircle(const X, Y, ARadius, AThickness: Single; const AColor: TlgColor);
+var
+  I: Integer;
+  LX, LY: Single;
+begin
+  if not IsOpen then Exit;
+
+  glLineWidth(AThickness);
+  glColor4f(AColor.Red, AColor.Green, AColor.Blue, AColor.Alpha);
+  glBegin(GL_LINE_LOOP);
+    LX := X + ARadius;
+    LY := Y + ARadius;
+    for I := 0 to 360 do
+    begin
+      glVertex2f(LX + ARadius * Math.AngleCos(I), LY - ARadius * Math.AngleSin(I));
+    end;
+  glEnd;
+end;
+
+procedure TlgWindow.DrawFilledCircle(const X, Y, ARadius: Single; const AColor: TlgColor);
+var
+  I: Integer;
+  LX, LY: Single;
+begin
+  if not IsOpen then Exit;
+
+  glColor4f(AColor.Red, AColor.Green, AColor.Blue, AColor.Alpha);
+  glBegin(GL_TRIANGLE_FAN);
+    LX := X + ARadius;
+    LY := Y + ARadius;
+    glVertex2f(LX, LY);
+    for i := 0 to 360 do
+    begin
+      glVertex2f(LX + ARadius * Math.AngleCos(i), LY + ARadius * Math.AngleSin(i));
+    end;
+  glEnd;
+end;
+
+procedure TlgWindow.DrawTriangle(const X1, Y1, X2, Y2, X3, Y3, AThickness: Single; const AColor: TlgColor);
+begin
+  if not IsOpen then Exit;
+
+  glLineWidth(AThickness);
+  glColor4f(AColor.Red, AColor.Green, AColor.Blue, AColor.Alpha);
+  glBegin(GL_LINE_LOOP);
+    glVertex2f(X1, Y1);
+    glVertex2f(X2, Y2);
+    glVertex2f(X3, Y3);
+  glEnd;
+end;
+
+procedure TlgWindow.DrawFilledTriangle(const X1, Y1, X2, Y2, X3, Y3: Single; const AColor: TlgColor);
+begin
+  if not IsOpen then Exit;
+
+  glColor4f(AColor.Red, AColor.Green, AColor.Blue, AColor.Alpha);
+  glBegin(GL_TRIANGLES);
+    glVertex2f(X1, Y1);
+    glVertex2f(X2, Y2);
+    glVertex2f(X3, Y3);
+  glEnd;
+end;
+
+procedure TlgWindow.DrawPolygon(const APoints: array of TlgPoint; const AThickness: Single; const AColor: TlgColor);
+var
+  I: Integer;
+begin
+  if not IsOpen then Exit;
+
+  glLineWidth(AThickness);
+  glColor4f(AColor.Red, AColor.Green, AColor.Blue, AColor.Alpha);
+  glBegin(GL_LINE_LOOP);
+    for i := Low(APoints) to High(APoints) do
+    begin
+      glVertex2f(APoints[i].X, APoints[i].Y);
+    end;
+  glEnd;
+end;
+
+procedure TlgWindow.DrawFilledPolygon(const APoints: array of TlgPoint; const AColor: TlgColor);
+var
+  I: Integer;
+begin
+  if not IsOpen then Exit;
+
+  glColor4f(AColor.Red, AColor.Green, AColor.Blue, AColor.Alpha);
+  glBegin(GL_POLYGON);
+  for I := Low(APoints) to High(APoints) do
+    begin
+      glVertex2f(APoints[i].X, APoints[i].Y);
+    end;
+  glEnd;
+end;
+
+procedure TlgWindow.DrawPolyline(const APoints: array of TlgPoint; const AThickness: Single; const AColor: TlgColor);
+var
+  I: Integer;
+begin
+  if not IsOpen then Exit;
+
+  glLineWidth(AThickness);
+  glColor4f(AColor.Red, AColor.Green, AColor.Blue, AColor.Alpha);
+  glBegin(GL_LINE_STRIP);
+    for I := Low(APoints) to High(APoints) do
+    begin
+      glVertex2f(APoints[i].X, APoints[i].Y);
+    end;
+  glEnd;
+end;
+
 {============================================================================ }
 
 {$R LGT.Deps.res}
@@ -2770,6 +3788,9 @@ begin
   SetConsoleCP(CP_UTF8);
   SetConsoleOutputCP(CP_UTF8);
 
+  // init utils
+  Utils := TlgUtils.Create();
+
   // init console
   Console := TlgConsole.Create();
 
@@ -2778,7 +3799,6 @@ begin
 
   // misc
   if glfwInit() <> GLFW_TRUE then AbortDepsDLL();
-  CriticalSection := TCriticalSection.Create();
   Math := TlgMath.Create();
   Timer := TlgDeterministicTimer.Create();
   Timer.Init();
@@ -2790,13 +3810,15 @@ begin
   Timer.Free();
   Math.Free();
   glfwTerminate();
-  CriticalSection.Free();
 
   // unload deps dll
   UnloadDepsDLL();
 
   // release console
   Console.Free();
+
+  // release utils
+  Utils.Free();
 
   // restore code page
   SetConsoleCP(InputCodePage);

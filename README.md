@@ -10,7 +10,7 @@ More info coming soon!
 
 ### Minimum Requirements 
 - Should work on Windows 10+ (64 bits)
-- Should work on any Delphi version that can target Win64/Unicode
+- Should work on any Delphi version that support generics and can target Win64/Unicode
 
 **NOTE: Made/tested on Windows/Delphi 11.**
 
