@@ -50,6 +50,15 @@ uses
   LGT.OGL;
 
 { === MISC ================================================================== }
+const
+  LGT_NAME          = 'Luna Game Toolkit™';
+  LGT_CODENAME      = 'Aurora';
+  LGT_MAJOR_VERSION = '0';
+  LGT_MINOR_VERSION = '1';
+  LGT_PATCH_VERSION = '0';
+  LGT_VERSION       = LGT_MAJOR_VERSION+'.'+LGT_MINOR_VERSION+'.'+LGT_PATCH_VERSION;
+  LGT_PROJECT       = LGT_NAME+' ('+LGT_CODENAME+') v'+LGT_MAJOR_VERSION+'.'+LGT_MINOR_VERSION+'.'+LGT_PATCH_VERSION;
+
 type
   { TlgSeekMode }
   TlgSeekMode = (smStart, smCurrent, smEnd);
@@ -68,7 +77,6 @@ type
   { TlgUtils }
   TlgUtils = class
   protected const
-    //CStaticBufferSize = 1024*4;
     CStaticBufferSize = 8192;
   protected class var
     FCriticalSection: TCriticalSection;
@@ -655,6 +663,7 @@ const
 
 { === WINDOW ================================================================ }
 type
+  { TlgWindow }
   TlgWindow = class(TlgBaseObject)
   protected
     FHandle: PGLFWwindow;
@@ -664,6 +673,8 @@ type
   public const
     DEFAULT_WIDTH = 1920 div 2;
     DEFAULT_HEIGHT = 1080 div 2;
+    CENTER_WIDTH = DEFAULT_WIDTH div 2;
+    CENTER_HEIGHT = DEFAULT_HEIGHT div 2;
   public
     constructor Create(); override;
     destructor Destroy(); override;
@@ -691,6 +702,60 @@ type
     procedure DrawPolygon(const APoints: array of TlgPoint; const AThickness: Single; const AColor: TlgColor);
     procedure DrawFilledPolygon(const APoints: array of TlgPoint; const AColor: TlgColor);
     procedure DrawPolyline(const APoints: array of TlgPoint; const AThickness: Single; const AColor: TlgColor);
+  end;
+
+{ === TEXTURE =============================================================== }
+  { TglTexture }
+  TlgTexture = class(TlgBaseObject)
+  protected
+    FHandle: Cardinal;
+    FChannels: Integer;
+    FSize: TlgSize;
+    FPivot: TlgPoint;
+    FAnchor: TlgPoint;
+    FAlphaBlending: Boolean;
+    FPos: TlgPoint;
+    FScale: Single;
+    FColor: TlgColor;
+    FAngle: Single;
+    FHFlip: Boolean;
+    FVFlip: Boolean;
+    FRegion: TlgRect;
+  public
+    constructor Create(); override;
+    destructor Destroy(); override;
+    function   Allocate(const AWidth, AHeight: Integer): Boolean;
+    procedure  Fill(const AColor: TlgColor);
+    function   Load(const AStream: TlgStream): Boolean;
+    procedure  Unload();
+    function   GetChannels(): Integer;
+    function   GetSize(): TlgSize;
+    function   GetPivot(): TlgPoint;
+    procedure  SetPivot(const APoint: TlgPoint); overload;
+    procedure  SetPivot(const X, Y: Single); overload;
+    function   GetAnchor(): TlgPoint;
+    procedure  SetAnchor(const APoint: TlgPoint); overload;
+    procedure  SetAnchor(const X, Y: Single); overload;
+    function   GetAlphaBlending(): Boolean;
+    procedure  SetAlphaBlending(const AValue: Boolean);
+    function   GetPos(): TlgPoint;
+    procedure  SetPos(const APos: TlgPoint); overload;
+    procedure  SetPos(const X, Y: Single); overload;
+    function   GetScale(): Single;
+    procedure  SetScale(const AScale: Single);
+    function   GetColor(): TlgColor;
+    procedure  SetColor(const AColor: TlgColor);
+    function   GetAngle(): Single;
+    procedure  SetAngle(const AAngle: Single);
+    function   GetHFlip: Boolean;
+    procedure  SetHFlip(const AFlip: Boolean);
+    function   GetVFlip: Boolean;
+    procedure  SetVFlip(const AFlip: Boolean);
+    function   GetRegion(): TlgRect;
+    procedure  SetRegion(const ARegion: TlgRect); overload;
+    procedure  SetRegion(const X, Y, AWidth, AHeight: Single); overload;
+    procedure  ResetRegion();
+    procedure  Draw();
   end;
 
 { =========================================================================== }
@@ -3535,6 +3600,7 @@ begin
   glEnd;
 end;
 
+(*
 procedure TlgWindow.DrawRect(const X, Y, AWidth, AHeight, AThickness: Single; const AColor: TlgColor; const AAngle: Single);
 var
   CenterX, CenterY: Single;
@@ -3568,7 +3634,38 @@ begin
 
   glPopMatrix;  // Restore the original matrix
 end;
+*)
+procedure TlgWindow.DrawRect(const X, Y, AWidth, AHeight, AThickness: Single; const AColor: TlgColor; const AAngle: Single);
+var
+  HalfWidth, HalfHeight: Single;
+begin
+  if not IsOpen then Exit;
 
+  HalfWidth := AWidth / 2;
+  HalfHeight := AHeight / 2;
+
+  glLineWidth(AThickness);
+  glColor4f(AColor.Red, AColor.Green, AColor.Blue, AColor.Alpha);
+
+  glPushMatrix;  // Save the current matrix
+
+  // Translate to the center point
+  glTranslatef(X, Y, 0);
+
+  // Rotate around the center
+  glRotatef(AAngle, 0, 0, 1);
+
+  glBegin(GL_LINE_LOOP);
+    glVertex2f(-HalfWidth, -HalfHeight);      // Bottom-left corner
+    glVertex2f(HalfWidth, -HalfHeight);       // Bottom-right corner
+    glVertex2f(HalfWidth, HalfHeight);        // Top-right corner
+    glVertex2f(-HalfWidth, HalfHeight);       // Top-left corner
+  glEnd;
+
+  glPopMatrix;  // Restore the original matrix
+end;
+
+(*
 procedure TlgWindow.DrawFilledRect(const X, Y, AWidth, AHeight: Single; const AColor: TlgColor; const AAngle: Single);
 var
   CenterX, CenterY: Single;
@@ -3601,6 +3698,36 @@ begin
 
   glPopMatrix;  // Restore the original matrix
 end;
+*)
+
+procedure TlgWindow.DrawFilledRect(const X, Y, AWidth, AHeight: Single; const AColor: TlgColor; const AAngle: Single);
+var
+  HalfWidth, HalfHeight: Single;
+begin
+  if not IsOpen then Exit;
+
+  HalfWidth := AWidth / 2;
+  HalfHeight := AHeight / 2;
+
+  glColor4f(AColor.Red, AColor.Green, AColor.Blue, AColor.Alpha);
+
+  glPushMatrix;  // Save the current matrix
+
+  // Translate to the center point
+  glTranslatef(X, Y, 0);
+
+  // Rotate around the center
+  glRotatef(AAngle, 0, 0, 1);
+
+  glBegin(GL_QUADS);
+    glVertex2f(-HalfWidth, -HalfHeight);      // Bottom-left corner
+    glVertex2f(HalfWidth, -HalfHeight);       // Bottom-right corner
+    glVertex2f(HalfWidth, HalfHeight);        // Top-right corner
+    glVertex2f(-HalfWidth, HalfHeight);       // Top-left corner
+  glEnd;
+
+  glPopMatrix;  // Restore the original matrix
+end;
 
 
 procedure TlgWindow.DrawCircle(const X, Y, ARadius, AThickness: Single; const AColor: TlgColor);
@@ -3613,8 +3740,8 @@ begin
   glLineWidth(AThickness);
   glColor4f(AColor.Red, AColor.Green, AColor.Blue, AColor.Alpha);
   glBegin(GL_LINE_LOOP);
-    LX := X + ARadius;
-    LY := Y + ARadius;
+    LX := X{ + ARadius};
+    LY := Y{ + ARadius};
     for I := 0 to 360 do
     begin
       glVertex2f(LX + ARadius * Math.AngleCos(I), LY - ARadius * Math.AngleSin(I));
@@ -3631,8 +3758,8 @@ begin
 
   glColor4f(AColor.Red, AColor.Green, AColor.Blue, AColor.Alpha);
   glBegin(GL_TRIANGLE_FAN);
-    LX := X + ARadius;
-    LY := Y + ARadius;
+    LX := X{ + ARadius};
+    LY := Y{ + ARadius};
     glVertex2f(LX, LY);
     for i := 0 to 360 do
     begin
@@ -3711,6 +3838,415 @@ begin
       glVertex2f(APoints[i].X, APoints[i].Y);
     end;
   glEnd;
+end;
+
+{ === TEXTURE =============================================================== }
+{ --- TglTexture ------------------------------------------------------------ }
+
+function  TlgTexture_Read(AUser: Pointer; AData: PUTF8Char;
+  ASize: Integer): Integer; cdecl;
+var
+  LStream: TlgStream;
+begin
+  LStream := AUser;
+  Result := LStream.Read(AData, ASize);
+end;
+
+procedure TlgTexture_Skip(AUser: Pointer; AOffset: Integer); cdecl;
+var
+  LStream: TlgStream;
+begin
+  LStream := AUser;
+  LStream.Seek(AOffset, smCurrent);
+end;
+
+function  TlgTexture_Eof(AUser: Pointer): Integer; cdecl;
+var
+  LStream: TlgStream;
+begin
+  LStream := AUser;
+  Result := Ord(LStream.Eos);
+end;
+
+constructor TlgTexture.Create();
+begin
+  inherited;
+  FAlphaBlending := True;
+end;
+
+destructor TlgTexture.Destroy();
+begin
+  Unload;
+  inherited;
+end;
+
+function   TlgTexture.Allocate(const AWidth, AHeight: Integer): Boolean;
+var
+  Data: array of Byte;
+begin
+  Result := False;
+
+  if FHandle <> 0 then Exit;
+
+  // init RGBA data
+  SetLength(Data, AWidth * AHeight * 4);
+
+  glGenTextures(1, @FHandle);
+  glBindTexture(GL_TEXTURE_2D, FHandle);
+
+  // init the texture with transparent pixels
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, AWidth, AHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, @Data[0]);
+
+  // set texture parameters
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+  FSize.Width := AWidth;
+  FSize.Height := AHeight;
+  FChannels := 4;
+
+  SetColor(WHITE);
+  SetScale(1.0);
+  SetAngle(0.0);
+  SetHFlip(False);
+  SetVFlip(False);
+  SetPivot(0.5, 0.5);
+  SetAnchor(0.5, 0.5);
+  SetPos(0.0, 0.0);
+  ResetRegion();
+
+
+  Result := True;
+end;
+
+procedure  TlgTexture.Fill(const AColor: TlgColor);
+var
+  X,Y,LWidth,LHeight: Integer;
+begin
+  LWidth := Round(FSize.Width);
+  LHeight := Round(FSize.Height);
+
+  glBindTexture(GL_TEXTURE_2D, FHandle);
+
+  for X := 0 to LWidth-1 do
+  begin
+    for Y := 0 to LHeight-1 do
+    begin
+      glTexSubImage2D(GL_TEXTURE_2D, 0, X, Y, 1, 1, GL_RGBA, GL_FLOAT, @AColor);
+    end;
+  end;
+
+  glBindTexture(GL_TEXTURE_2D, 0);
+end;
+
+function   TlgTexture.Load(const AStream: TlgStream): Boolean;
+var
+  LCallbacks: stbi_io_callbacks;
+  LData: Pstbi_uc;
+  LWidth,LHeight,LChannels: Integer;
+begin
+  Result := False;
+  if FHandle > 0 then Exit;
+
+  LCallbacks.read := TlgTexture_Read;
+  LCallbacks.skip := TlgTexture_Skip;
+  LCallbacks.eof := TlgTexture_Eof;
+
+  LData := stbi_load_from_callbacks(@LCallbacks, AStream, @LWidth, @LHeight, @LChannels, 4);
+  if not Assigned(LData) then Exit;
+
+  glGenTextures(1, @FHandle);
+  glBindTexture(GL_TEXTURE_2D, FHandle);
+
+  if LChannels = 4 then
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, LWidth, LHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, LData)
+  else if LChannels = 3 then
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, LWidth, LHeight, 0, GL_RGB, GL_UNSIGNED_BYTE, LData)
+  else
+    begin
+      Unload;
+      exit;
+    end;
+
+  // Set texture parameters
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+  stbi_image_free(LData);
+
+  FSize.Width := LWidth;
+  FSize.Height := LHeight;
+  FChannels := LChannels;
+
+  SetColor(WHITE);
+  SetScale(1.0);
+  SetAngle(0.0);
+  SetHFlip(False);
+  SetVFlip(False);
+  SetPivot(0.5, 0.5);
+  SetAnchor(0.5, 0.5);
+  SetPos(0.0, 0.0);
+  ResetRegion();
+
+  Result := True;
+end;
+
+procedure  TlgTexture.Unload();
+begin
+  if FHandle = 0 then Exit;
+
+  glDeleteTextures(1, @FHandle);
+  FHandle := 0;
+  FSize := Default(TlgSize);
+  FChannels := 0;
+end;
+
+function   TlgTexture.GetChannels(): Integer;
+begin
+  Result := FChannels;
+end;
+
+function   TlgTexture.GetSize(): TlgSize;
+begin
+  Result := FSize;
+end;
+
+function   TlgTexture.GetPivot(): TlgPoint;
+begin
+  Result := FPivot;
+end;
+
+procedure  TlgTexture.SetPivot(const APoint: TlgPoint);
+begin
+  SetPivot(APoint.x, APoint.y);
+end;
+
+procedure  TlgTexture.SetPivot(const X, Y: Single);
+begin
+  FPivot.x := EnsureRange(X, 0, 1);
+  FPivot.y := EnsureRange(Y, 0, 1);
+end;
+
+function   TlgTexture.GetAnchor(): TlgPoint;
+begin
+  Result := FAnchor;
+end;
+
+procedure  TlgTexture.SetAnchor(const APoint: TlgPoint);
+begin
+  SetAnchor(APoint.x, APoint.y);
+end;
+
+procedure  TlgTexture.SetAnchor(const X, Y: Single);
+begin
+  FAnchor.x := EnsureRange(X, 0, 1);
+  FAnchor.y := EnsureRange(Y, 0, 1);
+end;
+
+function   TlgTexture.GetAlphaBlending(): Boolean;
+begin
+  Result := FAlphaBlending;
+end;
+
+procedure  TlgTexture.SetAlphaBlending(const AValue: Boolean);
+begin
+  FAlphaBlending := AValue;
+end;
+
+function   TlgTexture.GetPos(): TlgPoint;
+begin
+  Result := FPos;
+end;
+
+procedure  TlgTexture.SetPos(const APos: TlgPoint);
+begin
+  FPos := APos;
+end;
+
+procedure  TlgTexture.SetPos(const X, Y: Single);
+begin
+  FPos.x := X;
+  FPos.y := Y;
+end;
+
+function   TlgTexture.GetScale(): Single;
+begin
+  Result := FScale;
+end;
+
+procedure  TlgTexture.SetScale(const AScale: Single);
+begin
+  FScale := AScale;
+end;
+
+function   TlgTexture.GetColor(): TlgColor;
+begin
+  Result := FColor;
+end;
+
+procedure  TlgTexture.SetColor(const AColor: TlgColor);
+begin
+  FColor := AColor;
+end;
+
+function   TlgTexture.GetAngle(): Single;
+begin
+  Result := FAngle;
+end;
+
+procedure  TlgTexture.SetAngle(const AAngle: Single);
+begin
+  FAngle := AAngle;
+  Math.ClipValueFloat(FAngle, 0, 360, True);
+end;
+
+function   TlgTexture.GetHFlip(): Boolean;
+begin
+  Result := FHFlip;
+end;
+
+procedure  TlgTexture.SetHFlip(const AFlip: Boolean);
+begin
+  FHFlip := AFlip;
+end;
+
+function   TlgTexture.GetVFlip(): Boolean;
+begin
+  Result := FVFlip;
+end;
+
+procedure  TlgTexture.SetVFlip(const AFlip: Boolean);
+begin
+  FVFlip := AFlip;
+end;
+
+function   TlgTexture.GetRegion(): TlgRect;
+begin
+  Result := FRegion;
+end;
+
+procedure  TlgTexture.SetRegion(const ARegion: TlgRect);
+begin
+  SetRegion(ARegion.X, ARegion.Y, ARegion.Width, ARegion.Height);
+end;
+
+procedure  TlgTexture.SetRegion(const X, Y, AWidth, AHeight: Single);
+begin
+  FRegion.X := X;
+  FRegion.Y := Y;
+  FRegion.Width := AWidth;
+  FRegion.Height := AHeight;
+end;
+
+procedure  TlgTexture.ResetRegion();
+begin
+  FRegion.X := 0;
+  FRegion.Y := 0;
+  FRegion.Width := FSize.Width;
+  FRegion.Height := FSize.Height;
+end;
+
+(*
+procedure  TlgTexture.Draw();
+var
+  FlipX, FlipY: Single;
+begin
+  if FHandle = 0 then Exit;
+
+  glBindTexture(GL_TEXTURE_2D, FHandle);
+  glEnable(GL_TEXTURE_2D);
+
+  glPushMatrix();
+
+  // Set the color
+  glColor4f(FColor.Red, FColor.Green, FColor.Blue, FColor.Alpha);
+
+  // Enable alpha blending
+  if FAlphaBlending then
+  begin
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+  end;
+
+  // Use the normalized anchor value
+  glTranslatef(FPos.X - (FAnchor.X * FSize.Width * FScale), FPos.Y - (FAnchor.Y * FSize.Height * FScale), 0);
+  glScalef(FScale, FScale, 1);
+
+  // Apply rotation using the normalized pivot value
+  glTranslatef(FPivot.X * FSize.Width, FPivot.Y * FSize.Height, 0);
+  glRotatef(FAngle, 0, 0, 1);
+  glTranslatef(-FPivot.X * FSize.Width, -FPivot.Y * FSize.Height, 0);
+
+  // Apply flip
+  if FHFlip then FlipX := -1 else FlipX := 1;
+  if FVFlip then FlipY := -1 else FlipY := 1;
+  glScalef(FlipX, FlipY, 1);
+
+  glBegin(GL_QUADS);
+    glTexCoord2f(0, 0); glVertex2f(0,      0);
+    glTexCoord2f(1, 0); glVertex2f(FSize.Width,  0);
+    glTexCoord2f(1, 1); glVertex2f(FSize.Width,  FSize.Height);
+    glTexCoord2f(0, 1); glVertex2f(0,      FSize.Height);
+  glEnd();
+
+  glPopMatrix();
+
+  glDisable(GL_TEXTURE_2D);
+  glBindTexture(GL_TEXTURE_2D, 0);
+end;
+*)
+
+procedure  TlgTexture.Draw();
+var
+  FlipX, FlipY: Single;
+begin
+  if FHandle = 0 then Exit;
+
+  glBindTexture(GL_TEXTURE_2D, FHandle);
+  glEnable(GL_TEXTURE_2D);
+
+  glPushMatrix();
+
+  // Set the color
+  glColor4f(FColor.Red, FColor.Green, FColor.Blue, FColor.Alpha);
+
+  // Enable alpha blending
+  if FAlphaBlending then
+  begin
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+  end;
+
+  // Use the normalized anchor value
+  glTranslatef(FPos.X - (FAnchor.X * FRegion.Width * FScale), FPos.Y - (FAnchor.Y * FRegion.Height * FScale), 0);
+  glScalef(FScale, FScale, 1);
+
+  // Apply rotation using the normalized pivot value
+  glTranslatef(FPivot.X * FRegion.Width, FPivot.Y * FRegion.Height, 0);
+  glRotatef(FAngle, 0, 0, 1);
+  glTranslatef(-FPivot.X * FRegion.Width, -FPivot.Y * FRegion.Height, 0);
+
+  // Apply flip
+  if FHFlip then FlipX := -1 else FlipX := 1;
+  if FVFlip then FlipY := -1 else FlipY := 1;
+  glScalef(FlipX, FlipY, 1);
+
+  // Adjusted texture coordinates and vertices for the specified rectangle
+  glBegin(GL_QUADS);
+    glTexCoord2f(FRegion.X/FSize.Width, FRegion.Y/FSize.Height); glVertex2f(0, 0);
+    glTexCoord2f((FRegion.X + FRegion.Width)/FSize.Width, FRegion.Y/FSize.Height); glVertex2f(FRegion.Width, 0);
+    glTexCoord2f((FRegion.X + FRegion.Width)/FSize.Width, (FRegion.Y + FRegion.Height)/FSize.Height); glVertex2f(FRegion.Width, FRegion.Height);
+    glTexCoord2f(FRegion.X/FSize.Width, (FRegion.Y + FRegion.Height)/FSize.Height); glVertex2f(0, FRegion.Height);
+  glEnd();
+
+  glPopMatrix();
+
+  glDisable(GL_TEXTURE_2D);
+  glBindTexture(GL_TEXTURE_2D, 0);
 end;
 
 {============================================================================ }

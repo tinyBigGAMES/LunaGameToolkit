@@ -348,10 +348,22 @@ procedure Test05();
 var
   LWindow: TlgWindow;
   LAngle: Single;
+  LStream: TlgStream;
+  LTexture: TlgTexture;
 begin
+  Console.PrintLn(LGT_PROJECT);
+
   LWindow := TlgWindow.Create();
 
   LWindow.Open('Test05');
+
+  LStream := TlgZipStream.Open(CZipFilename, 'res/images/LGT2.png');
+  LTexture := TlgTexture.Create();
+  LTexture.Load(LStream);
+  LStream.Free();
+  LTexture.SetPos(LWindow.CENTER_WIDTH, LWindow.CENTER_HEIGHT);
+  LTexture.SetScale(0.5);
+  LTexture.SetRegion(246, 64, 228, 75);
 
   while true do
   begin
@@ -370,12 +382,16 @@ begin
       LWindow.DrawFilledRect(100, 100, 100, 100, DARKGREEN, LAngle);
       LWindow.DrawRect(200, 200, 100, 100, 2, DARKORCHID, LAngle);
 
+      LTexture.Draw();
+
     LWindow.EndDrawing();
 
     LWindow.SetTitle(Format('Test05 (%d fps)', [Timer.TargetFrameRate]));
 
     Timer.Stop();
   end;
+
+  LTexture.Free();
 
   LWindow.Close();
 
