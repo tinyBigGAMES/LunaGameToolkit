@@ -91,10 +91,10 @@ end;
 ----------------------------------------------------------------------------- }
 procedure Test03();
 var
+  LZipFile: TlgZipFile;
   LAudio: TlgAudio;
   LSound: array[0..6] of TlgSound;
   LChan: array[0..15] of TlgSound;
-  LStream: TlgStream;
   I: Integer;
 
   function FindFree(): Integer;
@@ -127,6 +127,9 @@ var
 
 begin
 
+  LZipFile := TlgZipFile.Create();
+  LZipFile.Open(CZipFilename);
+
   LAudio := TlgAudio.Create();
   LAudio.Open();
 
@@ -136,19 +139,14 @@ begin
   end;
 
   // load music
-  LSound[0] := TlgSound.Create(LAudio);
-  LStream := TlgZipStream.Open(CZipFilename, 'res/music/song01.ogg');
-  LSound[0].Load(LStream, slStream);
+  LSound[0] := TlgSound.LoadFromZipFile(LAudio, LZipFile, 'res/music/song01.ogg', slStream);
   LSound[0].Play(True);
   LSound[0].SetLooping(True);
 
   // load sfx
   for I := 1 to 6 do
   begin
-    LSound[I] := TlgSound.Create(LAudio);
-    LStream := TlgZipStream.Open(CZipFilename, Format('res/sfx/samp%d.ogg',[I-1]));
-    LSound[I].Load(LStream, slMemory);
-    LStream.Free();
+    LSound[I] := TlgSound.LoadFromZipFile(LAudio, LZipFile, Format('res/sfx/samp%d.ogg',[I-1]), slMemory);
   end;
 
   Console.PrintLn('Press 1-6 to play sound, ESC to quit...');
@@ -255,8 +253,8 @@ begin
   LAudio := TlgAudio.Create();
   LAudio.Open();
 
-  LPlm := plm_create_with_filename('res/videos/GameKit.mpg');
-  //LPlm := plm_create_with_filename('res/videos/tinyBigGAMES.mpg');
+  //LPlm := plm_create_with_filename('res/videos/GameKit.mpg');
+  LPlm := plm_create_with_filename('res/videos/tinyBigGAMES.mpg');
   SampleRate := plm_get_samplerate(LPlm);
   LFrameTime := 1/(Timer.TargetFrameRate() / 2);
   plm_set_audio_lead_time(LPLM, (SAMEPLE_SIZE*AUDIO_CHANES)/SampleRate);
@@ -346,24 +344,27 @@ end;
 
 procedure Test05();
 var
+  LZipFile: TlgZipFile;
   LWindow: TlgWindow;
   LAngle: Single;
-  LStream: TlgStream;
   LTexture: TlgTexture;
 begin
   Console.PrintLn(LGT_PROJECT);
+
+  LZipFile := TlgZipFile.Create();
+  LZipFile.Open(CZipFilename);
 
   LWindow := TlgWindow.Create();
 
   LWindow.Open('Test05');
 
-  LStream := TlgZipStream.Open(CZipFilename, 'res/images/LGT2.png');
-  LTexture := TlgTexture.Create();
-  LTexture.Load(LStream);
-  LStream.Free();
+  //LTexture := TlgTexture.LoadFromFile('res/images/LGT2.png');
+  LTexture := TlgTexture.LoadFromZipFile(LZipFile, 'res/images/LGT2.png');
   LTexture.SetPos(LWindow.CENTER_WIDTH, LWindow.CENTER_HEIGHT);
   LTexture.SetScale(0.5);
   LTexture.SetRegion(246, 64, 228, 75);
+  LTexture.SetAngle(45);
+  //LTexture.SetAlphaBlending(False);
 
   while true do
   begin
@@ -396,6 +397,8 @@ begin
   LWindow.Close();
 
   LWindow.Free();
+
+  LZipFile.Free();
 
 end;
 

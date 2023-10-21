@@ -355,6 +355,8 @@ type
 
 { === STREAM ================================================================ }
 type
+  TlgStreamMode = (smRead, smWrite);
+
   { TlgStream }
   TlgStream = class(TlgBaseObject)
   public
@@ -389,6 +391,25 @@ type
     class function Open(const AFilename: string): TlgMemoryStream; overload;
   end;
 
+  { TlgFileStream }
+  TlgFileStream = class(TlgStream)
+  protected
+    FHandle: TFileStream;
+    FMode: TlgStreamMode;
+    function DoOpen(const AFilename: string; const AMode: TlgStreamMode): Boolean;
+  public
+    constructor Create(); override;
+    destructor Destroy(); override;
+    procedure Close(); override;
+    function  Size(): Int64; override;
+    function  Seek(const AOffset: Int64; const ASeek: TlgSeekMode): Int64; override;
+    function  Read(const AData: Pointer; const ASize: Int64): Int64; override;
+    function  Write(const AData: Pointer; const ASize: Int64): Int64; override;
+    function  Tell(): Int64; override;
+    function  Eos(): Boolean; override;
+    class function Open(const AFilename: string; const AMode: TlgStreamMode): TlgFileStream;
+  end;
+
   { TlgZipFileStreamBuildProgress }
   TlgZipFileStreamBuildProgress = procedure(const ASender: Pointer; const AFilename: string; const AProgress: Integer; const ANewFile: Boolean);
 
@@ -413,6 +434,22 @@ type
     function  Eos(): Boolean; override;
     class function Open(const AZipFilename, AFilename: string; const APassword: string=DEFAULT_PASSWORD): TlgZipStream;
     class function Build(const AZipFilename, ADirectoryName: string; const ASender: Pointer; const AHandler: TlgZipFileStreamBuildProgress; const APassword: string=DEFAULT_PASSWORD): Boolean;
+  end;
+
+{ === ZIPFILE =============================================================== }
+type
+  TlgZipFile = class(TlgBaseObject)
+  protected
+    FZipFilename: string;
+    FPassword: string;
+    FIsOpen: Boolean;
+  public
+    constructor Create; override;
+    destructor Destroy; override;
+    function  Open(const AZipFilename: string; const APassword: string=TlgZipStream.DEFAULT_PASSWORD): Boolean;
+    function  IsOpen(): Boolean;
+    procedure Close();
+    function  OpenFile(const AFilename: string): TlgZipStream;
   end;
 
 { === AUDIO ================================================================= }
@@ -493,6 +530,9 @@ type
     procedure SetPan(const APan: Single); virtual;
     function  GetChans(): Integer; virtual;
     function  GetFreq(): Integer; virtual;
+    class function LoadFromFile(const AAudio: TlgAudio; const AFilename: string; const ALoad: TlgSoundLoad; const AOneShot: Boolean=False): TlgSound;
+    class function LoadFromZipFile(const AAudio: TlgAudio; const AZipFile: TlgZipFile; const AFilename: string; const ALoad: TlgSoundLoad; const AOneShot: Boolean=False): TlgSound;
+
   end;
 
 { === COLOR ================================================================= }
@@ -756,6 +796,8 @@ type
     procedure  SetRegion(const X, Y, AWidth, AHeight: Single); overload;
     procedure  ResetRegion();
     procedure  Draw();
+    class function LoadFromFile(const AFilename: string): TlgTexture;
+    class function LoadFromZipFile(const AZipFile: TlgZipFile; const AFilename: string): TlgTexture;
   end;
 
 { =========================================================================== }
@@ -2616,6 +2658,91 @@ begin
   Result.FHandle.LoadFromFile(AFilename);
 end;
 
+{ --- TlgFileStream --------------------------------------------------------- }
+constructor TlgFileStream.Create();
+begin
+  inherited;
+end;
+
+destructor TlgFileStream.Destroy();
+begin
+  Close();
+  inherited;
+end;
+
+procedure TlgFileStream.Close();
+begin
+  if not Assigned(FHandle) then Exit;
+  FHandle.Free();
+  FHandle := nil;
+end;
+
+function  TlgFileStream.Size(): Int64;
+begin
+  Result := FHandle.Size;
+end;
+
+function  TlgFileStream.Seek(const AOffset: Int64; const ASeek: TlgSeekMode): Int64;
+begin
+  Result := FHandle.Seek(AOffset, Ord(ASeek));
+end;
+
+function  TlgFileStream.Read(const AData: Pointer; const ASize: Int64): Int64;
+begin
+  Result := FHandle.Read(AData^, ASize);
+end;
+
+function  TlgFileStream.Write(const AData: Pointer; const ASize: Int64): Int64;
+begin
+  Result := FHandle.Write(AData^, ASize);
+end;
+
+function  TlgFileStream.Tell(): Int64;
+begin
+  Result := FHandle.Position;
+end;
+
+function  TlgFileStream.Eos(): Boolean;
+begin
+  Result := Boolean(Tell() >= Size());
+end;
+
+function TlgFileStream.DoOpen(const AFilename: string; const AMode: TlgStreamMode): Boolean;
+begin
+  Result := False;
+  if AFilename.IsEmpty then Exit;
+
+  try
+    case AMode of
+      smRead:
+      begin
+        FHandle := TFile.OpenRead(AFilename);
+        FMode := AMode;
+      end;
+
+      smWrite:
+      begin
+        FHandle := TFile.OpenWrite(AFilename);
+        FMode := AMode;
+      end;
+    end;
+  except
+    FHandle := nil;
+  end;
+
+  Result := True;
+end;
+
+class function TlgFileStream.Open(const AFilename: string; const AMode: TlgStreamMode): TlgFileStream;
+begin
+  Result := TlgFileStream.Create();
+  if not Result.DoOpen(AFilename, AMode) then
+  begin
+    Result.Free();
+    Result := nil;
+  end;
+end;
+
 { --- TlgZipStream ---------------------------------------------------------- }
 constructor TlgZipStream.Create();
 begin
@@ -2910,6 +3037,57 @@ begin
   Result := TFile.Exists(LFilename);
 end;
 
+{ === ZIPFILE =============================================================== }
+constructor TlgZipFile.Create();
+begin
+  inherited;
+end;
+
+destructor TlgZipFile.Destroy();
+begin
+  Close();
+  inherited;
+end;
+
+function  TlgZipFile.Open(const AZipFilename: string; const APassword: string=TlgZipStream.DEFAULT_PASSWORD): Boolean;
+var
+  LZipFilename: PAnsiChar;
+  LFile: unzFile;
+begin
+  Result := False;
+
+  if FIsOpen then Exit;
+
+  LZipFilename := PAnsiChar(AnsiString(StringReplace(string(AZipFilename), '/', '\', [rfReplaceAll])));
+
+  LFile := unzOpen64(LZipFilename);
+  if not Assigned(LFile) then Exit;
+
+  unzClose(LFile);
+
+  FZipFilename := AZipFilename;
+  FPassword := APassword;
+  FIsOpen := True;
+
+  Result := True;
+end;
+
+function  TlgZipFile.IsOpen(): Boolean;
+begin
+  Result := FIsOpen;
+end;
+
+procedure TlgZipFile.Close();
+begin
+  FZipFilename := '';
+  FPassword := '';
+  FIsOpen := False;
+end;
+
+function  TlgZipFile.OpenFile(const AFilename: string): TlgZipStream;
+begin
+  Result := TlgZipStream.Open(FZipFilename, AFilename, FPassword);
+end;
 
 { === AUDIO ================================================================= }
 
@@ -3407,6 +3585,64 @@ begin
 
     Dec(LProcessed);
   end;
+end;
+
+class function TlgSound.LoadFromFile(const AAudio: TlgAudio; const AFilename: string; const ALoad: TlgSoundLoad; const AOneShot: Boolean=False): TlgSound;
+var
+  LStream: TlgStream;
+begin
+  Result := nil;
+  if not Assigned(AAudio) then Exit;
+  if AFilename.IsEmpty then Exit;
+
+  Result := TlgSound.Create(AAudio);
+  LStream := TlgFileStream.Open(AFilename, smRead);
+  if not Assigned(LStream) then
+  begin
+    Result.Free();
+    Exit;
+  end;
+
+  if not Result.Load(LStream, ALoad, AOneShot) then
+  begin
+    LStream.Free();
+    Result.Free();
+    Result := nil;
+    Exit;
+  end;
+  if ALoad = slMemory then
+    LStream.Free();
+end;
+
+class function TlgSound.LoadFromZipFile(const AAudio: TlgAudio; const AZipFile: TlgZipFile; const AFilename: string; const ALoad: TlgSoundLoad; const AOneShot: Boolean=False): TlgSound;
+var
+  LStream: TlgStream;
+begin
+  Result := nil;
+  if not Assigned(AAudio) then Exit;
+  if not Assigned(AZipFile) then Exit;
+  if not AZipFile.IsOpen() then Exit;
+  if AFilename.IsEmpty then Exit;
+
+  if AFilename.IsEmpty then Exit;
+
+  Result := TlgSound.Create(AAudio);
+  LStream := AZipFile.OpenFile(AFilename);
+  if not Assigned(LStream) then
+  begin
+    Result.Free();
+    Exit;
+  end;
+
+  if not Result.Load(LStream, ALoad, AOneShot) then
+  begin
+    LStream.Free();
+    Result.Free();
+    Result := nil;
+    Exit;
+  end;
+  if ALoad = slMemory then
+    LStream.Free();
 end;
 
 { === WINDOW ================================================================ }
@@ -4216,10 +4452,15 @@ begin
 
   // Enable alpha blending
   if FAlphaBlending then
-  begin
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-  end;
+    begin
+      glEnable(GL_BLEND);
+      glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    end
+  else
+    begin
+      glDisable(GL_BLEND);
+      glBlendFunc(GL_ONE, GL_ZERO);
+    end;
 
   // Use the normalized anchor value
   glTranslatef(FPos.X - (FAnchor.X * FRegion.Width * FScale), FPos.Y - (FAnchor.Y * FRegion.Height * FScale), 0);
@@ -4247,6 +4488,38 @@ begin
 
   glDisable(GL_TEXTURE_2D);
   glBindTexture(GL_TEXTURE_2D, 0);
+end;
+
+class function TlgTexture.LoadFromFile(const AFilename: string): TlgTexture;
+var
+  LStream: TlgStream;
+begin
+  Result := TlgTexture.Create();
+
+  LStream := TlgFileStream.Open(AFilename, smRead);
+  try
+    Result.Load(LStream);
+  finally
+    LStream.Free();
+  end;
+end;
+
+class function TlgTexture.LoadFromZipFile(const AZipFile: TlgZipFile; const AFilename: string): TlgTexture;
+var
+  LStream: TlgStream;
+begin
+  Result := nil;
+  if not Assigned(AZipFile) then Exit;
+  if not AZipFile.IsOpen() then Exit;
+
+  Result := TlgTexture.Create();
+
+  LStream := AZipFile.OpenFile(AFilename);
+  try
+    Result.Load(LStream);
+  finally
+    LStream.Free();
+  end;
 end;
 
 {============================================================================ }
