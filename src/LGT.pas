@@ -450,6 +450,7 @@ type
     function  IsOpen(): Boolean;
     procedure Close();
     function  OpenFile(const AFilename: string): TlgZipStream;
+    class function Init(const AZipFilename: string; const APassword: string=TlgZipStream.DEFAULT_PASSWORD): TlgZipFile;
   end;
 
 { === AUDIO ================================================================= }
@@ -537,6 +538,7 @@ type
 
 { === COLOR ================================================================= }
 type
+  PlgColor = ^TlgColor;
   TlgColor = record
     Red,Green,Blue,Alpha: Single;
   end;
@@ -742,9 +744,12 @@ type
     procedure DrawPolygon(const APoints: array of TlgPoint; const AThickness: Single; const AColor: TlgColor);
     procedure DrawFilledPolygon(const APoints: array of TlgPoint; const AColor: TlgColor);
     procedure DrawPolyline(const APoints: array of TlgPoint; const AThickness: Single; const AColor: TlgColor);
+    class function Init(const aTitle: string; const AWidth: Integer=DEFAULT_WIDTH; const AHeight: Integer=DEFAULT_HEIGHT): TlgWindow;
   end;
 
 { === TEXTURE =============================================================== }
+  TlgTextureBlend = (tbNone, tbAlpha, tbAdditiveAlpha);
+
   { TglTexture }
   TlgTexture = class(TlgBaseObject)
   protected
@@ -753,7 +758,7 @@ type
     FSize: TlgSize;
     FPivot: TlgPoint;
     FAnchor: TlgPoint;
-    FAlphaBlending: Boolean;
+    FBlend: TlgTextureBlend;
     FPos: TlgPoint;
     FScale: Single;
     FColor: TlgColor;
@@ -766,7 +771,7 @@ type
     destructor Destroy(); override;
     function   Allocate(const AWidth, AHeight: Integer): Boolean;
     procedure  Fill(const AColor: TlgColor);
-    function   Load(const AStream: TlgStream): Boolean;
+    function   Load(const AStream: TlgStream; const AColorKey: PlgColor=nil): Boolean;
     procedure  Unload();
     function   GetChannels(): Integer;
     function   GetSize(): TlgSize;
@@ -776,8 +781,8 @@ type
     function   GetAnchor(): TlgPoint;
     procedure  SetAnchor(const APoint: TlgPoint); overload;
     procedure  SetAnchor(const X, Y: Single); overload;
-    function   GetAlphaBlending(): Boolean;
-    procedure  SetAlphaBlending(const AValue: Boolean);
+    function   GetBlend: TlgTextureBlend;
+    procedure  SetBlend(const AValue: TlgTextureBlend);
     function   GetPos(): TlgPoint;
     procedure  SetPos(const APos: TlgPoint); overload;
     procedure  SetPos(const X, Y: Single); overload;
@@ -796,8 +801,61 @@ type
     procedure  SetRegion(const X, Y, AWidth, AHeight: Single); overload;
     procedure  ResetRegion();
     procedure  Draw();
-    class function LoadFromFile(const AFilename: string): TlgTexture;
-    class function LoadFromZipFile(const AZipFile: TlgZipFile; const AFilename: string): TlgTexture;
+    procedure  DrawTiled(ADeltaX, ADeltaY, AViewportWidth, AViewportHeight: Single);
+    class function LoadFromFile(const AFilename: string; const AColorKey: PlgColor=nil): TlgTexture;
+    class function LoadFromZipFile(const AZipFile: TlgZipFile; const AFilename: string; const AColorKey: PlgColor=nil): TlgTexture;
+  end;
+
+{ === VIDEO ================================================================= }
+type
+  { TlgVideoStatus }
+  TlgVideoStatus = (vsStopped, vsPaused, vsPlaying);
+
+  { TlgVideo }
+  TlgVideo = class(TlgBaseObject)
+  protected const
+    NUM_BUFFERS = 2;
+    SAMEPLE_SIZE = 2304;
+    AUDIO_CHANES = 2;
+    //RGBBUFFER_SIZE = PLM_BUFFER_DEFAULT_SIZE;
+    RGBBUFFER_SIZE = 1024*8;
+  protected
+    FSource: ALuint;
+    FBuffers: array[0..NUM_BUFFERS-1] of ALuint;
+    FSampleRate: Integer;
+    FFrameTime: Double;
+    FRingBuffer: TlgRingBuffer<Byte>;
+    FAudioDecodeBuffer: array[0..(SAMEPLE_SIZE*sizeof(smallint))] of Byte;
+    FStaticPlmBuffer: array[0..RGBBUFFER_SIZE] of byte;
+    FVolume: Single;
+    FLooping: Boolean;
+    FStatus: TlgVideoStatus;
+    FRGBABuffer: array of uint8;
+    FTexture: TlgTexture;
+    FStream: TlgStream;
+    FPlm: Pplm_t;
+    //procedure UpdateAudio();
+  public const
+  public
+    constructor Create(); override;
+    destructor Destroy(); override;
+    function  Load(var AStream: TlgStream): Boolean;
+    function  IsLoaded(): Boolean;
+    procedure Unload();
+    procedure Play(const APlay: Boolean);
+    function  GetPos(): TlgPoint;
+    procedure SetPos(const APos: TlgPoint); overload;
+    procedure SetPos(const X, Y: Single); overload;
+    function  GetVolume: Single;
+    procedure SetVolume(const AVolume: Single);
+    function  GetScale(): Single;
+    procedure SetScale(const AScale: Single);
+    function  IsLooping(): Boolean;
+    procedure SetLooping(const ALoop: Boolean);
+    procedure Update();
+    function  GetStatus(): TlgVideoStatus;
+    procedure Draw();
+    procedure UpdateAudio();
   end;
 
 { =========================================================================== }
@@ -2523,7 +2581,7 @@ begin
       begin
         // Busy-wait for the remaining time
         //ProcessMessages;
-        Sleep(1);
+        Sleep(0);
       end;
     end;
 end;
@@ -3087,6 +3145,16 @@ end;
 function  TlgZipFile.OpenFile(const AFilename: string): TlgZipStream;
 begin
   Result := TlgZipStream.Open(FZipFilename, AFilename, FPassword);
+end;
+
+class function TlgZipFile.Init(const AZipFilename: string; const APassword: string=TlgZipStream.DEFAULT_PASSWORD): TlgZipFile;
+begin
+  Result := TlgZipFile.Create();
+  if not Result.Open(AZipFilename, APassword) then
+  begin
+    Result.Free();
+    Result := nil;
+  end;
 end;
 
 { === AUDIO ================================================================= }
@@ -3714,6 +3782,8 @@ begin
   FScaledSize.Height := LHeight;
 
   glfwGetWindowContentScale(FHandle, @FScale.X, @FScale.Y);
+
+  Result := True;
 end;
 
 function  TlgWindow.IsOpen(): Boolean;
@@ -4076,6 +4146,16 @@ begin
   glEnd;
 end;
 
+class function TlgWindow.Init(const aTitle: string; const AWidth: Integer; const AHeight: Integer): TlgWindow;
+begin
+  Result := TlgWindow.Create();
+  if not Result.Open(ATitle, AWidth, AHeight) then
+  begin
+    Result.Free();
+    Result := nil;
+  end;
+end;
+
 { === TEXTURE =============================================================== }
 { --- TglTexture ------------------------------------------------------------ }
 
@@ -4107,7 +4187,6 @@ end;
 constructor TlgTexture.Create();
 begin
   inherited;
-  FAlphaBlending := True;
 end;
 
 destructor TlgTexture.Destroy();
@@ -4143,6 +4222,7 @@ begin
   FSize.Height := AHeight;
   FChannels := 4;
 
+  SetBlend(tbAlpha);
   SetColor(WHITE);
   SetScale(1.0);
   SetAngle(0.0);
@@ -4177,14 +4257,40 @@ begin
   glBindTexture(GL_TEXTURE_2D, 0);
 end;
 
-function   TlgTexture.Load(const AStream: TlgStream): Boolean;
+
+function   TlgTexture.Load(const AStream: TlgStream; const AColorKey: PlgColor): Boolean;
 var
   LCallbacks: stbi_io_callbacks;
   LData: Pstbi_uc;
   LWidth,LHeight,LChannels: Integer;
+
+  procedure ConvertMaskToAlpha(Data: Pointer; Width, Height: Integer; MaskColor: TlgColor);
+  type
+    TRGBA = packed record
+      R, G, B, A: Byte;
+    end;
+  var
+    i: Integer;
+    Pixels: array of TRGBA;
+  begin
+    SetLength(Pixels, Width * Height);
+    Move(Data^, Pixels[0], Width * Height * SizeOf(TRGBA));
+
+    for i := 0 to Width * Height - 1 do
+    begin
+      if (Pixels[i].R = (MaskColor.Red*256)) and (Pixels[i].G = (MaskColor.Green*256)) and (Pixels[i].B = (MaskColor.Blue*256)) then
+        Pixels[i].A := 0
+      else
+        Pixels[i].A := 255;
+    end;
+
+    Move(Pixels[0], Data^, Width * Height * SizeOf(TRGBA));
+  end;
+
 begin
   Result := False;
   if FHandle > 0 then Exit;
+  if not Assigned(AStream) then Exit;
 
   LCallbacks.read := TlgTexture_Read;
   LCallbacks.skip := TlgTexture_Skip;
@@ -4193,18 +4299,13 @@ begin
   LData := stbi_load_from_callbacks(@LCallbacks, AStream, @LWidth, @LHeight, @LChannels, 4);
   if not Assigned(LData) then Exit;
 
+  if Assigned(AColorKey) then
+    ConvertMaskToAlpha(LData, LWidth, LHeight, AColorKey^);
+
   glGenTextures(1, @FHandle);
   glBindTexture(GL_TEXTURE_2D, FHandle);
 
-  if LChannels = 4 then
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, LWidth, LHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, LData)
-  else if LChannels = 3 then
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, LWidth, LHeight, 0, GL_RGB, GL_UNSIGNED_BYTE, LData)
-  else
-    begin
-      Unload;
-      exit;
-    end;
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, LWidth, LHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, LData);
 
   // Set texture parameters
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
@@ -4218,6 +4319,7 @@ begin
   FSize.Height := LHeight;
   FChannels := LChannels;
 
+  SetBlend(tbAlpha);
   SetColor(WHITE);
   SetScale(1.0);
   SetAngle(0.0);
@@ -4283,14 +4385,14 @@ begin
   FAnchor.y := EnsureRange(Y, 0, 1);
 end;
 
-function   TlgTexture.GetAlphaBlending(): Boolean;
+function   TlgTexture.GetBlend: TlgTextureBlend;
 begin
-  Result := FAlphaBlending;
+  Result := FBlend;
 end;
 
-procedure  TlgTexture.SetAlphaBlending(const AValue: Boolean);
+procedure  TlgTexture.SetBlend(const AValue: TlgTextureBlend);
 begin
-  FAlphaBlending := AValue;
+  FBlend:= AValue;
 end;
 
 function   TlgTexture.GetPos(): TlgPoint;
@@ -4386,7 +4488,6 @@ begin
   FRegion.Height := FSize.Height;
 end;
 
-(*
 procedure  TlgTexture.Draw();
 var
   FlipX, FlipY: Single;
@@ -4401,66 +4502,26 @@ begin
   // Set the color
   glColor4f(FColor.Red, FColor.Green, FColor.Blue, FColor.Alpha);
 
-  // Enable alpha blending
-  if FAlphaBlending then
-  begin
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-  end;
-
-  // Use the normalized anchor value
-  glTranslatef(FPos.X - (FAnchor.X * FSize.Width * FScale), FPos.Y - (FAnchor.Y * FSize.Height * FScale), 0);
-  glScalef(FScale, FScale, 1);
-
-  // Apply rotation using the normalized pivot value
-  glTranslatef(FPivot.X * FSize.Width, FPivot.Y * FSize.Height, 0);
-  glRotatef(FAngle, 0, 0, 1);
-  glTranslatef(-FPivot.X * FSize.Width, -FPivot.Y * FSize.Height, 0);
-
-  // Apply flip
-  if FHFlip then FlipX := -1 else FlipX := 1;
-  if FVFlip then FlipY := -1 else FlipY := 1;
-  glScalef(FlipX, FlipY, 1);
-
-  glBegin(GL_QUADS);
-    glTexCoord2f(0, 0); glVertex2f(0,      0);
-    glTexCoord2f(1, 0); glVertex2f(FSize.Width,  0);
-    glTexCoord2f(1, 1); glVertex2f(FSize.Width,  FSize.Height);
-    glTexCoord2f(0, 1); glVertex2f(0,      FSize.Height);
-  glEnd();
-
-  glPopMatrix();
-
-  glDisable(GL_TEXTURE_2D);
-  glBindTexture(GL_TEXTURE_2D, 0);
-end;
-*)
-
-procedure  TlgTexture.Draw();
-var
-  FlipX, FlipY: Single;
-begin
-  if FHandle = 0 then Exit;
-
-  glBindTexture(GL_TEXTURE_2D, FHandle);
-  glEnable(GL_TEXTURE_2D);
-
-  glPushMatrix();
-
-  // Set the color
-  glColor4f(FColor.Red, FColor.Green, FColor.Blue, FColor.Alpha);
-
-  // Enable alpha blending
-  if FAlphaBlending then
-    begin
-      glEnable(GL_BLEND);
-      glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    end
-  else
+  // set blending
+  case FBlend of
+    tbNone: // no blending
     begin
       glDisable(GL_BLEND);
       glBlendFunc(GL_ONE, GL_ZERO);
     end;
+
+    tbAlpha: // alpha blending
+    begin
+      glEnable(GL_BLEND);
+      glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    end;
+
+    tbAdditiveAlpha: // addeditve blending
+    begin
+      glEnable(GL_BLEND);
+      glBlendFunc(GL_SRC_ALPHA, GL_ONE);
+    end;
+  end;
 
   // Use the normalized anchor value
   glTranslatef(FPos.X - (FAnchor.X * FRegion.Width * FScale), FPos.Y - (FAnchor.Y * FRegion.Height * FScale), 0);
@@ -4490,7 +4551,63 @@ begin
   glBindTexture(GL_TEXTURE_2D, 0);
 end;
 
-class function TlgTexture.LoadFromFile(const AFilename: string): TlgTexture;
+procedure  TlgTexture.DrawTiled(ADeltaX, ADeltaY, AViewportWidth, AViewportHeight: Single);
+var
+  LW,LH    : Integer;
+  LOX,LOY  : Integer;
+  LPX,LPY  : Single;
+  LFX,LFY  : Single;
+  LTX,LTY  : Integer;
+  LVPW,LVPH: Integer;
+  LVR,LVB  : Integer;
+  LIX,LIY  : Integer;
+begin
+  if FHandle = 0 then Exit;
+
+  SetPivot(0, 0);
+  SetAnchor(0, 0);
+
+  //Piro.Display.GetViewportSize(nil, nil, @LVPW, @LVPH);
+  LVPW := Round(AViewportWidth);
+  LVpH := Round(AViewportHeight);
+
+  LW := Round(FSize.Width);
+  LH := Round(FSize.Height);
+
+  LOX := -LW+1;
+  LOY := -LH+1;
+
+  LPX := aDeltaX;
+  LPY := aDeltaY;
+
+  LFX := LPX-floor(LPX);
+  LFY := LPY-floor(LPY);
+
+  LTX := floor(LPX)-LOX;
+  LTY := floor(LPY)-LOY;
+
+  if (LTX>=0) then LTX := LTX mod LW + LOX else LTX := LW - -LTX mod LW + LOX;
+  if (LTY>=0) then LTY := LTY mod LH + LOY else LTY := LH - -LTY mod LH + LOY;
+
+  LVR := LVPW;
+  LVB := LVPH;
+  LIY := LTY;
+
+  while LIY<LVB do
+  begin
+    LIX := LTX;
+    while LIX<LVR do
+    begin
+      //al_draw_bitmap(FHandle, LIX+LFX, LIY+LFY, 0);
+      SetPos(LIX+LFX, LIY+LFY);
+      Draw();
+      LIX := LIX+LW;
+    end;
+   LIY := LIY+LH;
+  end;
+end;
+
+class function TlgTexture.LoadFromFile(const AFilename: string; const AColorKey: PlgColor): TlgTexture;
 var
   LStream: TlgStream;
 begin
@@ -4498,13 +4615,13 @@ begin
 
   LStream := TlgFileStream.Open(AFilename, smRead);
   try
-    Result.Load(LStream);
+    Result.Load(LStream, AColorKey);
   finally
     LStream.Free();
   end;
 end;
 
-class function TlgTexture.LoadFromZipFile(const AZipFile: TlgZipFile; const AFilename: string): TlgTexture;
+class function TlgTexture.LoadFromZipFile(const AZipFile: TlgZipFile; const AFilename: string; const AColorKey: PlgColor): TlgTexture;
 var
   LStream: TlgStream;
 begin
@@ -4516,10 +4633,295 @@ begin
 
   LStream := AZipFile.OpenFile(AFilename);
   try
-    Result.Load(LStream);
+    if not Assigned(LStream) then
+    begin
+      Result.Free();
+      Result := nil;
+      Exit;
+    end;
+    Result.Load(LStream, AColorKey);
   finally
     LStream.Free();
   end;
+end;
+
+{ === VIDEO ================================================================= }
+
+{ --- TlgVideo -------------------------------------------------------------- }
+procedure TlgVideo_DecodeAudio(APLM: Pplm_t; ASamples: Pplm_samples_t; AUserData: Pointer); cdecl;
+var
+  I: Integer;
+  LValue: smallint;
+  LVideo: TlgVideo;
+begin
+  LVideo := AUserData;
+
+  for i := 0 to LVideo.SAMEPLE_SIZE-1 do
+  begin
+    LValue :=  Round(EnsureRange(ASamples.interleaved[i], -1.0, 1.0) * 32767);
+    LVideo.FAudioDecodeBuffer[i * 2] := Byte(LValue);               // Store the low byte
+    LVideo.FAudioDecodeBuffer[i * 2 + 1] := Byte(LValue shr 8);    // Store the high byte
+  end;
+  LVideo.FRingBuffer.Write(LVideo.FAudioDecodeBuffer, (LVideo.SAMEPLE_SIZE*sizeof(smallint)));
+end;
+
+procedure TlgVideo_DecodeVideo(APLM: Pplm_t; AFrame: Pplm_frame_t; AUserData: Pointer); cdecl;
+var
+  LVideo: TlgVideo;
+begin
+  LVideo := AUserData;
+
+  // convert YUV to RGBA
+  plm_frame_to_rgba(AFrame, @LVideo.FRGBABuffer[0], Round(LVideo.FTexture.FSize.Width*4));
+
+  // update OGL texture
+  glBindTexture(GL_TEXTURE_2D, LVideo.FTexture.FHandle);
+  glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, AFrame^.width, AFrame^.height, GL_RGBA, GL_UNSIGNED_BYTE, LVideo.FRGBABuffer);
+end;
+
+procedure TlgVideo_LoadBuffer(ABuffer: pplm_buffer_t; AUserData: pointer); cdecl;
+var
+  LBytesRead: Int64;
+  LVideo: TlgVideo;
+begin
+  LVideo := AUserData;
+
+  // read data from inputstream
+  LBytesRead := LVideo.FStream.Read(@LVideo.FStaticPlmBuffer[0], LVideo.RGBBUFFER_SIZE);
+
+  // push LBytesRead to PLM buffer
+  if LBytesRead > 0 then
+    begin
+      plm_buffer_write(aBuffer, @LVideo.FStaticPlmBuffer[0], LBytesRead);
+    end
+  else
+    begin
+      // set status to stopped
+      LVideo.FStatus := vsStopped;
+    end;
+end;
+
+constructor TlgVideo.Create();
+begin
+  inherited;
+end;
+
+destructor TlgVideo.Destroy();
+begin
+  Unload();
+  inherited;
+end;
+
+function  TlgVideo.Load(var AStream: TlgStream): Boolean;
+var
+  LBuffer: Pplm_buffer_t;
+  I: Integer;
+begin
+  Result := False;
+
+  if IsLoaded() then Exit;
+  if not Assigned(AStream) then Exit;
+
+
+  FStream := AStream;
+  FStatus := vsStopped;
+
+  AStream := nil;
+
+  // init plm buffer
+  LBuffer := plm_buffer_create_with_capacity(RGBBUFFER_SIZE);
+  if not Assigned(LBuffer) then Exit;
+
+  plm_buffer_set_load_callback(LBuffer, TlgVideo_LoadBuffer, Self);
+  FPlm := plm_create_with_buffer(LBuffer, 1);
+  if not Assigned(FPlm) then
+  begin
+    plm_buffer_destroy(LBuffer);
+    Exit;
+  end;
+  FSampleRate := plm_get_samplerate(FPlm);
+  FFrameTime := 1/Timer.TargetFrameRate();
+
+  // create video render texture
+  FTexture := TlgTexture.Create();
+  FTexture.SetBlend(tbNone);
+  if not FTexture.Allocate(plm_get_width(FPlm), plm_get_height(FPlm)) then
+  begin
+    plm_destroy(FPlm);
+    Exit;
+  end;
+
+  // alloc the video rgba buffer
+  SetLength(FRGBABuffer, Round(FTexture.GetSize.Width*FTexture.GetSize.Height*4));
+  if not Assigned(FRGBABuffer) then
+  begin
+    FTexture.Free();
+    plm_destroy(FPlm);
+    Exit;
+  end;
+
+  plm_set_audio_lead_time(FPlm, (SAMEPLE_SIZE*AUDIO_CHANES)/FSampleRate);
+  plm_set_audio_decode_callback(FPlm, TlgVideo_DecodeAudio, Self);
+  plm_set_video_decode_callback(FPlm, TlgVideo_DecodeVideo, Self);
+
+  alGenSources(1, @FSource);
+  alGenBuffers(NUM_BUFFERS, @FBuffers);
+
+  FRingBuffer := TlgRingBuffer<Byte>.Create((FSampleRate*AUDIO_CHANES*sizeof(smallint))*2);
+
+  Utils.ClearStaticBuffer();
+  for I := 0 to NUM_BUFFERS-1 do
+  begin
+    alBufferData(FBuffers[I], AL_FORMAT_STEREO16, Utils.GetStaticBuffer(), 100, FSampleRate);
+  end;
+  alSourceQueueBuffers(FSource, NUM_BUFFERS, @FBuffers[0]);
+
+  FTexture.SetPivot(0, 0);
+  FTexture.SetAnchor(0, 0);
+  FTexture.SetBlend(tbNone);
+
+  Result := True;
+end;
+
+function  TlgVideo.IsLoaded(): Boolean;
+begin
+  Result := Assigned(FPlm);
+end;
+
+procedure TlgVideo.Unload();
+begin
+  if not IsLoaded() then Exit;
+
+  alSourceStop(FSource);
+  alDeleteSources(1, @FSource);
+  alDeleteBuffers(NUM_BUFFERS, @FBuffers);
+
+  plm_destroy(FPlm);
+  FStream.Free();
+  FTexture.Free();
+  FRingBuffer.Free();
+
+  FSource := 0;
+  FBuffers[0] := 0;
+  FBuffers[1] := 0;
+  FPlm := nil;
+  FRingBuffer := nil;
+  FTexture := nil;
+  FStatus := vsStopped;
+end;
+
+procedure TlgVideo.Play(const APlay: Boolean);
+begin
+  if APlay then
+    begin
+      alSourcePlay(FSource);
+      FStatus := vsPlaying
+    end
+  else
+    begin
+      alSourceStop(FSource);
+      FStatus := vsStopped;
+    end;
+end;
+
+function  TlgVideo.GetPos(): TlgPoint;
+begin
+  Result := FTexture.GetPos();
+end;
+
+procedure TlgVideo.SetPos(const APos: TlgPoint);
+begin
+  FTexture.SetPos(APos);
+end;
+
+procedure TlgVideo.SetPos(const X, Y: Single);
+begin
+  FTexture.SetPos(X, Y);
+end;
+
+function  TlgVideo.GetVolume: Single;
+begin
+  Result := FVolume;
+end;
+
+procedure TlgVideo.SetVolume(const AVolume: Single);
+begin
+  FVolume := AVolume;
+end;
+
+function  TlgVideo.GetScale(): Single;
+begin
+  Result := FTexture.GetScale();
+end;
+
+procedure TlgVideo.SetScale(const AScale: Single);
+begin
+  FTexture.SetScale(AScale);
+end;
+
+function  TlgVideo.IsLooping(): Boolean;
+begin
+  Result := FLooping;
+end;
+
+procedure TlgVideo.SetLooping(const ALoop: Boolean);
+begin
+  FLooping := ALoop;
+end;
+
+procedure TlgVideo.UpdateAudio();
+var
+  LProcessed: ALint;
+  LWhich: integer;
+  LState: Integer;
+begin
+  if FStatus = vsStopped then Exit;
+
+  alGetSourcei(FSource, AL_BUFFERS_PROCESSED, @LProcessed);
+  while LProcessed > 0 do
+  begin
+    alSourceUnqueueBuffers(FSource, 1, @LWhich);
+    alBufferData(LWhich, AL_FORMAT_STEREO16, FRingBuffer.DirectReadPointer(SAMEPLE_SIZE*sizeof(smallint)), SAMEPLE_SIZE*sizeof(smallint), FSampleRate);
+    alSourceQueueBuffers(FSource, 1, @LWhich);
+    Dec(LProcessed);
+  end;
+
+  alGetSourcei(FSource, AL_SOURCE_STATE, @LState);
+  if LState = AL_STOPPED then
+  begin
+    alSourcePlay(FSource);
+  end;
+end;
+
+procedure TlgVideo.Update();
+begin
+  if not IsLoaded() then Exit;
+
+  if FStatus = vsStopped then
+  begin
+    if FLooping then
+      begin
+        plm_rewind(FPlm);
+        FStream.Seek(0, smStart);
+        FRingBuffer.Clear();
+        FStatus := vsPlaying;
+      end
+    else
+      Exit;
+  end;
+
+  plm_decode(FPlm, FFrameTime);
+end;
+
+function  TlgVideo.GetStatus(): TlgVideoStatus;
+begin
+  Result := FStatus;
+end;
+
+procedure TlgVideo.Draw();
+begin
+  if FStatus = vsStopped then Exit;
+  FTexture.Draw();
 end;
 
 {============================================================================ }

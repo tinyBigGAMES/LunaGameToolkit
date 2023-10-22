@@ -167,7 +167,7 @@ begin
 
     Timer.Stop();
 
-    Console.SetTitle('LGT (%d fps)', [Timer.TargetFrameRate()]);
+    Console.SetTitle('LGT (%d fps)', [Timer.FrameRate()]);
   end;
 
   for I := 0 to 2 do
@@ -186,170 +186,22 @@ begin
 
 end;
 
-const
-  NUM_BUFFERS = 2;
-  SAMEPLE_SIZE = 2304;
-  AUDIO_CHANES = 2;
-var
-  Source: ALuint;
-  Buffers: array[0..NUM_BUFFERS-1] of ALuint;
-  SampleRate: Integer;
-  RingBuffer: TlgRingBuffer<Byte>;
-  Status: TlgAudioStatus;
-  AudioDecodeBuffer: array[0..(SAMEPLE_SIZE*sizeof(smallint))] of Byte;
-
-procedure UpdateAudio();
-var
-  LProcessed: ALint;
-  LWhich: integer;
-  LState: Integer;
-begin
-  if Status = asStopped then Exit;
-
-  alGetSourcei(Source, AL_BUFFERS_PROCESSED, @LProcessed);
-  while LProcessed > 0 do
-  begin
-    alSourceUnqueueBuffers(Source, 1, @LWhich);
-    alBufferData(LWhich, AL_FORMAT_STEREO16, RingBuffer.DirectReadPointer(SAMEPLE_SIZE*sizeof(smallint)), SAMEPLE_SIZE*sizeof(smallint), SampleRate);
-    alSourceQueueBuffers(Source, 1, @LWhich);
-    Dec(LProcessed);
-  end;
-
-  alGetSourcei(Source, AL_SOURCE_STATE, @LState);
-  if LState = AL_STOPPED then
-  begin
-    alSourcePlay(Source);
-  end;
-end;
-
-procedure Test04_PLMAudioDecodeCallback(APLM: Pplm_t; ASamples: Pplm_samples_t; AUserData: Pointer); cdecl;
-var
-  I: Integer;
-  LValue: smallint;
-begin
-  for i := 0 to SAMEPLE_SIZE-1 do
-  begin
-    LValue :=  Round(EnsureRange(ASamples.interleaved[i], -1.0, 1.0) * 32767);
-    AudioDecodeBuffer[i * 2] := Byte(LValue);               // Store the low byte
-    AudioDecodeBuffer[i * 2 + 1] := Byte(LValue shr 8);    // Store the high byte
-  end;
-  RingBuffer.Write(AudioDecodeBuffer, (SAMEPLE_SIZE*sizeof(smallint)));
-  //writeln('audio callback');
-end;
-
-
-procedure Test04;
-
-var
-  LPlm: Pplm_t;
-  LAudio: TlgAudio;
-  LExitThread: Boolean;
-  LFrameTime: Double;
-  I: Integer;
-  LThread: TThread;
-  LLoop: Boolean;
-begin
-
-  LAudio := TlgAudio.Create();
-  LAudio.Open();
-
-  //LPlm := plm_create_with_filename('res/videos/GameKit.mpg');
-  LPlm := plm_create_with_filename('res/videos/tinyBigGAMES.mpg');
-  SampleRate := plm_get_samplerate(LPlm);
-  LFrameTime := 1/(Timer.TargetFrameRate() / 2);
-  plm_set_audio_lead_time(LPLM, (SAMEPLE_SIZE*AUDIO_CHANES)/SampleRate);
-  plm_set_audio_decode_callback(LPLM, Test04_PLMAudioDecodeCallback, nil);
-
-  alGenSources(1, @Source);
-  alGenBuffers(NUM_BUFFERS, @Buffers);
-
-  RingBuffer := TlgRingBuffer<Byte>.Create((SampleRate*AUDIO_CHANES*sizeof(smallint))*2);
-
-  Utils.ClearStaticBuffer();
-  for I := 0 to NUM_BUFFERS-1 do
-  begin
-    alBufferData(Buffers[I], AL_FORMAT_STEREO16, Utils.GetStaticBuffer(), 100, SampleRate);
-  end;
-  alSourceQueueBuffers(Source, NUM_BUFFERS, @Buffers[0]);
-  alSourcePlay(Source);
-
-  LExitThread := False;
-
-  LThread := TThread.CreateAnonymousThread(
-    procedure
-    begin
-      writeln('started thread...');
-      while not LExitThread do
-      begin
-        Utils.EnterCriticalSection();
-        LAudio.Update();
-        UpdateAudio();
-        Utils.LeaveCriticalSection();
-      end;
-      writeln('exit thread...');
-    end
-  );
-  LThread.Priority := tpNormal;
-  LThread.Start();
-
-  Status := asPlaying;
-  LLoop := True;
-
-  while True do
-  begin
-    Timer.Start();
-
-    if Status = asPlaying then
-    begin
-      if not Boolean(plm_has_ended(LPlm)) then
-        begin
-          Utils.EnterCriticalSection();
-          plm_decode(LPlm, LFrameTime);
-          Utils.LeaveCriticalSection();
-          //writeln('decode');
-        end
-      else
-        begin
-          Status := asStopped;
-          if LLoop then
-          begin
-            Utils.EnterCriticalSection();
-            RingBuffer.Clear();
-            plm_seek(LPlm, 0, 1);
-            Utils.LeaveCriticalSection();
-            Status := asPlaying;
-          end;
-        end;
-    end;
-
-    if Console.KeyWasPressed(VK_ESCAPE) then
-      Break;
-
-    Console.SetTitle('LGT (%d fps)', [Timer.TargetFrameRate()]);
-
-    Timer.Stop();
-  end;
-
-  LExitThread := True;
-
-  alSourceStop(Source);
-  alDeleteSources(1, @Source);
-  alDeleteBuffers(NUM_BUFFERS, @Buffers);
-
-  RingBuffer.Free();
-  plm_destroy(LPlm);
-
-  LAudio.Free();
-end;
-
-procedure Test05();
+procedure Test04();
 var
   LZipFile: TlgZipFile;
   LWindow: TlgWindow;
   LAngle: Single;
   LTexture: TlgTexture;
+  LVideo: TlgVideo;
+  LStream: TlgStream;
+  LAudio: TlgAudio;
+  LExitThread: Boolean;
+  LThread: TThread;
 begin
   Console.PrintLn(LGT_PROJECT);
+
+  LAudio := TlgAudio.Create();
+  LAudio.Open();
 
   LZipFile := TlgZipFile.Create();
   LZipFile.Open(CZipFilename);
@@ -358,13 +210,38 @@ begin
 
   LWindow.Open('Test05');
 
-  //LTexture := TlgTexture.LoadFromFile('res/images/LGT2.png');
   LTexture := TlgTexture.LoadFromZipFile(LZipFile, 'res/images/LGT2.png');
   LTexture.SetPos(LWindow.CENTER_WIDTH, LWindow.CENTER_HEIGHT);
   LTexture.SetScale(0.5);
   LTexture.SetRegion(246, 64, 228, 75);
   LTexture.SetAngle(45);
-  //LTexture.SetAlphaBlending(False);
+
+  LStream := LZipFile.OpenFile('res/videos/LGT.mpg');
+  LVideo := TlgVideo.Create();
+  LVideo.Load(LStream);
+  LVideo.SetPos(0, 0);
+  LVideo.SetScale(0.5);
+  LVideo.SetLooping(True);
+
+  LExitThread := False;
+  LThread := TThread.CreateAnonymousThread(
+    procedure
+    begin
+      writeln('started thread...');
+      while not LExitThread do
+      begin
+        Utils.EnterCriticalSection();
+        LAudio.Update();
+        LVideo.UpdateAudio();
+        Utils.LeaveCriticalSection();
+      end;
+      writeln('exit thread...');
+    end
+  );
+  LThread.Priority := tpNormal;
+  LThread.Start();
+
+  LVideo.Play(True);
 
   while true do
   begin
@@ -376,9 +253,14 @@ begin
     LAngle := LAngle + 1.0;
     LAngle := Math.ClipValueFloat(LAngle, 0, 360, True);
 
+    LVideo.Update();
+
     LWindow.StartDrawing();
 
       LWindow.Clear(DARKSLATEBROWN);
+
+      LVideo.Draw();
+
       LWindow.DrawFilledCircle(0, 0, 50, ORANGE);
       LWindow.DrawFilledRect(100, 100, 100, 100, DARKGREEN, LAngle);
       LWindow.DrawRect(200, 200, 100, 100, 2, DARKORCHID, LAngle);
@@ -387,10 +269,13 @@ begin
 
     LWindow.EndDrawing();
 
-    LWindow.SetTitle(Format('Test05 (%d fps)', [Timer.TargetFrameRate]));
+    LWindow.SetTitle(Format('LGT (%d fps): Video playback', [Timer.FrameRate()]));
 
     Timer.Stop();
   end;
+  LExitThread := True;
+
+  LVideo.Free();
 
   LTexture.Free();
 
@@ -400,6 +285,80 @@ begin
 
   LZipFile.Free();
 
+  LAudio.Free();
+end;
+
+procedure Test05();
+var
+  LZipFile: TlgZipFile;
+  LWindow: TlgWindow;
+  LTexture: array[0..3] of TlgTexture;
+  LPos: array[0..3] of TlgPoint;
+  LSpeed: array[0..3] of Single;
+  I: Integer;
+begin
+  LPos[0] := Math.Point(0,0);
+  LPos[1] := Math.Point(0,0);
+  LPos[2] := Math.Point(0,0);
+  LPos[3] := Math.Point(0,0);
+
+  LSpeed[0] := 0.15;
+  LSpeed[1] := 0.4;
+  LSpeed[2] := 0.6;
+  LSpeed[3] := 0.8;
+
+  LZipFile := TlgZipFile.Init(CZipFilename);
+
+  LWindow := TlgWindow.Init('Test06');
+
+  LTexture[0] := TlgTexture.LoadFromZipFile(LZipFile, 'res/backgrounds/space.png', nil);
+  LTexture[1] := TlgTexture.LoadFromZipFile(LZipFile, 'res/backgrounds/spacelayer1.png', @BLACK);
+  LTexture[2] := TlgTexture.LoadFromZipFile(LZipFile, 'res/backgrounds/spacelayer2.png', @BLACK);
+  LTexture[3] := TlgTexture.LoadFromZipFile(LZipFile, 'res/backgrounds/nebula1.png', @BLACK);
+
+
+  LTexture[0].SetBlend(tbNone);
+  LTexture[1].SetBlend(tbAlpha);
+  LTexture[2].SetBlend(tbAlpha);
+  LTexture[3].SetBlend(tbAdditiveAlpha);
+
+  while true do
+  begin
+    Timer.Start();
+
+    if LWindow.ShouldClose() then
+      Break;
+
+    // update scroll
+     for I := 0 to 3 do
+     begin
+      LPos[I].Y := LPos[I].Y + LSpeed[I];
+     end;
+
+    LWindow.StartDrawing();
+
+      LWindow.Clear(DARKSLATEBROWN);
+
+      // draw parallax
+      for I := 0 to 3 do
+      begin
+        LTexture[I].DrawTiled(LPos[I].X, LPos[I].Y, LWindow.DEFAULT_WIDTH, LWindow.DEFAULT_HEIGHT);
+      end;
+
+    LWindow.EndDrawing();
+
+    LWindow.SetTitle(Format('LGT (%d fps): Parallax Tiled Texture', [Timer.FrameRate()]));
+
+    Timer.Stop();
+  end;
+
+  LTexture[3].Free();
+  LTexture[2].Free();
+  LTexture[1].Free();
+  LTexture[0].Free();
+
+  LWindow.Free();
+  LZipFile.Free();
 end;
 
 procedure RunTests();
@@ -407,8 +366,8 @@ begin
   //Test01();
   //Test02();
   //Test03();
-  //Test04();
-  Test05();
+  Test04();
+  //Test05();
   Console.Pause();
 end;
 
