@@ -154,7 +154,6 @@ begin
   while true do
   begin
     Timer.Start();
-    LAudio.Update();
 
     if Console.KeyWasPressed(Ord('1')) then Play(1);
     if Console.KeyWasPressed(Ord('2')) then Play(2);
@@ -195,8 +194,6 @@ var
   LVideo: TlgVideo;
   LStream: TlgStream;
   LAudio: TlgAudio;
-  LExitThread: Boolean;
-  LThread: TThread;
 begin
   Console.PrintLn(LGT_PROJECT);
 
@@ -222,24 +219,6 @@ begin
   LVideo.SetPos(0, 0);
   LVideo.SetScale(0.5);
   LVideo.SetLooping(True);
-
-  LExitThread := False;
-  LThread := TThread.CreateAnonymousThread(
-    procedure
-    begin
-      writeln('started thread...');
-      while not LExitThread do
-      begin
-        Utils.EnterCriticalSection();
-        LAudio.Update();
-        LVideo.UpdateAudio();
-        Utils.LeaveCriticalSection();
-      end;
-      writeln('exit thread...');
-    end
-  );
-  LThread.Priority := tpNormal;
-  LThread.Start();
 
   LVideo.Play(True);
 
@@ -273,7 +252,6 @@ begin
 
     Timer.Stop();
   end;
-  LExitThread := True;
 
   LVideo.Free();
 
@@ -316,7 +294,7 @@ begin
   LTexture[2] := TlgTexture.LoadFromZipFile(LZipFile, 'res/backgrounds/spacelayer2.png', @BLACK);
   LTexture[3] := TlgTexture.LoadFromZipFile(LZipFile, 'res/backgrounds/nebula1.png', @BLACK);
 
-
+  LTexture[0].SetColor(0.3, 0.3, 0.3, 0.3);
   LTexture[0].SetBlend(tbNone);
   LTexture[1].SetBlend(tbAlpha);
   LTexture[2].SetBlend(tbAlpha);

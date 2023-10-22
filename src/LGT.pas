@@ -63,13 +63,80 @@ type
   { TlgSeekMode }
   TlgSeekMode = (smStart, smCurrent, smEnd);
 
-{ === BASE ================================================================== }
+{ === OBJECT ================================================================ }
 type
-  { TlgBaseObject }
-  TlgBaseObject = class
+  { TlgObjectAttributeSet }
+  TlgObjectAttributeSet = set of Byte;
+
+  { TlgObjectList }
+  TlgObjectList = class;
+
+  { TlgObject }
+  TlgObject = class
+  protected
+    FOwner: TlgObjectList;
+    FPrev: TlgObject;
+    FNext: TlgObject;
+    FAttributes: TlgObjectAttributeSet;
+    function GetAttribute(aIndex: Byte): Boolean;
+    procedure SetAttribute(aIndex: Byte; aValue: Boolean);
+    function GetAttributes: TlgObjectAttributeSet;
+    procedure SetAttributes(aValue: TlgObjectAttributeSet);
   public
-    constructor Create; virtual;
+    property Owner: TlgObjectList read FOwner write FOwner;
+    property Prev: TlgObject read FPrev write FPrev;
+    property Next: TlgObject read FNext write FNext;
+    property Attribute[aIndex: Byte]: Boolean read GetAttribute write SetAttribute;
+    property Attributes: TlgObjectAttributeSet read GetAttributes  write SetAttributes;
+    constructor Create(); virtual;
+    destructor Destroy(); override;
+    function AttributesAreSet(aAttrs: TlgObjectAttributeSet): Boolean;
+    procedure OnVisit(); virtual;
+  end;
+
+  { TlgObjectList }
+  TlgObjectList = class
+  protected
+    FHead: TlgObject;
+    FTail: TlgObject;
+    FCount: Integer;
+  public
+    property Count: Integer read FCount;
+    constructor Create(); virtual;
+    destructor Destroy(); override;
+    procedure Add(aObject: TlgObject);
+    procedure Remove(aObject: TlgObject; aDispose: Boolean);
+    procedure Clean(); virtual;
+    procedure Clear(aAttrs: TlgObjectAttributeSet);
+    procedure Visit(aAttrs: TlgObjectAttributeSet);
+  end;
+
+{ === TASKLIST ============================================================== }
+type
+  { TlgTaskID }
+  TlgTaskID = class(TlgObject)
+  protected
+    FTask: TProc;
+  public
+    property Task: TProc read FTask write FTask;
+    procedure OnVisit(); override;
+  end;
+
+  { TlgTaskList }
+  TlgTaskList = class(TlgObject)
+  protected
+    FHandle: TlgObjectList;
+    FTerminated: Boolean;
+  public
+    constructor Create; override;
     destructor Destroy; override;
+    function Add(const ATask: TProc): TlgTaskID;
+    procedure Remove(const ATaskItem: TlgTaskID);
+    function  Count(): Integer;
+    procedure Clear();
+    procedure Start();
+    procedure Stop();
+    procedure Exec(AAttrs: TlgObjectAttributeSet);
   end;
 
 { === UTILS ================================================================= }
@@ -220,7 +287,7 @@ type
     property Next: TlgLinkListNode<T> read FNext write FNext;
   end;
 
-  TlgLinkedList<T: class> = class(TlgBaseObject)
+  TlgLinkedList<T: class> = class(TlgObject)
   private
     FHead: TlgLinkListNode<T>;
     FTail: TlgLinkListNode<T>;
@@ -358,7 +425,7 @@ type
   TlgStreamMode = (smRead, smWrite);
 
   { TlgStream }
-  TlgStream = class(TlgBaseObject)
+  TlgStream = class(TlgObject)
   public
     constructor Create(); override;
     destructor Destroy(); override;
@@ -438,7 +505,7 @@ type
 
 { === ZIPFILE =============================================================== }
 type
-  TlgZipFile = class(TlgBaseObject)
+  TlgZipFile = class(TlgObject)
   protected
     FZipFilename: string;
     FPassword: string;
@@ -461,7 +528,7 @@ type
   { TlgAudioStatus }
   TlgAudioStatus = (asStopped, asPlaying, asPaused);
 
-  TlgAudio = class(TlgBaseObject)
+  TlgAudio = class(TlgObject)
   protected const
     BUFFER_CHUCK = 1024*2;
     BUFFER_SIZE = BUFFER_CHUCK*2*sizeof(smallint);
@@ -472,7 +539,9 @@ type
     FPCM: array[0..BUFFER_SIZE] of byte;
     FSounds: TlgLinkedList<TlgSound>;
     FOneShotSounds: TList<TlgSound>;
+    FTaskID: TlgTaskID;
     procedure CheckErrors();
+    procedure Update();
   public
     constructor Create(); override;
     destructor Destroy(); override;
@@ -484,14 +553,13 @@ type
     function GetError(): string;
     function GetPCMBufferSize(): Integer;
     function GetPCMBuffer(): PByte;
-    procedure Update();
   end;
 
   { TlgSoundLoad }
   TlgSoundLoad = (slMemory, slStream);
 
   { TlgSound }
-  TlgSound = class(TlgBaseObject)
+  TlgSound = class(TlgObject)
   protected const
     NUM_BUFFERS = 2;
   protected
@@ -706,7 +774,7 @@ const
 { === WINDOW ================================================================ }
 type
   { TlgWindow }
-  TlgWindow = class(TlgBaseObject)
+  TlgWindow = class(TlgObject)
   protected
     FHandle: PGLFWwindow;
     FSize: TlgSize;
@@ -751,7 +819,7 @@ type
   TlgTextureBlend = (tbNone, tbAlpha, tbAdditiveAlpha);
 
   { TglTexture }
-  TlgTexture = class(TlgBaseObject)
+  TlgTexture = class(TlgObject)
   protected
     FHandle: Cardinal;
     FChannels: Integer;
@@ -789,7 +857,8 @@ type
     function   GetScale(): Single;
     procedure  SetScale(const AScale: Single);
     function   GetColor(): TlgColor;
-    procedure  SetColor(const AColor: TlgColor);
+    procedure  SetColor(const AColor: TlgColor); overload;
+    procedure  SetColor(const ARed, AGreen, ABlue, AAlpha: Single); overload;
     function   GetAngle(): Single;
     procedure  SetAngle(const AAngle: Single);
     function   GetHFlip: Boolean;
@@ -812,7 +881,7 @@ type
   TlgVideoStatus = (vsStopped, vsPaused, vsPlaying);
 
   { TlgVideo }
-  TlgVideo = class(TlgBaseObject)
+  TlgVideo = class(TlgObject)
   protected const
     NUM_BUFFERS = 2;
     SAMEPLE_SIZE = 2304;
@@ -834,7 +903,8 @@ type
     FTexture: TlgTexture;
     FStream: TlgStream;
     FPlm: Pplm_t;
-    //procedure UpdateAudio();
+    FTaskID: TlgTaskID;
+    procedure UpdateAudio();
   public const
   public
     constructor Create(); override;
@@ -855,7 +925,6 @@ type
     procedure Update();
     function  GetStatus(): TlgVideoStatus;
     procedure Draw();
-    procedure UpdateAudio();
   end;
 
 { =========================================================================== }
@@ -865,18 +934,386 @@ var
   Math: TlgMath = nil;
   Console: TlgConsole = nil;
   Timer: TlgDeterministicTimer = nil;
+  TaskList: TlgTaskList = nil;
 
 implementation
 
-{ === BASE ================================================================== }
-constructor TlgBaseObject.Create();
+{ === OBJECT ================================================================ }
+
+{ --- TlgObject ------------------------------------------------------------- }
+function TlgObject.GetAttribute(aIndex: Byte): Boolean;
 begin
+  Result := Boolean(aIndex in FAttributes);
+end;
+
+procedure TlgObject.SetAttribute(aIndex: Byte; aValue: Boolean);
+begin
+  if aValue then
+    Include(FAttributes, aIndex)
+  else
+    Exclude(FAttributes, aIndex);
+end;
+
+function TlgObject.GetAttributes: TlgObjectAttributeSet;
+begin
+  Result := FAttributes;
+end;
+
+procedure TlgObject.SetAttributes(aValue: TlgObjectAttributeSet);
+begin
+  FAttributes := aValue;
+end;
+
+constructor TlgObject.Create();
+begin
+  inherited;
+  FOwner := nil;
+  FPrev := nil;
+  FNext := nil;
+  FAttributes := [];
+end;
+
+destructor TlgObject.Destroy();
+begin
+  if Assigned(FOwner) then
+  begin
+    FOwner.Remove(Self, False);
+  end;
+
   inherited;
 end;
 
-destructor TlgBaseObject.Destroy();
+function TlgObject.AttributesAreSet(aAttrs: TlgObjectAttributeSet): Boolean;
+var
+  LAttr: Byte;
+begin
+  Result := False;
+  for LAttr in aAttrs do
+  begin
+    if LAttr in FAttributes then
+    begin
+      Result := True;
+      Break;
+    end;
+  end;
+end;
+
+procedure TlgObject.OnVisit();
+begin
+end;
+
+{ --- TlgObjectList --------------------------------------------------------- }
+constructor TlgObjectList.Create();
 begin
   inherited;
+  FHead := nil;
+  FTail := nil;
+  FCount := 0;
+end;
+
+destructor TlgObjectList.Destroy();
+begin
+  Clean;
+  inherited;
+end;
+
+procedure TlgObjectList.Add(aObject: TlgObject);
+begin
+  Utils.EnterCriticalSection();
+  try
+    if aObject = nil then Exit;
+
+    // check if already on this list
+    if aObject.Owner = Self then Exit;
+
+    // remove if on another list
+    if aObject.Owner <> nil then
+    begin
+      aObject.Owner.Remove(aObject, False);
+    end;
+
+    aObject.Prev := FTail;
+    aObject.Next := nil;
+    aObject.Owner := Self;
+
+    if FHead = nil then
+      begin
+        FHead := aObject;
+        FTail := aObject;
+      end
+    else
+      begin
+        FTail.Next := aObject;
+        FTail := aObject;
+      end;
+
+    Inc(FCount);
+  finally
+    Utils.LeaveCriticalSection();
+  end;
+end;
+
+procedure TlgObjectList.Remove(aObject: TlgObject; aDispose: Boolean);
+var
+  LFlag: Boolean;
+begin
+  Utils.EnterCriticalSection();
+  try
+    if aObject = nil then Exit;
+
+    LFlag := False;
+
+    if aObject.Next <> nil then
+    begin
+      aObject.Next.Prev := aObject.Prev;
+      LFlag := True;
+    end;
+
+    if aObject.Prev <> nil then
+    begin
+      aObject.Prev.Next := aObject.Next;
+      LFlag := True;
+    end;
+
+    if FTail = aObject then
+    begin
+      FTail := FTail.Prev;
+      LFlag := True;
+    end;
+
+    if FHead = aObject then
+    begin
+      FHead := FHead.Next;
+      LFlag := True;
+    end;
+
+    if LFlag = True then
+    begin
+      aObject.Owner := nil;
+      Dec(FCount);
+      if aDispose then
+      begin
+        aObject.Free;
+      end;
+    end;
+  finally
+    Utils.LeaveCriticalSection();
+  end;
+end;
+
+procedure TlgObjectList.Clean();
+var
+  LPrev: TlgObject;
+  LNext: TlgObject;
+begin
+  Utils.EnterCriticalSection();
+  try
+    // get pointer to head
+    LPrev := FHead;
+
+    // exit if list is empty
+    if LPrev = nil then
+      Exit;
+
+    repeat
+      // save pointer to next object
+      LNext := LPrev.Next;
+
+      Remove(LPrev, True);
+
+      // get pointer to next object
+      LPrev := LNext;
+
+    until LPrev = nil;
+  finally
+    Utils.LeaveCriticalSection();
+  end;
+end;
+
+procedure TlgObjectList.Clear(aAttrs: TlgObjectAttributeSet);
+var
+  LPrev: TlgObject;
+  LNext: TlgObject;
+  LNoAttrs: Boolean;
+begin
+  Utils.EnterCriticalSection();
+  try
+    // get pointer to head
+    LPrev := FHead;
+
+    // exit if list is empty
+    if LPrev = nil then Exit;
+
+    // check if we should check for attrs
+    LNoAttrs := Boolean(aAttrs = []);
+
+    repeat
+      // save pointer to next object
+      LNext := LPrev.Next;
+
+      if LNoAttrs then
+        begin
+          Remove(LPrev, True);
+        end
+      else
+        begin
+          if LPrev.AttributesAreSet(aAttrs) then
+          begin
+            Remove(LPrev, True);
+          end;
+        end;
+
+      // get pointer to next object
+      LPrev := LNext;
+
+    until LPrev = nil;
+  finally
+    Utils.LeaveCriticalSection();
+  end;
+end;
+
+procedure TlgObjectList.Visit(aAttrs: TlgObjectAttributeSet);
+var
+  LPrev: TlgObject;
+  LNext: TlgObject;
+  LNoAttrs: Boolean;
+begin
+  Utils.EnterCriticalSection();
+  try
+    // get pointer to head
+    LPrev := FHead;
+
+    // exit if list is empty
+    if LPrev = nil then Exit;
+
+    // check if we should check for attrs
+    LNoAttrs := Boolean(aAttrs = []);
+
+    repeat
+      // save pointer to next object
+      LNext := LPrev.Next;
+
+      if LNoAttrs then
+        begin
+          LPrev.OnVisit();
+        end
+      else
+        begin
+          if LPrev.AttributesAreSet(aAttrs) then
+          begin
+            LPrev.OnVisit();
+          end;
+        end;
+
+      // get pointer to next object
+      LPrev := LNext;
+
+    until LPrev = nil;
+  finally
+    Utils.LeaveCriticalSection();
+  end;
+end;
+
+{ === TASKLIST ============================================================== }
+
+{ --- TlgTaskID ------------------------------------------------------------- }
+procedure TlgTaskID.OnVisit();
+begin
+  if Assigned(FTask) then
+    FTask();
+end;
+
+{ --- TlgTaskList ----------------------------------------------------------- }
+constructor TlgTaskList.Create();
+begin
+  inherited;
+  FHandle := TlgObjectList.Create();
+end;
+
+destructor TlgTaskList.Destroy();
+begin
+  Stop();
+  Clear();
+  FHandle.Free();
+  inherited;
+end;
+
+function TlgTaskList.Add(const ATask: TProc): TlgTaskID;
+begin
+  Utils.EnterCriticalSection();
+  try
+    Result := TlgTaskID.Create();
+    Result.Task := ATask;
+    FHandle.Add(Result);
+  finally
+    Utils.LeaveCriticalSection();
+  end;
+end;
+
+procedure TlgTaskList.Remove(const ATaskItem: TlgTaskID);
+begin
+  Utils.EnterCriticalSection();
+  try
+    FHandle.Remove(ATaskItem, True);
+  finally
+    Utils.LeaveCriticalSection();
+  end;
+end;
+
+function  TlgTaskList.Count(): Integer;
+begin
+  Result := FHandle.Count;
+end;
+
+procedure TlgTaskList.Clear();
+begin
+  Utils.EnterCriticalSection();
+  try
+    FHandle.Clean();
+  finally
+    Utils.LeaveCriticalSection();
+  end;
+end;
+
+procedure TlgTaskList.Start();
+var
+  LThread: TThread;
+begin
+  Utils.EnterCriticalSection();
+  try
+    FTerminated := False;
+    LThread := TThread.CreateAnonymousThread(
+      procedure
+      begin
+        //Console.PrintLn(#13'Starting taskList thread...'#13);
+        while not FTerminated do
+        begin
+          // run tasks
+          Exec([]);
+        end;
+        //Console.PrintLn(#13'exit tasklist thread...'#13);
+      end
+    );
+    LThread.Priority := tpNormal;
+    LThread.Start();
+  finally
+    Utils.LeaveCriticalSection();
+  end;
+end;
+
+procedure TlgTaskList.Stop();
+begin
+  Utils.EnterCriticalSection();
+  try
+    FTerminated := True;
+  finally
+    Utils.LeaveCriticalSection();
+  end;
+end;
+
+procedure TlgTaskList.Exec(AAttrs: TlgObjectAttributeSet);
+begin
+  FHandle.Visit(AAttrs);
 end;
 
 { === UTILS ================================================================= }
@@ -2208,7 +2645,6 @@ procedure TlgRingBuffer<T>.Clear;
 var
   I: Integer;
 begin
-
   Utils.EnterCriticalSection();
   try
     for I := Low(FBuffer) to High(FBuffer) do
@@ -3205,6 +3641,13 @@ begin
   // reset to "known" default state
   Reset();
 
+  FTaskID := TaskList.Add(
+    procedure
+    begin
+      Update();
+    end
+  );
+
   Result := IsOpen();
 end;
 
@@ -3216,6 +3659,8 @@ end;
 procedure TlgAudio.Close();
 begin
   if not IsOpen then Exit;
+
+  TaskList.Remove(FTaskID);
 
   // free any dangling sounds
   FSounds.Clear(True);
@@ -3906,41 +4351,6 @@ begin
   glEnd;
 end;
 
-(*
-procedure TlgWindow.DrawRect(const X, Y, AWidth, AHeight, AThickness: Single; const AColor: TlgColor; const AAngle: Single);
-var
-  CenterX, CenterY: Single;
-begin
-  if not IsOpen then Exit;
-
-  // Calculate the center of the rectangle for rotation
-  CenterX := X + AWidth / 2;
-  CenterY := Y + AHeight / 2;
-
-  glLineWidth(AThickness);
-  glColor4f(AColor.Red, AColor.Green, AColor.Blue, AColor.Alpha);
-
-  glPushMatrix;  // Save the current matrix
-
-  // Move the drawing context to the center of the rectangle
-  glTranslatef(CenterX, CenterY, 0);
-
-  // Rotate the drawing context
-  glRotatef(AAngle, 0, 0, 1);
-
-  // Move back the drawing context to its original position
-  glTranslatef(-CenterX, -CenterY, 0);
-
-  glBegin(GL_LINE_LOOP);
-    glVertex2f(X, Y);
-    glVertex2f(X + AWidth, Y);
-    glVertex2f(X + AWidth, Y + AHeight);
-    glVertex2f(X, Y + AHeight);
-  glEnd;
-
-  glPopMatrix;  // Restore the original matrix
-end;
-*)
 procedure TlgWindow.DrawRect(const X, Y, AWidth, AHeight, AThickness: Single; const AColor: TlgColor; const AAngle: Single);
 var
   HalfWidth, HalfHeight: Single;
@@ -3970,41 +4380,6 @@ begin
 
   glPopMatrix;  // Restore the original matrix
 end;
-
-(*
-procedure TlgWindow.DrawFilledRect(const X, Y, AWidth, AHeight: Single; const AColor: TlgColor; const AAngle: Single);
-var
-  CenterX, CenterY: Single;
-begin
-  if not IsOpen then Exit;
-
-  // Calculate the center of the rectangle for rotation
-  CenterX := X + AWidth / 2;
-  CenterY := Y + AHeight / 2;
-
-  glColor4f(AColor.Red, AColor.Green, AColor.Blue, AColor.Alpha);
-
-  glPushMatrix;  // Save the current matrix
-
-  // Move the drawing context to the center of the rectangle
-  glTranslatef(CenterX, CenterY, 0);
-
-  // Rotate the drawing context
-  glRotatef(AAngle, 0, 0, 1);
-
-  // Move back the drawing context to its original position
-  glTranslatef(-CenterX, -CenterY, 0);
-
-  glBegin(GL_QUADS);
-    glVertex2f(X, Y);
-    glVertex2f(X + AWidth, Y);
-    glVertex2f(X + AWidth, Y + AHeight);
-    glVertex2f(X, Y + AHeight);
-  glEnd;
-
-  glPopMatrix;  // Restore the original matrix
-end;
-*)
 
 procedure TlgWindow.DrawFilledRect(const X, Y, AWidth, AHeight: Single; const AColor: TlgColor; const AAngle: Single);
 var
@@ -4266,25 +4641,27 @@ var
 
   procedure ConvertMaskToAlpha(Data: Pointer; Width, Height: Integer; MaskColor: TlgColor);
   type
+    PRGBA = ^TRGBA;
     TRGBA = packed record
       R, G, B, A: Byte;
     end;
   var
     i: Integer;
-    Pixels: array of TRGBA;
+    PixelPtr: PRGBA;
   begin
-    SetLength(Pixels, Width * Height);
-    Move(Data^, Pixels[0], Width * Height * SizeOf(TRGBA));
+    PixelPtr := PRGBA(Data);
 
     for i := 0 to Width * Height - 1 do
     begin
-      if (Pixels[i].R = (MaskColor.Red*256)) and (Pixels[i].G = (MaskColor.Green*256)) and (Pixels[i].B = (MaskColor.Blue*256)) then
-        Pixels[i].A := 0
+      if (PixelPtr^.R = Round(MaskColor.Red * 256)) and
+         (PixelPtr^.G = Round(MaskColor.Green * 256)) and
+         (PixelPtr^.B = Round(MaskColor.Blue * 256)) then
+        PixelPtr^.A := 0
       else
-        Pixels[i].A := 255;
-    end;
+        PixelPtr^.A := 255;
 
-    Move(Pixels[0], Data^, Width * Height * SizeOf(TRGBA));
+      Inc(PixelPtr);
+    end;
   end;
 
 begin
@@ -4429,6 +4806,14 @@ end;
 procedure  TlgTexture.SetColor(const AColor: TlgColor);
 begin
   FColor := AColor;
+end;
+
+procedure  TlgTexture.SetColor(const ARed, AGreen, ABlue, AAlpha: Single);
+begin
+  FColor.Red := EnsureRange(ARed, 0, 1);
+  FColor.Green := EnsureRange(AGreen, 0, 1);
+  FColor.Blue := EnsureRange(ABlue, 0, 1);
+  FColor.Alpha := EnsureRange(AAlpha, 0, 1);
 end;
 
 function   TlgTexture.GetAngle(): Single;
@@ -4722,7 +5107,6 @@ begin
   if IsLoaded() then Exit;
   if not Assigned(AStream) then Exit;
 
-
   FStream := AStream;
   FStatus := vsStopped;
 
@@ -4780,6 +5164,13 @@ begin
   FTexture.SetAnchor(0, 0);
   FTexture.SetBlend(tbNone);
 
+  FTaskID := TaskList.Add(
+    procedure
+    begin
+      UpdateAudio();
+    end
+  );
+
   Result := True;
 end;
 
@@ -4791,6 +5182,8 @@ end;
 procedure TlgVideo.Unload();
 begin
   if not IsLoaded() then Exit;
+
+  TaskList.Remove(FTaskID);
 
   alSourceStop(FSource);
   alDeleteSources(1, @FSource);
@@ -5008,18 +5401,22 @@ begin
   // load deps dll
   LoadDepsDLL();
 
-  // misc
+
+  // init library
   if glfwInit() <> GLFW_TRUE then AbortDepsDLL();
   Math := TlgMath.Create();
   Timer := TlgDeterministicTimer.Create();
   Timer.Init();
+  TaskList := TlgTaskList.Create();
+  TaskList.Start();
 end;
 
 finalization
 begin
-  // misc
-  Timer.Free();
-  Math.Free();
+  // shutdown library
+  if Assigned(TaskList) then TaskList.Free();
+  if Assigned(Timer) then Timer.Free();
+  if Assigned(Math) then Math.Free();
   glfwTerminate();
 
   // unload deps dll
