@@ -55,12 +55,14 @@ const
 
 procedure Test01;
 begin
+  Console.PrintLn(LGT_PROJECT+LF);
+
   Console.PrintLn('Building %s...', [CZipFilename]);
 
   if TlgZipStream.Build(CZipFilename, 'res', nil, nil) then
-    Console.PrintLn(#10#10+'Success!', [])
+    Console.PrintLn(LF+LF+'Success!', [])
   else
-    Console.PrintLn(#10#10+'Failed!', []);
+    Console.PrintLn(LF+LF+'Failed!', []);
 end;
 
 {------------------------------------------------------------------------------
@@ -71,12 +73,13 @@ procedure Test02();
 var
   LAudio: TlgAudio;
 begin
+  Console.PrintLn(LGT_PROJECT+LF);
 
   LAudio := TlgAudio.Create();
   try
     if LAudio.Open() then
     begin
-      WriteLn(LAudio.GetDeviceName());
+      Console.PrintLn('Audio device: %s', [LAudio.GetDeviceName()]);
       LAudio.Close();
     end;
   finally
@@ -87,7 +90,7 @@ end;
 
 {------------------------------------------------------------------------------
  This example demonstrates the loading and playback of multichannel audio
- from a ZIP stream.
+ from a ZIP file.
 ----------------------------------------------------------------------------- }
 procedure Test03();
 var
@@ -126,6 +129,7 @@ var
   end;
 
 begin
+  Console.PrintLn(LGT_PROJECT+LF);
 
   LZipFile := TlgZipFile.Create();
   LZipFile.Open(CZipFilename);
@@ -185,6 +189,10 @@ begin
 
 end;
 
+{------------------------------------------------------------------------------
+ This example demonstrates the loading and playback MPG1 video from a ZIP
+ file.
+----------------------------------------------------------------------------- }
 procedure Test04();
 var
   LZipFile: TlgZipFile;
@@ -194,6 +202,7 @@ var
   LVideo: TlgVideo;
   LStream: TlgStream;
   LAudio: TlgAudio;
+  LFont: TlgFont;
 begin
   Console.PrintLn(LGT_PROJECT);
 
@@ -205,7 +214,9 @@ begin
 
   LWindow := TlgWindow.Create();
 
-  LWindow.Open('Test05');
+  LWindow.Open('Luna Game Toolkit: Video');
+
+  LFont := TlgFont.LoadDefault(LWindow, 12);
 
   LTexture := TlgTexture.LoadFromZipFile(LZipFile, 'res/images/LGT2.png');
   LTexture.SetPos(LWindow.CENTER_WIDTH, LWindow.CENTER_HEIGHT);
@@ -246,26 +257,26 @@ begin
 
       LTexture.Draw();
 
-    LWindow.EndDrawing();
+      LFont.DrawText(LWindow, 3, 3, WHITE, haLeft, '%d fps', [Timer.FrameRate()]);
 
-    LWindow.SetTitle(Format('LGT (%d fps): Video playback', [Timer.FrameRate()]));
+    LWindow.EndDrawing();
 
     Timer.Stop();
   end;
 
   LVideo.Free();
-
   LTexture.Free();
-
   LWindow.Close();
-
+  LFont.Free();
   LWindow.Free();
-
   LZipFile.Free();
-
   LAudio.Free();
 end;
 
+{------------------------------------------------------------------------------
+ This example demonstrates loading and rendering parallax tiled textures from
+ a ZIP file.
+----------------------------------------------------------------------------- }
 procedure Test05();
 var
   LZipFile: TlgZipFile;
@@ -274,6 +285,7 @@ var
   LPos: array[0..3] of TlgPoint;
   LSpeed: array[0..3] of Single;
   I: Integer;
+  LFont: TlgFont;
 begin
   LPos[0] := Math.Point(0,0);
   LPos[1] := Math.Point(0,0);
@@ -287,7 +299,7 @@ begin
 
   LZipFile := TlgZipFile.Init(CZipFilename);
 
-  LWindow := TlgWindow.Init('Test06');
+  LWindow := TlgWindow.Init('Luna Game Toolkit: Parallax Tiled Texture');
 
   LTexture[0] := TlgTexture.LoadFromZipFile(LZipFile, 'res/backgrounds/space.png', nil);
   LTexture[1] := TlgTexture.LoadFromZipFile(LZipFile, 'res/backgrounds/spacelayer1.png', @BLACK);
@@ -300,12 +312,14 @@ begin
   LTexture[2].SetBlend(tbAlpha);
   LTexture[3].SetBlend(tbAdditiveAlpha);
 
+
+  LFont := TlgFont.LoadDefault(LWindow, 12);
+
   while true do
   begin
     Timer.Start();
 
-    if LWindow.ShouldClose() then
-      Break;
+    if LWindow.ShouldClose() then Break;
 
     // update scroll
      for I := 0 to 3 do
@@ -323,12 +337,15 @@ begin
         LTexture[I].DrawTiled(LPos[I].X, LPos[I].Y, LWindow.DEFAULT_WIDTH, LWindow.DEFAULT_HEIGHT);
       end;
 
-    LWindow.EndDrawing();
+      //LFont.Test();
+      LFont.DrawText(LWindow, 3, 3, WHITE, haLeft, '%d fps', [Timer.FrameRate()]);
 
-    LWindow.SetTitle(Format('LGT (%d fps): Parallax Tiled Texture', [Timer.FrameRate()]));
+    LWindow.EndDrawing();
 
     Timer.Stop();
   end;
+
+  LFont.Free();
 
   LTexture[3].Free();
   LTexture[2].Free();
@@ -339,13 +356,55 @@ begin
   LZipFile.Free();
 end;
 
+{------------------------------------------------------------------------------
+ This example demonstrates laoding and rendering unicode true type fonts from
+ a ZIP file.
+----------------------------------------------------------------------------- }
+procedure Test06;
+var
+  LZipFile: TlgZipFile;
+  LWindow: TlgWindow;
+  LFont: array[0..3] of TlgFont;
+begin
+  LZipFile := TlgZipFile.Init(CZipFilename);
+  LWindow := TlgWindow.Init('Luna Game Toolkit: Unicode Truetype Fonts', TlgWindow.DEFAULT_WIDTH, TlgWindow.DEFAULT_HEIGHT);
+
+  LFont[0] := TlgFont.LoadDefault(LWindow, 12);
+  LFont[1] := TlgFont.LoadFromZipFile(LWindow, LZipFile, 'res/fonts/unifont.ttf', 16, '你好こんにちは안녕하세요');
+  LFont[2] := TlgFont.LoadDefault(LWindow, 32);
+
+  while True do
+  begin
+    Timer.Start();
+    if LWindow.ShouldClose() then Break;
+
+    LWindow.StartDrawing();
+      LWindow.Clear(DARKSLATEBROWN);
+      LFont[0].DrawText(LWindow, 3, 3, WHITE, haLeft, '%d fps', [Timer.FrameRate()]);
+      LFont[1].DrawText(LWindow, LWindow.CENTER_WIDTH, LWindow.CENTER_HEIGHT, YELLOW, haCenter, ' en   zh      ja       ko        de   es   pt     fr      vi    id', []);
+      LFont[1].DrawText(LWindow, LWindow.CENTER_WIDTH, LWindow.CENTER_HEIGHT+LFont[1].TextHeight()+3, DARKGREEN, haCenter, 'Hello|你好|こんにちは|안녕하세요|Hallo|Hola|Olá|Bonjour|Xin chào|Halo', []);
+      LFont[2].DrawText(LWindow, LWindow.CENTER_WIDTH, 150, GREENYELLOW, haCenter, 'these are truetype fonts', []);
+
+    LWindow.EndDrawing();
+
+    Timer.Stop();
+  end;
+
+  LFont[2].Free();
+  LFont[1].Free();
+  LFont[0].Free();
+  LWindow.Free();
+  LZipFile.Free();
+end;
+
 procedure RunTests();
 begin
   //Test01();
   //Test02();
   //Test03();
-  Test04();
+  //Test04();
   //Test05();
+  Test06();
   Console.Pause();
 end;
 

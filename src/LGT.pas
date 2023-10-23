@@ -59,9 +59,19 @@ const
   LGT_VERSION       = LGT_MAJOR_VERSION+'.'+LGT_MINOR_VERSION+'.'+LGT_PATCH_VERSION;
   LGT_PROJECT       = LGT_NAME+' ('+LGT_CODENAME+') v'+LGT_MAJOR_VERSION+'.'+LGT_MINOR_VERSION+'.'+LGT_PATCH_VERSION;
 
+  LF   = #10;
+  CR   = #13;
+  CRLF = LF+CR;
+
 type
   { TlgSeekMode }
   TlgSeekMode = (smStart, smCurrent, smEnd);
+
+  { TlgHAlign }
+  THAlign = (haLeft, haCenter, haRight);
+
+  { TlgVAlign }
+  TVAlign = (vaTop, vaCenter, vaBottom);
 
 { === OBJECT ================================================================ }
 type
@@ -161,6 +171,8 @@ type
     class procedure LeaveCriticalSection();
     class procedure SetDefaultIcon(AWindow: HWND); overload;
     class procedure SetDefaultIcon(AWindow: PGLFWwindow); overload;
+    class function  RemoveDuplicates(const aText: string): string;
+    class function  ResourceExists(aInstance: THandle; const aResName: string): Boolean;
   end;
 
 { === MATH ================================================================== }
@@ -273,38 +285,6 @@ type
     class function  EasePosition(const AStartPos, AEndPos, ACurrentPos: Double; AEase: TlgEase): Double;
   end;
 
-{ === LINKLIST ============================================================== }
-type
-  TlgLinkListNode<T: class> = class
-  private
-    FValue: T;
-    FPrev: TlgLinkListNode<T>;
-    FNext: TlgLinkListNode<T>;
-  public
-    constructor Create(const AValue: T);
-    property Value: T read FValue write FValue;
-    property Prev: TlgLinkListNode<T> read FPrev write FPrev;
-    property Next: TlgLinkListNode<T> read FNext write FNext;
-  end;
-
-  TlgLinkedList<T: class> = class(TlgObject)
-  private
-    FHead: TlgLinkListNode<T>;
-    FTail: TlgLinkListNode<T>;
-    FCurrent: TlgLinkListNode<T>;
-  public
-    constructor Create(); override;
-    destructor Destroy(); override;
-    procedure Add(const AValue: T);
-    procedure Remove(const AValue: T);
-    function Find(const AValue: T): TlgLinkListNode<T>;
-    function MoveNext(): Boolean;
-    function GetCurrent(): T;
-    property Current: T read GetCurrent;
-    procedure Reset();
-    procedure Clear(const ADispose: Boolean);
-  end;
-
 { === BUFFER ================================================================ }
 type
   { TlgVirtualBuffer }
@@ -334,25 +314,6 @@ type
     FReadIndex, FWriteIndex, FCapacity: Integer;
   public
     constructor Create(ACapacity: Integer);
-    function Write(const AData: array of T; ACount: Integer): Integer;
-    function Read(var AData: array of T; ACount: Integer): Integer;
-    function DirectReadPointer(ACount: Integer): Pointer;
-    function AvailableBytes: Integer;
-    procedure Clear;
-  end;
-
-  { TlgVirtualRingBuffer }
-  TlgVirtualRingBuffer<T> = class
-  private type
-    PType = ^T;
-  private
-    FBuffer: TlgVirtualBuffer;
-    FReadIndex, FWriteIndex, FCapacity: Integer;
-    function GetArrayValue(AIndex: Integer): T;
-    procedure SetArrayValue(AIndex: Integer; AValue: T);
-  public
-    constructor Create(ACapacity: Integer);
-    destructor Destroy; override;
     function Write(const AData: array of T; ACount: Integer): Integer;
     function Read(var AData: array of T; ACount: Integer): Integer;
     function DirectReadPointer(ACount: Integer): Pointer;
@@ -456,6 +417,7 @@ type
     function  Memory(): Pointer; virtual;
     class function Open(const ASize: Int64): TlgMemoryStream; overload;
     class function Open(const AFilename: string): TlgMemoryStream; overload;
+    class function Open(const AData: Pointer; ASize: Int64): TlgMemoryStream; overload;
   end;
 
   { TlgFileStream }
@@ -528,6 +490,7 @@ type
   { TlgAudioStatus }
   TlgAudioStatus = (asStopped, asPlaying, asPaused);
 
+
   TlgAudio = class(TlgObject)
   protected const
     BUFFER_CHUCK = 1024*2;
@@ -537,11 +500,12 @@ type
     FContext: PALCcontext;
     FError: string;
     FPCM: array[0..BUFFER_SIZE] of byte;
-    FSounds: TlgLinkedList<TlgSound>;
-    FOneShotSounds: TList<TlgSound>;
+    FSoundList: TlgObjectList;
     FTaskID: TlgTaskID;
     procedure CheckErrors();
     procedure Update();
+  public const
+    ATTR_ONESHOT = 0;
   public
     constructor Create(); override;
     destructor Destroy(); override;
@@ -582,6 +546,7 @@ type
   public
     constructor Create(const AAudio: TlgAudio); reintroduce;
     destructor Destroy(); override;
+    procedure OnVisit(); override;
     function  Duplicate(const AOneShot: Boolean): TlgSound; virtual;
     function  Copy(const ASound: TlgSound; const AOneShot: Boolean): Boolean; virtual;
     function  Load(var AStream: TlgStream; const ALoad: TlgSoundLoad; const AOneShot: Boolean=False): Boolean; virtual;
@@ -780,6 +745,7 @@ type
     FSize: TlgSize;
     FScaledSize: TlgSize;
     FScale: TlgPoint;
+    FMaxTextureSize: GLint;
   public const
     DEFAULT_WIDTH = 1920 div 2;
     DEFAULT_HEIGHT = 1080 div 2;
@@ -792,12 +758,14 @@ type
     function  IsOpen(): Boolean;
     procedure Close();
     function  Ready(): Boolean;
+    function  GetMaxTextureSize(): Integer;
     function  GetTitle(): string;
     procedure SetTitle(const ATitle: string);
     function  ShouldClose(): Boolean;
     procedure GetSize(var ASize: TlgSize);
     procedure GetScaledSize(var ASize: TlgSize);
     procedure GetScale(var AScale: TlgPoint);
+    function  GetViewport(): TlgRect;
     procedure Clear(const AColor: TlgColor); overload;
     procedure Clear(const ARed, AGreen, ABlue, AAlpha: Single); overload;
     procedure StartDrawing();
@@ -839,7 +807,8 @@ type
     destructor Destroy(); override;
     function   Allocate(const AWidth, AHeight: Integer): Boolean;
     procedure  Fill(const AColor: TlgColor);
-    function   Load(const AStream: TlgStream; const AColorKey: PlgColor=nil): Boolean;
+    function   Load(const ARGBData: Pointer; const AWidth, AHeight: Integer): Boolean; overload;
+    function   Load(const AStream: TlgStream; const AColorKey: PlgColor=nil): Boolean; overload;
     procedure  Unload();
     function   GetChannels(): Integer;
     function   GetSize(): TlgSize;
@@ -871,8 +840,41 @@ type
     procedure  ResetRegion();
     procedure  Draw();
     procedure  DrawTiled(ADeltaX, ADeltaY, AViewportWidth, AViewportHeight: Single);
+    function   SaveToFile(const AFilename: string): Boolean;
     class function LoadFromFile(const AFilename: string; const AColorKey: PlgColor=nil): TlgTexture;
     class function LoadFromZipFile(const AZipFile: TlgZipFile; const AFilename: string; const AColorKey: PlgColor=nil): TlgTexture;
+  end;
+
+{ === FONT ================================================================== }
+type
+  TlgFont = class(TlgObject)
+  public const
+    DEFAULT_GLYPHS = ' !"#$%&''()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrstuvwxyz{|}~™©';
+  protected type
+    PGlyph = ^TGlyph;
+    TGlyph = record
+      SrcRect: TlgRect;
+      DstRect: TlgRect;
+      XAdvance: Single;
+    end;
+  protected
+    FAtlasSize: Integer;
+    FAtlas: TlgTexture;
+    FBaseLine: Single;
+    FGlyph: TDictionary<Integer, TGlyph>;
+  public
+    constructor Create(); override;
+    destructor Destroy(); override;
+    function  Load(const AWindow: TlgWindow; const AStream: TlgStream; const ASize: Cardinal; const AGlyphs: string=''): Boolean;
+    procedure Unload();
+    procedure DrawText(const AWindow: TlgWindow; const aX, aY: Single; const aColor: TlgColor; aHAlign: THAlign; const aMsg: string; const aArgs: array of const); overload;
+    procedure DrawText(const AWindow: TlgWindow; const aX: Single; var aY: Single; const aLineSpace: Single; const aColor: TlgColor; aHAlign: THAlign; const aMsg: string; const aArgs: array of const); overload;
+    function  TextLength(const aMsg: string; const aArgs: array of const): Single;
+    function  TextHeight(): Single;
+    function  SaveTexture(const AFilename: string): Boolean;
+    class function LoadFromFile(const AWindow: TlgWindow; const AFilename: string; const ASize: Cardinal; const AGlyphs: string=''): TlgFont;
+    class function LoadFromZipFile(const AWindow: TlgWindow; const AZipFile: TlgZipFile; const AFilename: string; const ASize: Cardinal; const AGlyphs: string=''): TlgFont;
+    class function LoadDefault(const AWindow: TlgWindow; const aSize: Cardinal; const aGlyphs: string=''): TlgFont;
   end;
 
 { === VIDEO ================================================================= }
@@ -928,7 +930,6 @@ type
   end;
 
 { =========================================================================== }
-
 var
   Utils: TlgUtils = nil;
   Math: TlgMath = nil;
@@ -937,6 +938,33 @@ var
   TaskList: TlgTaskList = nil;
 
 implementation
+
+{ =========================================================================== }
+type
+  PRGBA = ^TRGBA;
+  TRGBA = packed record
+    R, G, B, A: Byte;
+  end;
+
+procedure ConvertMaskToAlpha(Data: Pointer; Width, Height: Integer; MaskColor: TlgColor);
+var
+  i: Integer;
+  PixelPtr: PRGBA;
+begin
+  PixelPtr := PRGBA(Data);
+
+  for i := 0 to Width * Height - 1 do
+  begin
+    if (PixelPtr^.R = Round(MaskColor.Red * 256)) and
+       (PixelPtr^.G = Round(MaskColor.Green * 256)) and
+       (PixelPtr^.B = Round(MaskColor.Blue * 256)) then
+      PixelPtr^.A := 0
+    else
+      PixelPtr^.A := 255;
+
+    Inc(PixelPtr);
+  end;
+end;
 
 { === OBJECT ================================================================ }
 
@@ -1369,6 +1397,26 @@ end;
 class procedure TlgUtils.SetDefaultIcon(AWindow: PGLFWwindow);
 begin
   SetDefaultIcon(glfwGetWin32Window(AWindow))
+end;
+
+class function TlgUtils.RemoveDuplicates(const aText: string): string;
+var
+  i, l: integer;
+begin
+  Result := '';
+  l := Length(aText);
+  for i := 1 to l do
+  begin
+    if (Pos(aText[i], result) = 0) then
+    begin
+      result := result + aText[i];
+    end;
+  end;
+end;
+
+class function  TlgUtils.ResourceExists(aInstance: THandle; const aResName: string): Boolean;
+begin
+  Result := Boolean((FindResource(aInstance, PChar(aResName), RT_RCDATA) <> 0));
 end;
 
 { === MATH ================================================================== }
@@ -2304,144 +2352,6 @@ begin
     Result := 100;
 end;
 
-{ === LINKLIST ============================================================== }
-
-{ --- TlgLinkListNode<T> ---------------------------------------------------- }
-constructor TlgLinkListNode<T>.Create(const AValue: T);
-begin
-  FValue := AValue;
-end;
-
-{ ---TlgLinkedList<T> ------------------------------------------------------- }
-constructor TlgLinkedList<T>.Create();
-begin
-  inherited;
-end;
-
-destructor TlgLinkedList<T>.Destroy();
-begin
-  Clear(True);
-  inherited;
-end;
-
-procedure TlgLinkedList<T>.Add(const AValue: T);
-var
-  LNode: TlgLinkListNode<T>;
-begin
-  LNode := TlgLinkListNode<T>.Create(AValue);
-  if not Assigned(FHead) then
-    begin
-      FHead := LNode;
-      FTail := LNode;
-    end
-  else
-    begin
-      FTail.Next := LNode;
-      LNode.Prev := FTail;
-      FTail := LNode;
-    end;
-end;
-
-procedure TlgLinkedList<T>.Remove(const AValue: T);
-var
-  LNode, LTemp: TlgLinkListNode<T>;
-begin
-  LNode := Find(AValue);
-  if Assigned(LNode) then
-  begin
-    if Assigned(LNode.Prev) then
-      LNode.Prev.Next := LNode.Next
-    else
-      FHead := LNode.Next;
-
-    if Assigned(LNode.Next) then
-      LNode.Next.Prev := LNode.Prev
-    else
-      FTail := LNode.Prev;
-
-    LNode.Free;
-  end;
-end;
-
-function TlgLinkedList<T>.Find(const AValue: T): TlgLinkListNode<T>;
-var
-  LTemp: TlgLinkListNode<T>;
-begin
-  Result := nil;
-  LTemp := FHead;
-  while Assigned(LTemp) do
-  begin
-    if LTemp.Value = AValue then
-    begin
-      Result := LTemp;
-      Break;
-    end;
-    LTemp := LTemp.Next;
-  end;
-end;
-
-function TlgLinkedList<T>.MoveNext(): Boolean;
-begin
-  if Assigned(FCurrent) then
-    FCurrent := FCurrent.Next;
-  Result := Assigned(FCurrent);
-end;
-
-function TlgLinkedList<T>.GetCurrent: T;
-begin
-  if Assigned(FCurrent) then
-    Result := FCurrent.Value
-  else
-    Result := nil;
-end;
-
-procedure TlgLinkedList<T>.Reset();
-begin
-  FCurrent := FHead;
-end;
-
-procedure TlgLinkedList<T>.Clear(const ADispose: Boolean);
-var
-  LTemp, LNode: TlgLinkListNode<T>;
-  LDisposeList: TList<T>;
-  LItem: T;
-begin
-  // create a dispose list
-  if ADispose then
-    LDisposelist := TList<T>.Create;
-
-  LNode := FHead;
-  while Assigned(LNode) do
-  begin
-    LTemp := LNode;
-    LNode := LNode.Next;
-    if ADispose then
-    begin
-      // if dispose, then add value to list
-      if Assigned(LTemp.FValue) then
-      begin
-        LDisposeList.Add(LTemp.FValue);
-      end;
-    end;
-    LTemp.Free();
-  end;
-  FHead := nil;
-  FTail := nil;
-  FCurrent := nil;
-
-  if ADispose then
-  begin
-    // if there any items on dispose list, free them
-    for LItem in LDisposeList do
-    begin
-      LItem.Free();
-    end;
-
-    // free dispose list
-    LDisposelist.Free();
-  end;
-end;
-
 { === BUFFER ================================================================ }
 
 { --- TlgVirtualBuffer ------------------------------------------------------ }
@@ -2650,98 +2560,6 @@ begin
     for I := Low(FBuffer) to High(FBuffer) do
     begin
      FBuffer[i] := Default(T);
-    end;
-
-    FReadIndex := 0;
-    FWriteIndex := 0;
-  finally
-    Utils.LeaveCriticalSection();
-  end;
-end;
-
-{ --- TlgVirtualRingBuffer -------------------------------------------------- }
-function TlgVirtualRingBuffer<T>.GetArrayValue(AIndex: Integer): T;
-begin
-  Result := PType(PByte(FBuffer.Memory) + AIndex * SizeOf(T))^;
-end;
-
-procedure TlgVirtualRingBuffer<T>.SetArrayValue(AIndex: Integer; AValue: T);
-begin
-  PType(PByte(FBuffer.Memory) + AIndex * SizeOf(T))^ := AValue;
-end;
-
-constructor TlgVirtualRingBuffer<T>.Create(ACapacity: Integer);
-begin
-  //SetLength(FBuffer, ACapacity);
-  FBuffer := TlgVirtualBuffer.Create(ACapacity*SizeOf(T));
-  FReadIndex := 0;
-  FWriteIndex := 0;
-  FCapacity := ACapacity;
-  Clear;
-end;
-
-destructor TlgVirtualRingBuffer<T>.Destroy;
-begin
-  FBuffer.Free;
-  inherited;
-end;
-
-function TlgVirtualRingBuffer<T>.Write(const AData: array of T;
-  ACount: Integer): Integer;
-var
-  i, WritePos: Integer;
-begin
-  Utils.EnterCriticalSection();
-  try
-    for i := 0 to ACount - 1 do
-    begin
-      WritePos := (FWriteIndex + i) mod FCapacity;
-      //FBuffer[WritePos] := AData[i];
-      SetArrayValue(WritePos, AData[i]);
-    end;
-    FWriteIndex := (FWriteIndex + ACount) mod FCapacity;
-    Result := ACount;
-  finally
-    Utils.LeaveCriticalSection();
-  end;
-end;
-
-function TlgVirtualRingBuffer<T>.Read(var AData: array of T; ACount: Integer): Integer;
-var
-  i, ReadPos: Integer;
-begin
-  for i := 0 to ACount - 1 do
-  begin
-    ReadPos := (FReadIndex + i) mod FCapacity;
-    //AData[i] := FBuffer[ReadPos];
-    AData[i] := GetArrayValue(ReadPos);
-  end;
-  FReadIndex := (FReadIndex + ACount) mod FCapacity;
-  Result := ACount;
-end;
-
-function TlgVirtualRingBuffer<T>.DirectReadPointer(ACount: Integer): Pointer;
-begin
-  //Result := @FBuffer[FReadIndex mod FCapacity];
-  Result := PType(PByte(FBuffer.Memory) + (FReadIndex mod FCapacity) * SizeOf(T));
-  FReadIndex := (FReadIndex + ACount) mod FCapacity;
-end;
-
-function TlgVirtualRingBuffer<T>.AvailableBytes: Integer;
-begin
-  Result := (FCapacity + FWriteIndex - FReadIndex) mod FCapacity;
-end;
-
-procedure TlgVirtualRingBuffer<T>.Clear;
-var
-  I: Integer;
-begin
-
-  Utils.EnterCriticalSection();
-  try
-    for I := 0 to FCapacity-1 do
-    begin
-     SetArrayValue(I, Default(T));
     end;
 
     FReadIndex := 0;
@@ -3150,6 +2968,17 @@ class function TlgMemoryStream.Open(const AFilename: string): TlgMemoryStream;
 begin
   Result := TlgMemoryStream.Create();
   Result.FHandle.LoadFromFile(AFilename);
+end;
+
+class function TlgMemoryStream.Open(const AData: Pointer; ASize: Int64): TlgMemoryStream;
+begin
+  Result := nil;
+  if not Assigned(AData) then Exit;
+  if ASize <= 0 then Exit;
+
+  Result := TlgMemoryStream.Create();
+  Result.FHandle.Write(AData^, ASize);
+  Result.FHandle.Position := 0;
 end;
 
 { --- TlgFileStream --------------------------------------------------------- }
@@ -3610,15 +3439,17 @@ end;
 constructor TlgAudio.Create();
 begin
   inherited;
-  FSounds := TlgLinkedList<TlgSound>.Create();
-  FOneShotSounds := TList<TlgSound>.Create();
+  //FSounds := TlgLinkedList<TlgSound>.Create();
+  //FOneShotSounds := TList<TlgSound>.Create();
+  FSoundList := TlgObjectList.Create();
 end;
 
 destructor TlgAudio.Destroy();
 begin
   Close();
-  FOneShotSounds.Free();
-  FSounds.Free();
+  FSoundList.Free();
+  //FOneShotSounds.Free();
+  //FSounds.Free();
   inherited;
 end;
 
@@ -3663,7 +3494,8 @@ begin
   TaskList.Remove(FTaskID);
 
   // free any dangling sounds
-  FSounds.Clear(True);
+  //FSounds.Clear(True);
+  FSoundList.Clean();
 
   if Assigned(FContext) then
   begin
@@ -3686,8 +3518,9 @@ begin
   if not IsOpen() then Exit;
 
   // free any dangling sounds
-  FSounds.Clear(True);
-  FOneShotSounds.Clear();
+  //FSounds.Clear(True);
+  //FOneShotSounds.Clear();
+  FSoundList.Clean();
 
   // set default 2d orientation
   alListener3f(AL_POSITION, 0, 0, 1.0); CheckErrors();
@@ -3717,6 +3550,7 @@ begin
   Result := @FPCM[0];
 end;
 
+(*
 procedure TlgAudio.Update();
 var
   LSound: TlgSound;
@@ -3756,6 +3590,15 @@ begin
 
   // clear oneshot sound list
   FOneShotSounds.Clear();
+end;
+*)
+
+procedure TlgAudio.Update();
+begin
+  if not IsOpen() then Exit;
+
+  FSoundList.Visit([]);
+  FSoundList.Clear([ATTR_ONESHOT])
 end;
 
 { --- TlgSound -------------------------------------------------------------- }
@@ -3809,15 +3652,22 @@ begin
   FAudio := AAudio;
 
   // add self to audio sounds list
-  FAudio.FSounds.Add(Self);
+  //FAudio.FSounds.Add(Self);
+  FAudio.FSoundList.Add(Self);
 end;
 
 destructor TlgSound.Destroy();
 begin
   // remove self from audio sounds list
-  FAudio.FSounds.Remove(Self);
+  FAudio.FSoundList.Remove(Self, False);
+  //FAudio.FSounds.Remove(Self);
   Unload();
   inherited;
+end;
+
+procedure TlgSound.OnVisit();
+begin
+  Update();
 end;
 
 function  TlgSound.Duplicate(const AOneShot: Boolean): TlgSound;
@@ -3934,6 +3784,8 @@ begin
   SetLooping(False);
 
   FOneShot := AOneShot;
+  if FOneShot then Self.SetAttribute(FAudio.ATTR_ONESHOT, True);
+
   Result := True;
 end;
 
@@ -4228,6 +4080,8 @@ begin
 
   glfwGetWindowContentScale(FHandle, @FScale.X, @FScale.Y);
 
+  glGetIntegerv(GL_MAX_TEXTURE_SIZE, @FMaxTextureSize);
+
   Result := True;
 end;
 
@@ -4257,6 +4111,11 @@ begin
   Result := False;
   if not IsOpen then Exit;
   Result := True;
+end;
+
+function  TlgWindow.GetMaxTextureSize(): Integer;
+begin
+  Result := FMaxTextureSize;
 end;
 
 function  TlgWindow.GetTitle(): string;
@@ -4304,6 +4163,14 @@ end;
 procedure TlgWindow.GetScale(var AScale: TlgPoint);
 begin
   AScale := FScale;
+end;
+
+function  TlgWindow.GetViewport(): TlgRect;
+begin
+  Result.X := 0;
+  Result.Y := 0;
+  Result.Width := Self.FSize.Width;
+  Result.Height := Self.FSize.Height;
 end;
 
 procedure TlgWindow.Clear(const AColor: TlgColor);
@@ -4608,6 +4475,7 @@ begin
   SetPos(0.0, 0.0);
   ResetRegion();
 
+  glBindTexture(GL_TEXTURE_2D, 0);
 
   Result := True;
 end;
@@ -4632,38 +4500,26 @@ begin
   glBindTexture(GL_TEXTURE_2D, 0);
 end;
 
+function   TlgTexture.Load(const ARGBData: Pointer; const AWidth, AHeight: Integer): Boolean;
+begin
+  Result := False;
+  if FHandle > 0 then Exit;
+  if not Allocate(AWidth, AHeight) then Exit;
+
+  glBindTexture(GL_TEXTURE_2D, FHandle);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_ALPHA, AWidth, AHeight, 0, GL_ALPHA, GL_UNSIGNED_BYTE, ARGBData);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  glBindTexture(GL_TEXTURE_2D, 0);
+
+  Result := True;
+end;
 
 function   TlgTexture.Load(const AStream: TlgStream; const AColorKey: PlgColor): Boolean;
 var
   LCallbacks: stbi_io_callbacks;
   LData: Pstbi_uc;
   LWidth,LHeight,LChannels: Integer;
-
-  procedure ConvertMaskToAlpha(Data: Pointer; Width, Height: Integer; MaskColor: TlgColor);
-  type
-    PRGBA = ^TRGBA;
-    TRGBA = packed record
-      R, G, B, A: Byte;
-    end;
-  var
-    i: Integer;
-    PixelPtr: PRGBA;
-  begin
-    PixelPtr := PRGBA(Data);
-
-    for i := 0 to Width * Height - 1 do
-    begin
-      if (PixelPtr^.R = Round(MaskColor.Red * 256)) and
-         (PixelPtr^.G = Round(MaskColor.Green * 256)) and
-         (PixelPtr^.B = Round(MaskColor.Blue * 256)) then
-        PixelPtr^.A := 0
-      else
-        PixelPtr^.A := 255;
-
-      Inc(PixelPtr);
-    end;
-  end;
-
 begin
   Result := False;
   if FHandle > 0 then Exit;
@@ -4706,6 +4562,8 @@ begin
   SetAnchor(0.5, 0.5);
   SetPos(0.0, 0.0);
   ResetRegion();
+
+  glBindTexture(GL_TEXTURE_2D, 0);
 
   Result := True;
 end;
@@ -4992,6 +4850,33 @@ begin
   end;
 end;
 
+function  TlgTexture.SaveToFile(const AFilename: string): Boolean;
+var
+  LData: array of Byte;
+  LFilename: string;
+begin
+  Result := False;
+  if FHandle = 0 then Exit;
+  if AFilename.IsEmpty then Exit;
+
+ // Allocate space for the texture data
+  SetLength(LData, Round(FSize.Width * FSize.Height * 4)); // Assuming RGBA format
+
+  // Bind the texture
+  glBindTexture(GL_TEXTURE_2D, FHandle);
+
+  // Read the texture data
+  glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, @LData[0]);
+
+  LFilename := TPath.ChangeExtension(AFilename, 'png');
+
+  // Use stb_image_write to save the texture to a PNG file
+  Result := Boolean(stbi_write_png(Utils.Marshal.AsUtf8(LFilename).ToPointer, Round(FSize.Width), Round(FSize.Height), 4, @LData[0], Round(FSize.Width * 4)));
+
+  // Unbind the texture
+  glBindTexture(GL_TEXTURE_2D, 0);
+end;
+
 class function TlgTexture.LoadFromFile(const AFilename: string; const AColorKey: PlgColor): TlgTexture;
 var
   LStream: TlgStream;
@@ -5027,6 +4912,328 @@ begin
     Result.Load(LStream, AColorKey);
   finally
     LStream.Free();
+  end;
+end;
+
+{ === FONT ================================================================== }
+{ --- TlgFont --------------------------------------------------------------- }
+constructor TlgFont.Create();
+begin
+  inherited;
+  FGlyph := TDictionary<Integer, TGlyph>.Create();
+end;
+
+destructor TlgFont.Destroy();
+begin
+  Unload();
+  FGlyph.Free();
+  inherited;
+end;
+
+function  TlgFont.Load(const AWindow: TlgWindow; const AStream: TlgStream; const ASize: Cardinal; const AGlyphs: string): Boolean;
+
+var
+  LBuffer: TlgVirtualBuffer;
+  LChars: TlgVirtualBuffer;
+  LFileSize: Int64;
+  LFontInfo: stbtt_fontinfo;
+  NumOfGlyphs: Integer;
+  LGlyphChars: string;
+  LCodePoints: array of Integer;
+  LBitmap: array of Byte;
+  LPixels: array of TRGBA;
+  LPackContext: stbtt_pack_context;
+  LPackRange: stbtt_pack_range;
+  I: Integer;
+  LGlyph: TGlyph;
+  LChar: Pstbtt_packedchar;
+  LScale: Single;
+  LAscent: Integer;
+  LSize: Single;
+  LMaxTextureSize: Integer;
+  LDpiScale: Single;
+begin
+  Result := False;
+  if not Assigned(AWindow) then Exit;
+
+  LDpiScale := AWindow.FScale.y;
+  LMaxTextureSize := AWindow.FMaxTextureSize;
+
+  LSize := aSize * LDpiScale;
+  LFileSize := AStream.Size();
+  LBuffer := TlgVirtualBuffer.Create(LFileSize);
+  try
+    AStream.Read(LBuffer.Memory, LFileSize);
+    if stbtt_InitFont(@LFontInfo, LBuffer.Memory, 0) = 0 then Exit;
+    LGlyphChars := DEFAULT_GLYPHS + aGlyphs;
+    LGlyphChars := Utils.RemoveDuplicates(LGlyphChars);
+    NumOfGlyphs := LGlyphChars.Length;
+    SetLength(LCodePoints, NumOfGlyphs);
+
+    for I := 1 to NumOfGlyphs do
+    begin
+      LCodePoints[I-1] := Integer(Char(LGlyphChars[I]));
+    end;
+
+    LChars := TlgVirtualBuffer.Create(SizeOf(stbtt_packedchar) * (NumOfGlyphs+1));
+    try
+      LPackRange.font_size := -LSize;
+      LPackRange.first_unicode_codepoint_in_range := 0;
+      LPackRange.array_of_unicode_codepoints := @LCodePoints[0];
+      LPackRange.num_chars := NumOfGlyphs;
+      LPackRange.chardata_for_range := LChars.Memory;
+      LPackRange.h_oversample := 1;
+      LPackRange.v_oversample := 1;
+
+      FAtlasSize := 32;
+
+      while True do
+      begin
+        SetLength(LBitmap, FAtlasSize * FAtlasSize);
+        stbtt_PackBegin(@LPackContext, @LBitmap[0], FAtlasSize, FAtlasSize, 0, 1, nil);
+        stbtt_PackSetOversampling(@LPackContext, 1, 1);
+        if stbtt_PackFontRanges(@LPackContext, LBuffer.Memory, 0, @LPackRange, 1) = 0  then
+          begin
+            LBitmap := nil;
+            stbtt_PackEnd(@LPackContext);
+            FAtlasSize := FAtlasSize * 2;
+            if (FAtlasSize > LMaxTextureSize) then
+            begin
+              raise Exception.Create(Format('Font texture too large. Max size: %d', [LMaxTextureSize]));
+            end;
+          end
+        else
+          begin
+            stbtt_PackEnd(@LPackContext);
+            break;
+          end;
+      end;
+
+      FAtlas := TlgTexture.Create();
+      FAtlas.Load(@LBitmap[0], FAtlasSize, FAtlasSize);
+      FAtlas.SetPivot(0,0);
+      FAtlas.SetAnchor(0,0);
+      FAtlas.SetBlend(tbAlpha);
+      FAtlas.SetColor(WHITE);
+
+      LPixels := nil;
+      LBitmap := nil;
+
+      LScale := stbtt_ScaleForMappingEmToPixels(@LFontInfo, LSize);
+      stbtt_GetFontVMetrics(@LFontInfo, @LAscent, nil, nil);
+      FBaseline := LAscent * LScale;
+
+      FGlyph.Clear();
+      for I := Low(LCodePoints) to High(LCodePoints) do
+      begin
+        LChar := Pstbtt_packedchar(LChars.Memory);
+        Inc(LChar, I);
+
+        LGlyph.SrcRect.x := LChar.x0;
+        LGlyph.SrcRect.y := LChar.y0;
+        LGlyph.SrcRect.Width := LChar.x1-LChar.x0;
+        LGlyph.SrcRect.Height := LChar.y1-LChar.y0;
+
+        LGlyph.DstRect.x := 0 + LChar.xoff;
+        LGlyph.DstRect.y := 0 + LChar.yoff + FBaseline;
+        LGlyph.DstRect.Width := (LChar.x1-LChar.x0);
+        LGlyph.DstRect.Height := (LChar.y1-LChar.y0);
+
+        LGlyph.XAdvance := LChar.xadvance;
+
+        FGlyph.Add(LCodePoints[I], LGlyph);
+      end;
+
+      Result := True;
+
+    finally
+      LChars.Free();
+    end;
+
+  finally
+    LBuffer.Free();
+  end;
+end;
+
+procedure TlgFont.Unload();
+begin
+  if Assigned(FAtlas) then
+  begin
+    FAtlas.Free();
+    FAtlas := nil;
+  end;
+  FGlyph.Clear();
+end;
+
+procedure TlgFont.DrawText(const AWindow: TlgWindow; const aX, aY: Single; const aColor: TlgColor; aHAlign: THAlign; const aMsg: string; const aArgs: array of const);
+var
+  LText: string;
+  LChar: Integer;
+  LGlyph: TGlyph;
+  I, LLen: Integer;
+  LX, LY: Single;
+  LViewport: TlgRect;
+  LWidth: Single;
+begin
+  LText := Format(aMsg, aArgs);
+  LLen := LText.Length;
+
+  LX := aX;
+  LY := aY;
+
+  LViewport := AWindow.GetViewport();
+
+  case aHAlign of
+    haLeft:
+      begin
+      end;
+    haCenter:
+      begin
+        LWidth := TextLength(aMsg, aArgs);
+        LX := (LViewport.Width - LWidth)/2;
+      end;
+    haRight:
+      begin
+        LWidth := TextLength(aMsg, aArgs);
+        LX := LViewport.Width - LWidth;
+      end;
+  end;
+
+  FAtlas.SetColor(AColor);
+
+  for I := 1 to LLen do
+  begin
+    LChar := Integer(Char(LText[I]));
+    if FGlyph.TryGetValue(LChar, LGlyph) then
+    begin
+      LGlyph.DstRect.x := LGlyph.DstRect.x + LX;
+      LGlyph.DstRect.y := LGlyph.DstRect.y + LY;
+
+      FAtlas.SetRegion(LGlyph.SrcRect);
+      FAtlas.SetPos(LGlyph.DstRect.x, LGlyph.DstRect.y);
+      FAtlas.Draw();
+      LX := LX + LGlyph.XAdvance;
+    end;
+  end;
+end;
+
+procedure TlgFont.DrawText(const AWindow: TlgWindow; const aX: Single; var aY: Single; const aLineSpace: Single; const aColor: TlgColor; aHAlign: THAlign; const aMsg: string; const aArgs: array of const);
+begin
+  DrawText(AWindow, aX, aY, aColor, aHAlign, aMsg, aArgs);
+  aY := aY + FBaseLine + aLineSpace;
+end;
+
+function  TlgFont.TextLength(const aMsg: string; const aArgs: array of const): Single;
+var
+  LText: string;
+  LChar: Integer;
+  LGlyph: TGlyph;
+  I, LLen: Integer;
+  LWidth: Single;
+begin
+  LText := Format(aMsg, aArgs);
+  LLen := LText.Length;
+
+  LWidth := 0;
+
+  for I := 1 to LLen do
+  begin
+    LChar := Integer(Char(LText[I]));
+    if FGlyph.TryGetValue(LChar, LGlyph) then
+    begin
+      LWidth := LWidth + LGlyph.XAdvance;
+    end;
+  end;
+
+  Result := LWidth;
+end;
+
+function  TlgFont.TextHeight: Single;
+begin
+  Result := FBaseLine;
+end;
+
+function TlgFont.SaveTexture(const AFilename: string): Boolean;
+begin
+  Result := FAtlas.SaveToFile(AFilename);
+end;
+
+class function TlgFont.LoadFromFile(const AWindow: TlgWindow; const AFilename: string; const ASize: Cardinal; const AGlyphs: string): TlgFont;
+var
+  LStream: TlgStream;
+begin
+  Result := nil;
+  if not Assigned(AWindow) then Exit;
+
+  LStream := TlgFileStream.Open(AFilename, smRead);
+  try
+    if not Assigned(LStream) then Exit;
+    Result := TlgFont.Create();
+    if not Assigned(Result) then Exit;
+    if not Result.Load(AWindow, LStream, ASize, AGlyphs) then
+    begin
+      Result.Free();
+      Result := nil;
+      Exit;
+    end;
+  finally
+    LStream.Free();
+  end;
+end;
+
+class function TlgFont.LoadFromZipFile(const AWindow: TlgWindow; const AZipFile: TlgZipFile; const AFilename: string; const ASize: Cardinal; const AGlyphs: string): TlgFont;
+var
+  LStream: TlgStream;
+begin
+  Result := nil;
+  if not Assigned(AWindow) then Exit;
+  if not Assigned(AZipFile) then Exit;
+  if not AZipFile.IsOpen() then Exit;
+
+  LStream := AZipFile.OpenFile(AFilename);
+  try
+    if not Assigned(LStream) then Exit;
+    Result := TlgFont.Create();
+    if not Assigned(Result) then Exit;
+    if not Result.Load(AWindow, LStream, ASize, AGlyphs) then
+    begin
+      Result.Free();
+      Result := nil;
+      Exit;
+    end;
+  finally
+    LStream.Free();
+  end;
+end;
+
+class function  TlgFont.LoadDefault(const AWindow: TlgWindow; const aSize: Cardinal; const aGlyphs: string=''): TlgFont;
+const
+  CResName = '4deb5a2026b646fb9d07983723e66174';
+var
+  LResStream: TResourceStream;
+  LStream: TlgStream;
+begin
+  Result := nil;
+  if not Assigned(AWindow) then Exit;
+  if not Utils.ResourceExists(HInstance, cResName) then Exit;
+
+  LResStream := TResourceStream.Create(HInstance, cResName, RT_RCDATA);
+  try
+    LStream := TlgMemoryStream.Open(LResStream.Memory, LResStream.Size);
+    try
+      Result := TlgFont.Create();
+      if not Assigned(Result) then Exit;
+      if not Result.Load(AWindow, LStream, ASize, AGlyphs) then
+      begin
+        Result.Free();
+        Result := nil;
+        Exit;
+      end;
+    finally
+      LStream.Free();
+    end;
+  finally
+    LResStream.Free();
   end;
 end;
 
