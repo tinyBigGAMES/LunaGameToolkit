@@ -386,6 +386,8 @@ begin
   LZipFile := TlgZipFile.Init(CZipFilename);
   LWindow := TlgWindow.Init('Luna Game Toolkit: Unicode Truetype Fonts', TlgWindow.DEFAULT_WIDTH, TlgWindow.DEFAULT_HEIGHT);
 
+  writeln(LWindow.GetGamepadName(GAMEPAD_1));
+
   LFont[0] := TlgFont.LoadDefault(LWindow, 10);
   LFont[1] := TlgFont.LoadFromZipFile(LWindow, LZipFile, 'res/fonts/unifont.ttf', 16, '你好こんにちは안녕하세요');
   LFont[2] := TlgFont.LoadDefault(LWindow, 32);
@@ -397,6 +399,9 @@ begin
 
       // input processing
       if LWindow.GetKey(KEY_ESCAPE, isWasPressed) then
+        LWindow.SetShouldClose(True);
+
+      if LWindow.GetGamepadButton(GAMEPAD_1, GAMEPAD_BUTTON_X, isWasReleased) then
         LWindow.SetShouldClose(True);
 
       LMousePos := LWindow.GetMousePos();
@@ -433,9 +438,9 @@ begin
   //Test01();
   //Test02();
   //Test03();
-  Test04();
+  //Test04();
   //Test05();
-  //Test06();
+  Test06();
   Console.Pause();
 end;
 

@@ -880,6 +880,62 @@ const
   MOUSE_BUTTON_MIDDLE = GLFW_MOUSE_BUTTON_3;
 {$ENDREGION}
 
+{$REGION ' Gamepads '}
+const
+  GAMEPAD_1 = 0;
+  GAMEPAD_2 = 1;
+  GAMEPAD_3 = 2;
+  GAMEPAD_4 = 3;
+  GAMEPAD_5 = 4;
+  GAMEPAD_6 = 5;
+  GAMEPAD_7 = 6;
+  GAMEPAD_8 = 7;
+  GAMEPAD_9 = 8;
+  GAMEPAD_10 = 9;
+  GAMEPAD_11 = 10;
+  GAMEPAD_12 = 11;
+  GAMEPAD_13 = 12;
+  GAMEPAD_14 = 13;
+  GAMEPAD_15 = 14;
+  GAMEPAD_16 = 15;
+  GAMEPAD_LAST = GAMEPAD_16;
+{$ENDREGION}
+
+{$REGION ' Gamepad Buttons '}
+const
+  GAMEPAD_BUTTON_A = 0;
+  GAMEPAD_BUTTON_B = 1;
+  GAMEPAD_BUTTON_X = 2;
+  GAMEPAD_BUTTON_Y = 3;
+  GAMEPAD_BUTTON_LEFT_BUMPER = 4;
+  GAMEPAD_BUTTON_RIGHT_BUMPER = 5;
+  GAMEPAD_BUTTON_BACK = 6;
+  GAMEPAD_BUTTON_START = 7;
+  GAMEPAD_BUTTON_GUIDE = 8;
+  GAMEPAD_BUTTON_LEFT_THUMB = 9;
+  GAMEPAD_BUTTON_RIGHT_THUMB = 10;
+  GAMEPAD_BUTTON_DPAD_UP = 11;
+  GAMEPAD_BUTTON_DPAD_RIGHT = 12;
+  GAMEPAD_BUTTON_DPAD_DOWN = 13;
+  GAMEPAD_BUTTON_DPAD_LEFT = 14;
+  GAMEPAD_BUTTON_LAST = GAMEPAD_BUTTON_DPAD_LEFT;
+  GAMEPAD_BUTTON_CROSS = GAMEPAD_BUTTON_A;
+  GAMEPAD_BUTTON_CIRCLE = GAMEPAD_BUTTON_B;
+  GAMEPAD_BUTTON_SQUARE = GAMEPAD_BUTTON_X;
+  GAMEPAD_BUTTON_TRIANGLE = GAMEPAD_BUTTON_Y;
+{$ENDREGION}
+
+{$REGiON ' Gamepad Axis '}
+const
+  GAMEPAD_AXIS_LEFT_X = 0;
+  GAMEPAD_AXIS_LEFT_Y = 1;
+  GAMEPAD_AXIS_RIGHT_X = 2;
+  GAMEPAD_AXIS_RIGHT_Y = 3;
+  GAMEPAD_AXIS_LEFT_TRIGGER = 4;
+  GAMEPAD_AXIS_RIGHT_TRIGGER = 5;
+  GAMEPAD_AXIS_LAST = GAMEPAD_AXIS_RIGHT_TRIGGER;
+{$ENDREGiON}
+
 type
   { TlgInputState }
   TlgInputState = (isPressed, isWasPressed, isWasReleased);
@@ -893,7 +949,8 @@ type
     FScale: TlgPoint;
     FMaxTextureSize: GLint;
     FKeyState: array [0..0, KEY_SPACE..KEY_LAST] of Boolean;
-    FMouseState: array [0..0, MOUSE_BUTTON_1..MOUSE_BUTTON_MIDDLE] of Boolean;
+    FMouseButtonState: array [0..0, MOUSE_BUTTON_1..MOUSE_BUTTON_MIDDLE] of Boolean;
+    FGamepadButtonState: array[0..0, GAMEPAD_BUTTON_A..GAMEPAD_BUTTON_LAST] of Boolean;
   public const
     DEFAULT_WIDTH = 1920 div 2;
     DEFAULT_HEIGHT = 1080 div 2;
@@ -933,10 +990,14 @@ type
     procedure DrawPolyline(const APoints: array of TlgPoint; const AThickness: Single; const AColor: TlgColor);
     procedure ClearInput();
     function  GetKey(const AKey: Integer; const AState: TlgInputState): Boolean;
-    function  GetMouseButton(const AButton: Integer; const AState: TlgInputState): Boolean;
+    function  GetMouseButton(const AButton: Byte; const AState: TlgInputState): Boolean;
     procedure GetMousePos(const X, Y: PSingle); overload;
     function  GetMousePos(): TlgPoint; overload;
     procedure SetMousePos(const X, Y: Single);
+    function  GamepadPresent(const AGamepad: Byte): Boolean;
+    function  GetGamepadName(const AGamepad: Byte): string;
+    function  GetGamepadButton(const AGamepad, AButton: Byte; const AState: TlgInputState): Boolean;
+    function  GetGamepadAxisValue(const AGamepad, AAxis: Byte): Single;
     function  SaveToFile(const AFilename: string): Boolean;
     class function Init(const aTitle: string; const AWidth: Integer=DEFAULT_WIDTH; const AHeight: Integer=DEFAULT_HEIGHT): TlgWindow;
   end;
@@ -4571,7 +4632,8 @@ end;
 procedure TlgWindow.ClearInput();
 begin
   FillChar(FKeyState, SizeOf(FKeyState), 0);
-  FillChar(FMouseState, SizeOf(FMouseState), 0);
+  FillChar(FMouseButtonState, SizeOf(FMouseButtonState), 0);
+  FillChar(FGamepadButtonState, SizeOf(FGamepadButtonState), 0);
 end;
 
 function  TlgWindow.GetKey(const AKey: Integer; const AState: TlgInputState): Boolean;
@@ -4621,7 +4683,7 @@ begin
   end;
 end;
 
-function  TlgWindow.GetMouseButton(const AButton: Integer; const AState: TlgInputState): Boolean;
+function  TlgWindow.GetMouseButton(const AButton: Byte; const AState: TlgInputState): Boolean;
 
   function IsButtonPressed(const AKey: Integer): Boolean;
   begin
@@ -4640,28 +4702,28 @@ begin
 
     isWasPressed:
     begin
-      if IsButtonPressed(AButton) and (not FMouseState[0, AButton]) then
+      if IsButtonPressed(AButton) and (not FMouseButtonState[0, AButton]) then
       begin
-        FMouseState[0, AButton] := True;
+        FMouseButtonState[0, AButton] := True;
         Result := True;
       end
-      else if (not IsButtonPressed(AButton)) and (FMouseState[0, AButton]) then
+      else if (not IsButtonPressed(AButton)) and (FMouseButtonState[0, AButton]) then
       begin
-        FMouseState[0, AButton] := False;
+        FMouseButtonState[0, AButton] := False;
         Result := False;
       end;
     end;
 
     isWasReleased:
     begin
-      if IsButtonPressed(AButton) and (not FMouseState[0, AButton]) then
+      if IsButtonPressed(AButton) and (not FMouseButtonState[0, AButton]) then
       begin
-        FMouseState[0, AButton] := True;
+        FMouseButtonState[0, AButton] := True;
         Result := False;
       end
-      else if (not IsButtonPressed(AButton)) and (FMouseState[0, AButton]) then
+      else if (not IsButtonPressed(AButton)) and (FMouseButtonState[0, AButton]) then
       begin
-        FMouseState[0, AButton] := False;
+        FMouseButtonState[0, AButton] := False;
         Result := True;
       end;
     end;
@@ -4687,6 +4749,77 @@ end;
 procedure TlgWindow.SetMousePos(const X, Y: Single);
 begin
   glfwSetCursorPos(FHandle, X*FScale.x, Y*FScale.y);
+end;
+
+function  TlgWindow.GamepadPresent(const AGamepad: Byte): Boolean;
+begin
+  Result := Boolean(glfwJoystickIsGamepad(EnsureRange(Agamepad, GAMEPAD_1, GAMEPAD_LAST)));
+end;
+
+function  TlgWindow.GetGamepadName(const AGamepad: Byte): string;
+begin
+  Result := 'Not present';
+  if not GamepadPresent(AGamepad) then Exit;
+  Result := string(glfwGetGamepadName(AGamepad));
+end;
+
+function  TlgWindow.GetGamepadButton(const AGamepad, AButton: Byte; const AState: TlgInputState): Boolean;
+var
+  LState: GLFWgamepadstate;
+
+  function IsButtonPressed(const AButton: Byte): Boolean;
+  begin
+    Result :=  Boolean(LState.buttons[AButton]);
+  end;
+
+begin
+  Result := False;
+
+  if not Boolean(glfwGetGamepadState(EnsureRange(AGamepad, GAMEPAD_1, GAMEPAD_LAST), @LState)) then Exit;
+
+  case AState of
+    isPressed:
+    begin
+      Result :=  IsButtonPressed(AButton);
+    end;
+
+    isWasPressed:
+    begin
+      if IsButtonPressed(AButton) and (not FGamepadButtonState[0, AButton]) then
+      begin
+        FGamepadButtonState[0, AButton] := True;
+        Result := True;
+      end
+      else if (not IsButtonPressed(AButton)) and (FGamepadButtonState[0, AButton]) then
+      begin
+        FGamepadButtonState[0, AButton] := False;
+        Result := False;
+      end;
+    end;
+
+    isWasReleased:
+    begin
+      if IsButtonPressed(AButton) and (not FGamepadButtonState[0, AButton]) then
+      begin
+        FGamepadButtonState[0, AButton] := True;
+        Result := False;
+      end
+      else if (not IsButtonPressed(AButton)) and (FGamepadButtonState[0, AButton]) then
+      begin
+        FGamepadButtonState[0, AButton] := False;
+        Result := True;
+      end;
+    end;
+  end;
+end;
+
+function  TlgWindow.GetGamepadAxisValue(const AGamepad, AAxis: Byte): Single;
+var
+  LState: GLFWgamepadstate;
+begin
+  Result := 0;
+  if not Boolean(glfwGetGamepadState(EnsureRange(AGamepad, GAMEPAD_1, GAMEPAD_LAST), @LState)) then Exit;
+  Result := LState.axes[EnsureRange(AAxis, GAMEPAD_AXIS_LEFT_X, GLFW_GAMEPAD_AXIS_LAST)];
 end;
 
 function  TlgWindow.SaveToFile(const AFilename: string): Boolean;

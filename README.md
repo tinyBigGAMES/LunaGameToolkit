@@ -20,5 +20,5 @@ More info coming soon!
 
 <p align="center">
  <a href="https://www.embarcadero.com/products/delphi" target="_blank"><img src="media/Delphi.png"></a><br/>
- <b>Made with ♥ for Delphi</b>
+ <b>Made with ❤️ for Delphi</b>
 </p>
