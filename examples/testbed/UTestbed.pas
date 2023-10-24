@@ -381,6 +381,7 @@ var
   LWindow: TlgWindow;
   LFont: array[0..3] of TlgFont;
   LPos: TlgPoint;
+  LMousePos: TlgPoint;
 begin
   LZipFile := TlgZipFile.Init(CZipFilename);
   LWindow := TlgWindow.Init('Luna Game Toolkit: Unicode Truetype Fonts', TlgWindow.DEFAULT_WIDTH, TlgWindow.DEFAULT_HEIGHT);
@@ -398,12 +399,15 @@ begin
       if LWindow.GetKey(KEY_ESCAPE, isWasPressed) then
         LWindow.SetShouldClose(True);
 
+      LMousePos := LWindow.GetMousePos();
+
       // start drawing
       LWindow.StartDrawing();
         LWindow.Clear(DARKSLATEBROWN);
         LPos := Math.Point(3,3);
         LFont[0].DrawText(LWindow, LPos.x, LPos.y, 0, WHITE, haLeft, '%d fps', [Timer.FrameRate()]);
         LFont[0].DrawText(LWindow, LPos.x, LPos.y, 0, GREEN, haLeft, 'ESC - Quit', []);
+        LFont[0].DrawText(LWindow, LPos.x, LPos.y, 0, GREEN, haLeft, 'Mouse: (%d, %d)', [Round(LMousePos.x), Round(LMousePos.y)]);
         LFont[1].DrawText(LWindow, LWindow.CENTER_WIDTH, LWindow.CENTER_HEIGHT, YELLOW, haCenter, ' en   zh      ja       ko        de   es   pt     fr      vi    id', []);
         LFont[1].DrawText(LWindow, LWindow.CENTER_WIDTH, LWindow.CENTER_HEIGHT+LFont[1].TextHeight()+3, DARKGREEN, haCenter, 'Hello|你好|こんにちは|안녕하세요|Hallo|Hola|Olá|Bonjour|Xin chào|Halo', []);
         LFont[2].DrawText(LWindow, LWindow.CENTER_WIDTH, 150, GREENYELLOW, haCenter, 'these are truetype fonts', []);
@@ -414,6 +418,8 @@ begin
     // end frame
     LWindow.EndFrame();
   end;
+
+  LWindow.SaveToFile('window.png');
 
   LFont[2].Free();
   LFont[1].Free();
@@ -427,9 +433,9 @@ begin
   //Test01();
   //Test02();
   //Test03();
-  //Test04();
+  Test04();
   //Test05();
-  Test06();
+  //Test06();
   Console.Pause();
 end;
 

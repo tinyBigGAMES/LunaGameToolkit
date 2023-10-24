@@ -738,7 +738,7 @@ const
 
 { === WINDOW ================================================================ }
 
-{$REGION ' Key codes '}
+{$REGION ' Key Codes '}
 const
   KEY_UNKNOWN = -1;
   KEY_SPACE = 32;
@@ -864,6 +864,22 @@ const
   KEY_LAST = KEY_MENU;
 {$ENDREGION}
 
+{$REGION ' Mouse Buttons '}
+const
+  MOUSE_BUTTON_1 = 0;
+  MOUSE_BUTTON_2 = 1;
+  MOUSE_BUTTON_3 = 2;
+  MOUSE_BUTTON_4 = 3;
+  MOUSE_BUTTON_5 = 4;
+  MOUSE_BUTTON_6 = 5;
+  MOUSE_BUTTON_7 = 6;
+  MOUSE_BUTTON_8 = 7;
+  MOUSE_BUTTON_LAST = GLFW_MOUSE_BUTTON_8;
+  MOUSE_BUTTON_LEFT = GLFW_MOUSE_BUTTON_1;
+  MOUSE_BUTTON_RIGHT = GLFW_MOUSE_BUTTON_2;
+  MOUSE_BUTTON_MIDDLE = GLFW_MOUSE_BUTTON_3;
+{$ENDREGION}
+
 type
   { TlgInputState }
   TlgInputState = (isPressed, isWasPressed, isWasReleased);
@@ -877,6 +893,7 @@ type
     FScale: TlgPoint;
     FMaxTextureSize: GLint;
     FKeyState: array [0..0, KEY_SPACE..KEY_LAST] of Boolean;
+    FMouseState: array [0..0, MOUSE_BUTTON_1..MOUSE_BUTTON_MIDDLE] of Boolean;
   public const
     DEFAULT_WIDTH = 1920 div 2;
     DEFAULT_HEIGHT = 1080 div 2;
@@ -916,9 +933,11 @@ type
     procedure DrawPolyline(const APoints: array of TlgPoint; const AThickness: Single; const AColor: TlgColor);
     procedure ClearInput();
     function  GetKey(const AKey: Integer; const AState: TlgInputState): Boolean;
-    function  IsKeyPressed(const AKey: Integer): Boolean;
-    function  KeyWasPressed(const AKey: Integer): Boolean;
-    function  KeyWasReleased(const AKey: Integer): Boolean;
+    function  GetMouseButton(const AButton: Integer; const AState: TlgInputState): Boolean;
+    procedure GetMousePos(const X, Y: PSingle); overload;
+    function  GetMousePos(): TlgPoint; overload;
+    procedure SetMousePos(const X, Y: Single);
+    function  SaveToFile(const AFilename: string): Boolean;
     class function Init(const aTitle: string; const AWidth: Integer=DEFAULT_WIDTH; const AHeight: Integer=DEFAULT_HEIGHT): TlgWindow;
   end;
 
@@ -4222,6 +4241,9 @@ begin
   glGetIntegerv(GL_MAX_TEXTURE_SIZE, @FMaxTextureSize);
 
   glfwSetInputMode(FHandle, GLFW_STICKY_KEYS, GLFW_TRUE);
+  glfwSetInputMode(FHandle, GLFW_STICKY_MOUSE_BUTTONS, GLFW_TRUE);
+
+  SetMousePos(0,0);
 
   Self.ClearInput();
 
@@ -4549,6 +4571,7 @@ end;
 procedure TlgWindow.ClearInput();
 begin
   FillChar(FKeyState, SizeOf(FKeyState), 0);
+  FillChar(FMouseState, SizeOf(FMouseState), 0);
 end;
 
 function  TlgWindow.GetKey(const AKey: Integer; const AState: TlgInputState): Boolean;
@@ -4598,43 +4621,106 @@ begin
   end;
 end;
 
-function  TlgWindow.IsKeyPressed(const AKey: Integer): Boolean;
+function  TlgWindow.GetMouseButton(const AButton: Integer; const AState: TlgInputState): Boolean;
+
+  function IsButtonPressed(const AKey: Integer): Boolean;
+  begin
+    Result :=  Boolean(glfwGetMouseButton(FHandle, AButton) = GLFW_PRESS);
+  end;
+
 begin
   Result := False;
-  if not InRange(AKey,  KEY_SPACE, KEY_LAST) then Exit;
+  if not InRange(AButton,  MOUSE_BUTTON_1, MOUSE_BUTTON_MIDDLE) then Exit;
 
-end;
+  case AState of
+    isPressed:
+    begin
+      Result :=  IsButtonPressed(AButton);
+    end;
 
-function  TlgWindow.KeyWasPressed(const AKey: Integer): Boolean;
-begin
-  Result := False;
-  if IsKeyPressed(AKey) and (not FKeyState[0, AKey]) then
-  begin
-    FKeyState[0, AKey] := True;
-    Result := True;
-  end
-  else if (not IsKeyPressed(AKey)) and (FKeyState[0, AKey]) then
-  begin
-    FKeyState[0, AKey] := False;
-    Result := False;
+    isWasPressed:
+    begin
+      if IsButtonPressed(AButton) and (not FMouseState[0, AButton]) then
+      begin
+        FMouseState[0, AButton] := True;
+        Result := True;
+      end
+      else if (not IsButtonPressed(AButton)) and (FMouseState[0, AButton]) then
+      begin
+        FMouseState[0, AButton] := False;
+        Result := False;
+      end;
+    end;
+
+    isWasReleased:
+    begin
+      if IsButtonPressed(AButton) and (not FMouseState[0, AButton]) then
+      begin
+        FMouseState[0, AButton] := True;
+        Result := False;
+      end
+      else if (not IsButtonPressed(AButton)) and (FMouseState[0, AButton]) then
+      begin
+        FMouseState[0, AButton] := False;
+        Result := True;
+      end;
+    end;
   end;
 end;
 
-function  TlgWindow.KeyWasReleased(const AKey: Integer): Boolean;
+procedure TlgWindow.GetMousePos(const X, Y: PSingle);
+var
+  LX, LY: Double;
 begin
-  Result := False;
-  if IsKeyPressed(AKey) and (not FKeyState[0, AKey]) then
-  begin
-    FKeyState[0, AKey] := True;
-    Result := False;
-  end
-  else if (not IsKeyPressed(AKey)) and (FKeyState[0, AKey]) then
-  begin
-    FKeyState[0, AKey] := False;
-    Result := True;
-  end;
+  glfwGetCursorPos(FHandle, @LX, @LY);
+  if Assigned(X) then X^ := LX;
+  if Assigned(Y) then Y^ := LY;
 end;
 
+function  TlgWindow.GetMousePos(): TlgPoint;
+begin
+  GetMousePos(@Result.x, @Result.y);
+  Result.x := Result.x/FScale.x;
+  Result.y := Result.y/FScale.y;
+end;
+
+procedure TlgWindow.SetMousePos(const X, Y: Single);
+begin
+  glfwSetCursorPos(FHandle, X*FScale.x, Y*FScale.y);
+end;
+
+function  TlgWindow.SaveToFile(const AFilename: string): Boolean;
+var
+  LBuffer: TlgVirtualBuffer;
+  LWidth,LHeight, LRow, LCol: Integer;
+  LTempByte: Byte;
+  LFilename: string;
+begin
+  Result := False;
+  if AFilename.IsEmpty then Exit;
+
+  LWidth := Round(FScaledSize.Width);
+  LHeight := Round(FScaledSize.Height);
+  LFilename := TPath.ChangeExtension(AFilename, 'png');
+  LBuffer := TlgVirtualBuffer.Create(LWidth * LHeight * 3);
+  try
+    glReadPixels(0, 0, LWidth, LHeight, GL_RGB, GL_UNSIGNED_BYTE, LBuffer.Memory);
+
+    for LRow := 0 to LHeight div 2 - 1 do
+    begin
+      for LCol := 0 to LWidth * 3 - 1 do
+      begin
+        Move((PByte(LBuffer.Memory) + (LRow * LWidth * 3 + LCol))^, LTempByte, 1);
+        Move((PByte(LBuffer.Memory) + ((LHeight - LRow - 1) * LWidth * 3 + LCol))^, (PByte(LBuffer.Memory) + (LRow * LWidth * 3 + LCol))^, 1);
+        Move(LTempByte, (PByte(LBuffer.Memory) + ((LHeight - LRow - 1) * LWidth * 3 + LCol))^, 1);
+      end;
+    end;
+
+    Result := Boolean(stbi_write_png(Utils.Marshal.AsUtf8(LFileName).ToPointer, LWidth, LHeight, 3, LBuffer.Memory, LWidth * 3));
+  finally
+    LBuffer.Free();
+  end;
+end;
 
 class function TlgWindow.Init(const aTitle: string; const AWidth: Integer; const AHeight: Integer): TlgWindow;
 begin

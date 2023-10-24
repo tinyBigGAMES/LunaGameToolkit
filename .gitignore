@@ -474,3 +474,4 @@ src/deps/externs/LGT.Deps/post/LGT.Deps.txt
 !examples/bin/
 !examples/bin/res/
 examples/bin/Data.zip
+examples/bin/*.png
