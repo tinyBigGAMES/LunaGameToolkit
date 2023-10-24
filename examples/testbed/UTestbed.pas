@@ -203,6 +203,7 @@ var
   LStream: TlgStream;
   LAudio: TlgAudio;
   LFont: TlgFont;
+  LPos: TlgPoint;
 begin
   Console.PrintLn(LGT_PROJECT);
 
@@ -216,7 +217,7 @@ begin
 
   LWindow.Open('Luna Game Toolkit: Video');
 
-  LFont := TlgFont.LoadDefault(LWindow, 12);
+  LFont := TlgFont.LoadDefault(LWindow, 10);
 
   LTexture := TlgTexture.LoadFromZipFile(LZipFile, 'res/images/LGT2.png');
   LTexture.SetPos(LWindow.CENTER_WIDTH, LWindow.CENTER_HEIGHT);
@@ -233,35 +234,42 @@ begin
 
   LVideo.Play(True);
 
-  while true do
+  while not LWindow.ShouldClose() do
   begin
-    Timer.Start();
+    // start frame
+    LWindow.StartFrame();
 
-    if LWindow.ShouldClose() then
-      Break;
+      // input processing
+      if LWindow.GetKey(KEY_ESCAPE, isWasPressed) then
+        LWindow.SetShouldClose(True);
 
-    LAngle := LAngle + 1.0;
-    LAngle := Math.ClipValueFloat(LAngle, 0, 360, True);
+      LAngle := LAngle + 1.0;
+      LAngle := Math.ClipValueFloat(LAngle, 0, 360, True);
 
-    LVideo.Update();
+      LVideo.Update();
 
-    LWindow.StartDrawing();
+      // start drawing
+      LWindow.StartDrawing();
 
-      LWindow.Clear(DARKSLATEBROWN);
+        LWindow.Clear(DARKSLATEBROWN);
 
-      LVideo.Draw();
+        LVideo.Draw();
 
-      LWindow.DrawFilledCircle(0, 0, 50, ORANGE);
-      LWindow.DrawFilledRect(100, 100, 100, 100, DARKGREEN, LAngle);
-      LWindow.DrawRect(200, 200, 100, 100, 2, DARKORCHID, LAngle);
+        LWindow.DrawFilledCircle(0, 0, 50, ORANGE);
+        LWindow.DrawFilledRect(100, 100, 100, 100, DARKGREEN, LAngle);
+        LWindow.DrawRect(200, 200, 100, 100, 2, DARKORCHID, -LAngle);
 
-      LTexture.Draw();
+        LTexture.Draw();
 
-      LFont.DrawText(LWindow, 3, 3, WHITE, haLeft, '%d fps', [Timer.FrameRate()]);
+        LPos := Math.Point(3,3);
+        LFont.DrawText(LWindow, LPos.x, LPos.y, 0, WHITE, haLeft, '%d fps', [Timer.FrameRate()]);
+        LFont.DrawText(LWindow, LPos.x, LPos.y, 0, GREEN, haLeft, 'ESC - Quit', []);
 
-    LWindow.EndDrawing();
+      // end drawing
+      LWindow.EndDrawing();
 
-    Timer.Stop();
+    // end frame
+    LWindow.EndFrame();
   end;
 
   LVideo.Free();
@@ -282,15 +290,16 @@ var
   LZipFile: TlgZipFile;
   LWindow: TlgWindow;
   LTexture: array[0..3] of TlgTexture;
-  LPos: array[0..3] of TlgPoint;
+  LTexPos: array[0..3] of TlgPoint;
   LSpeed: array[0..3] of Single;
   I: Integer;
   LFont: TlgFont;
+  LPos: TlgPoint;
 begin
-  LPos[0] := Math.Point(0,0);
-  LPos[1] := Math.Point(0,0);
-  LPos[2] := Math.Point(0,0);
-  LPos[3] := Math.Point(0,0);
+  LTexPos[0] := Math.Point(0,0);
+  LTexPos[1] := Math.Point(0,0);
+  LTexPos[2] := Math.Point(0,0);
+  LTexPos[3] := Math.Point(0,0);
 
   LSpeed[0] := 0.15;
   LSpeed[1] := 0.4;
@@ -312,37 +321,43 @@ begin
   LTexture[2].SetBlend(tbAlpha);
   LTexture[3].SetBlend(tbAdditiveAlpha);
 
+  LFont := TlgFont.LoadDefault(LWindow, 10);
 
-  LFont := TlgFont.LoadDefault(LWindow, 12);
-
-  while true do
+  while not LWindow.ShouldClose() do
   begin
-    Timer.Start();
+    // start frame
+    LWindow.StartFrame();
 
-    if LWindow.ShouldClose() then Break;
+      // input processing
+      if LWindow.GetKey(KEY_ESCAPE, isWasPressed) then
+        LWindow.SetShouldClose(True);
 
-    // update scroll
-     for I := 0 to 3 do
-     begin
-      LPos[I].Y := LPos[I].Y + LSpeed[I];
-     end;
+      // update scroll
+       for I := 0 to 3 do
+       begin
+        LTexPos[I].Y := LTexPos[I].Y + LSpeed[I];
+       end;
 
-    LWindow.StartDrawing();
+      // start drawing
+      LWindow.StartDrawing();
 
-      LWindow.Clear(DARKSLATEBROWN);
+        LWindow.Clear(DARKSLATEBROWN);
 
-      // draw parallax
-      for I := 0 to 3 do
-      begin
-        LTexture[I].DrawTiled(LPos[I].X, LPos[I].Y, LWindow.DEFAULT_WIDTH, LWindow.DEFAULT_HEIGHT);
-      end;
+        // draw parallax
+        for I := 0 to 3 do
+        begin
+          LTexture[I].DrawTiled(LTexPos[I].X, LTexPos[I].Y, LWindow.DEFAULT_WIDTH, LWindow.DEFAULT_HEIGHT);
+        end;
 
-      //LFont.Test();
-      LFont.DrawText(LWindow, 3, 3, WHITE, haLeft, '%d fps', [Timer.FrameRate()]);
+        LPos := Math.Point(3,3);
+        LFont.DrawText(LWindow, LPos.x, LPos.y, 0, WHITE, haLeft, '%d fps', [Timer.FrameRate()]);
+        LFont.DrawText(LWindow, LPos.x, LPos.y, 0, GREEN, haLeft, 'ESC - Quit', []);
 
-    LWindow.EndDrawing();
+      // end drawing
+      LWindow.EndDrawing();
 
-    Timer.Stop();
+    // end frame
+    LWindow.EndFrame();
   end;
 
   LFont.Free();
@@ -365,29 +380,39 @@ var
   LZipFile: TlgZipFile;
   LWindow: TlgWindow;
   LFont: array[0..3] of TlgFont;
+  LPos: TlgPoint;
 begin
   LZipFile := TlgZipFile.Init(CZipFilename);
   LWindow := TlgWindow.Init('Luna Game Toolkit: Unicode Truetype Fonts', TlgWindow.DEFAULT_WIDTH, TlgWindow.DEFAULT_HEIGHT);
 
-  LFont[0] := TlgFont.LoadDefault(LWindow, 12);
+  LFont[0] := TlgFont.LoadDefault(LWindow, 10);
   LFont[1] := TlgFont.LoadFromZipFile(LWindow, LZipFile, 'res/fonts/unifont.ttf', 16, '你好こんにちは안녕하세요');
   LFont[2] := TlgFont.LoadDefault(LWindow, 32);
 
-  while True do
+  while not LWindow.ShouldClose() do
   begin
-    Timer.Start();
-    if LWindow.ShouldClose() then Break;
+    // start frame
+    LWindow.StartFrame();
 
-    LWindow.StartDrawing();
-      LWindow.Clear(DARKSLATEBROWN);
-      LFont[0].DrawText(LWindow, 3, 3, WHITE, haLeft, '%d fps', [Timer.FrameRate()]);
-      LFont[1].DrawText(LWindow, LWindow.CENTER_WIDTH, LWindow.CENTER_HEIGHT, YELLOW, haCenter, ' en   zh      ja       ko        de   es   pt     fr      vi    id', []);
-      LFont[1].DrawText(LWindow, LWindow.CENTER_WIDTH, LWindow.CENTER_HEIGHT+LFont[1].TextHeight()+3, DARKGREEN, haCenter, 'Hello|你好|こんにちは|안녕하세요|Hallo|Hola|Olá|Bonjour|Xin chào|Halo', []);
-      LFont[2].DrawText(LWindow, LWindow.CENTER_WIDTH, 150, GREENYELLOW, haCenter, 'these are truetype fonts', []);
+      // input processing
+      if LWindow.GetKey(KEY_ESCAPE, isWasPressed) then
+        LWindow.SetShouldClose(True);
 
-    LWindow.EndDrawing();
+      // start drawing
+      LWindow.StartDrawing();
+        LWindow.Clear(DARKSLATEBROWN);
+        LPos := Math.Point(3,3);
+        LFont[0].DrawText(LWindow, LPos.x, LPos.y, 0, WHITE, haLeft, '%d fps', [Timer.FrameRate()]);
+        LFont[0].DrawText(LWindow, LPos.x, LPos.y, 0, GREEN, haLeft, 'ESC - Quit', []);
+        LFont[1].DrawText(LWindow, LWindow.CENTER_WIDTH, LWindow.CENTER_HEIGHT, YELLOW, haCenter, ' en   zh      ja       ko        de   es   pt     fr      vi    id', []);
+        LFont[1].DrawText(LWindow, LWindow.CENTER_WIDTH, LWindow.CENTER_HEIGHT+LFont[1].TextHeight()+3, DARKGREEN, haCenter, 'Hello|你好|こんにちは|안녕하세요|Hallo|Hola|Olá|Bonjour|Xin chào|Halo', []);
+        LFont[2].DrawText(LWindow, LWindow.CENTER_WIDTH, 150, GREENYELLOW, haCenter, 'these are truetype fonts', []);
 
-    Timer.Stop();
+      // end drawing
+      LWindow.EndDrawing();
+
+    // end frame
+    LWindow.EndFrame();
   end;
 
   LFont[2].Free();
