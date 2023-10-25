@@ -93,7 +93,6 @@ end;
  This example demonstrates the loading and playback of multichannel audio
  from a ZIP file.
 ----------------------------------------------------------------------------- }
-
 procedure Test03();
 var
   LZipFile: TlgZipFile;
@@ -608,6 +607,67 @@ begin
   LZipFile.Free();
 end;
 
+procedure Test08;
+var
+  LWindow: TlgWindow;
+  LFont: TlgFont;
+  LHudPos: TlgPoint;
+begin
+  // show LGT version info
+  Console.PrintLn(LGT_PROJECT);
+
+  // init window
+  LWindow := TlgWindow.Init('Luna Game Toolkit: Minimal Example', 960, 540);
+
+  // show gamepad info
+  Console.PrintLn('Gamepad: %s', [LWindow.GetGamepadName(GAMEPAD_1)]);
+
+  // init default font
+  LFont := TlgFont.LoadDefault(LWindow, 10);
+
+  // enter game loop
+  while not LWindow.ShouldClose() do
+  begin
+    // start frame
+    LWindow.StartFrame();
+
+      // keyboard processing
+      if LWindow.GetKey(KEY_ESCAPE, isWasPressed) then
+        LWindow.SetShouldClose(True);
+
+      // mouse processing
+      if LWindow.GetMouseButton(MOUSE_BUTTON_LEFT, isWasPressed) then
+        LWindow.SetShouldClose(True);
+
+      // gamepad processing
+      if LWindow.GetGamepadButton(GAMEPAD_1, GAMEPAD_BUTTON_X, isWasReleased) then
+        LWindow.SetShouldClose(True);
+
+      // start drawing
+      LWindow.StartDrawing();
+
+        // clear window
+        LWindow.Clear(DARKSLATEBROWN);
+
+        // display hud
+        LHudPos := Math.Point(3,3);
+        LFont.DrawText(LWindow, LHudPos.x, LHudPos.y, 0, WHITE, haLeft,  '%d fps', [Timer.FrameRate()]);
+        LFont.DrawText(LWindow, LHudPos.x, LHudPos.y, 0, GREEN, haLeft,  'ESC - Quit', []);
+
+      // end drawing
+      LWindow.EndDrawing();
+
+    // end frame
+    LWindow.EndFrame();
+  end;
+
+  // free font
+  LFont.Free();
+
+  // free window
+  LWindow.Free();
+end;
+
 procedure RunTests();
 begin
   //Test01();
@@ -616,7 +676,8 @@ begin
   //Test04();
   //Test05();
   //Test06();
-  Test07();
+  //Test07();
+  Test08;
   Console.Pause();
 end;
 

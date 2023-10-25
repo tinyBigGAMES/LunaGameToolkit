@@ -6158,7 +6158,6 @@ end;
 procedure TlgCamera.Use(const AWindow: TlgWindow);
 var
   LViewport: TlgRect;
-  LX, LY: Single;
 begin
   if not Assigned(AWindow) then
   begin
