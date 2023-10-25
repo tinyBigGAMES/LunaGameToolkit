@@ -258,7 +258,7 @@ type
     class function  Extent(const AMinX, AMinY, AMaxX, AMaxY: Single): TlgExtent;
     class function  AngleSin(const AAngle: Cardinal): Single;
     class function  AngleCos(const AAngle: Cardinal): Single;
-    class function  RandomRange(const AFrom, ATo: Int64): Int64; overload;
+    class function  RandomRange(const AFrom, ATo: Integer): Integer; overload;
     class function  RandomRange(const AFrom, ATo: Double): Double; overload;
     class function  RandomBool(): Boolean;
     class function  UnitToScalarValue(const AValue, AMaxValue: Double): Double;
@@ -951,6 +951,7 @@ type
     FKeyState: array [0..0, KEY_SPACE..KEY_LAST] of Boolean;
     FMouseButtonState: array [0..0, MOUSE_BUTTON_1..MOUSE_BUTTON_MIDDLE] of Boolean;
     FGamepadButtonState: array[0..0, GAMEPAD_BUTTON_A..GAMEPAD_BUTTON_LAST] of Boolean;
+    FVsync: Boolean;
   public const
     DEFAULT_WIDTH = 1920 div 2;
     DEFAULT_HEIGHT = 1080 div 2;
@@ -959,10 +960,12 @@ type
   public
     constructor Create(); override;
     destructor Destroy(); override;
-    function  Open(const aTitle: string; const AWidth: Integer=DEFAULT_WIDTH; const AHeight: Integer=DEFAULT_HEIGHT): Boolean;
+    function  Open(const aTitle: string; const AWidth: Integer=DEFAULT_WIDTH; const AHeight: Integer=DEFAULT_HEIGHT; const AEnableVSync: Boolean=False): Boolean;
     function  IsOpen(): Boolean;
     procedure Close();
     function  Ready(): Boolean;
+    function  GetVSync(): Boolean;
+    procedure SetVSync(const AEnable: Boolean);
     function  GetMaxTextureSize(): Integer;
     function  GetTitle(): string;
     procedure SetTitle(const ATitle: string);
@@ -971,7 +974,7 @@ type
     procedure GetSize(var ASize: TlgSize);
     procedure GetScaledSize(var ASize: TlgSize);
     procedure GetScale(var AScale: TlgPoint);
-    function  GetViewport(): TlgRect;
+    procedure GetViewport(var AViewport: TlgRect);
     procedure Clear(const AColor: TlgColor); overload;
     procedure Clear(const ARed, AGreen, ABlue, AAlpha: Single); overload;
     procedure StartFrame();
@@ -1146,6 +1149,29 @@ type
     procedure Update();
     function  GetStatus(): TlgVideoStatus;
     procedure Draw();
+  end;
+
+{ === CAMERA ================================================================ }
+type
+  TlgCamera = class(TlgObject)
+  protected
+    FX, FY: Single;
+    FRotation: Single;
+    FScale: Single;
+    FWindow: TlgWindow;
+    procedure SetRotation(const AValue: Single);
+  public
+    property X: Single read FX write FX;
+    property Y: Single read FY write FY;
+    property Rotation: Single read FRotation write SetRotation;
+    property Scale: Single read FScale write FScale;
+    constructor Create; override;
+    destructor Destroy; override;
+    procedure Move(const X, Y: Single);
+    procedure Zoom(const AScale: Single);
+    procedure Rotate(const ARotation: Single);
+    procedure Use(const AWindow: TlgWindow);
+    procedure Reset();
   end;
 
 { =========================================================================== }
@@ -1869,7 +1895,7 @@ begin
   Result := FCosTable[EnsureRange(aAngle, 0, 360)];
 end;
 
-class function  TlgMath.RandomRange(const AFrom, ATo: Int64): Int64;
+class function  TlgMath.RandomRange(const AFrom, ATo: Integer): Integer;
 begin
   Result := AFrom + Random(ATo - AFrom + 1);
 end;
@@ -1878,8 +1904,9 @@ class function  TlgMath.RandomRange(const AFrom, ATo: Double): Double;
 var
   LNum: Single;
 begin
-  LNum := RandomRange(0, MaxInt) / MaxInt;
+  LNum := RandomRange(0, MaxInt-1) / MaxInt-1;
   Result := aFrom + (LNum * (aTo - aFrom));
+  writeln(result:3:2);
 end;
 
 class function  TlgMath.RandomBool(): Boolean;
@@ -4243,7 +4270,7 @@ begin
   inherited;
 end;
 
-function  TlgWindow.Open(const aTitle: string; const AWidth: Integer; const AHeight: Integer): Boolean;
+function  TlgWindow.Open(const aTitle: string; const AWidth: Integer; const AHeight: Integer; const AEnableVSync: Boolean): Boolean;
 var
   VideoMode: PGLFWvidmode;
   LWidth, LHeight: Integer;
@@ -4267,7 +4294,7 @@ begin
   glfwSetWindowPos(FHandle, (VideoMode.width - LWidth) div 2, (VideoMode.height - LHeight) div 2);
   glfwMakeContextCurrent(FHandle);
 
-  glfwSwapInterval(0);
+  SetVSync(AEnableVSync);
 
   if not LoadOpenGL then
   begin
@@ -4339,6 +4366,20 @@ begin
   Result := True;
 end;
 
+function  TlgWindow.GetVSync(): Boolean;
+begin
+  Result := FVsync;
+end;
+
+procedure TlgWindow.SetVSync(const AEnable: Boolean);
+begin
+  if AEnable then
+    glfwSwapInterval(1)
+  else
+    glfwSwapInterval(0);
+  FVSync := AEnable;
+end;
+
 function  TlgWindow.GetMaxTextureSize(): Integer;
 begin
   Result := FMaxTextureSize;
@@ -4396,12 +4437,12 @@ begin
   AScale := FScale;
 end;
 
-function  TlgWindow.GetViewport(): TlgRect;
+procedure TlgWindow.GetViewport(var AViewport: TlgRect);
 begin
-  Result.X := 0;
-  Result.Y := 0;
-  Result.Width := Self.FSize.Width;
-  Result.Height := Self.FSize.Height;
+  AViewport.X := 0;
+  AViewport.Y := 0;
+  AViewport.Width := Self.FSize.Width;
+  AViewport.Height := Self.FSize.Height;
 end;
 
 procedure TlgWindow.Clear(const AColor: TlgColor);
@@ -5548,7 +5589,7 @@ begin
   LX := aX;
   LY := aY;
 
-  LViewport := AWindow.GetViewport();
+  AWindow.GetViewport(LViewport);
 
   case aHAlign of
     haLeft:
@@ -5990,6 +6031,163 @@ begin
   if FStatus = vsStopped then Exit;
   FTexture.Draw();
 end;
+
+{ === CAMERA ================================================================ }
+{ --- TlgCamera ------------------------------------------------------------- }
+procedure TlgCamera.SetRotation(const AValue: Single);
+begin
+  FRotation := EnsureRange(AValue, 0, 360);
+end;
+
+constructor TlgCamera.Create();
+begin
+  inherited;
+  FScale := 1;
+end;
+
+destructor TlgCamera.Destroy();
+begin
+  inherited;
+end;
+
+procedure TlgCamera.Move(const X, Y: Single);
+begin
+  FX := FX + (X / FScale);
+  FY := FY + (Y / FScale);
+end;
+
+procedure TlgCamera.Zoom(const AScale: Single);
+begin
+  FScale := FScale + (AScale * FScale);
+end;
+
+procedure TlgCamera.Rotate(const ARotation: Single);
+begin
+  FRotation := FRotation + ARotation;
+end;
+
+(*
+procedure TCamera2D.Use(const AWindow: TlgWindow);
+var
+  LSize: TlgSize;
+begin
+  AWindow.GetSize(LSize);
+  glTranslatef(LSize.Width/2, LSize.Height/2, 0);
+  glRotatef(rotation, 0, 0, 1);
+  glScalef(scale, scale, 1);
+  glTranslatef(-x, -y, 0);
+
+//  AWindow.GetSize(LSize);
+//  glTranslatef((LSize.Width / 2) + x, (LSize.Height / 2) + y, 0);
+//  glRotatef(rotation, 0, 0, 1);
+//  glTranslatef(-(LSize.Width / 2) - x, -(LSize.Height / 2) - y, 0);
+//  glScalef(scale, scale, 1);
+
+end;
+
+*)
+
+(*
+procedure TlgCamera.Use(const AWindow: TlgWindow);
+var
+  LViewport: TlgRect;
+  LX, LY: Single;
+begin
+  if not Assigned(AWindow) then
+  begin
+    glPopMatrix();
+    Exit;
+  end;
+
+  if Assigned(AWindow) then
+  begin
+    glPushMatrix();
+  end;
+  AWindow.GetViewport(LViewport);
+
+  LX := FX + LViewport.X;
+  LY := FY + LViewport.Y;
+
+//  glTranslatef((LViewport.Width / 2)  + LX, (LViewport.Height / 2)  + LY, 0);
+//  glRotatef(rotation, 0, 0, 1);
+//  glTranslatef(-(LViewport.Width / 2) - LX, -(LViewport.Height / 2) - LY, 0);
+//  glScalef(FScale, FScale, 1);
+
+  glTranslatef((LViewport.Width/2), (LViewport.Height/2), 0);
+  glRotatef(rotation, 0, 0, 1);
+  glScalef(scale, scale, 1);
+  glTranslatef(-x, -y, 0);
+
+end;
+
+procedure TCamera.WorldToScreen(const aWorld: TTransform; var aScreen: TTransform);
+var
+  LCenter: TVector;
+  LScreen: TTransform;
+begin
+  LScreen := aWorld;
+  LScreen.Angle := FAngle;
+  LScreen.Zoom := FZoom;
+
+  LScreen.X := LScreen.X - FPos.X;
+  LScreen.Y := LScreen.Y - FPos.Y;
+
+  AngleRotatePos(LScreen.Angle, LScreen.X, LScreen.Y);
+
+  LCenter.X := (FBounds.Width  / 2) + FBounds.X;
+  LCenter.Y := (FBounds.Height / 2) + FBounds.Y;
+
+  LScreen.X := (LCenter.X - FBounds.X) - LScreen.X * LScreen.Zoom;
+  LScreen.Y := (LCenter.Y - FBounds.Y) + LScreen.Y * LScreen.Zoom;
+
+  LScreen.X := LScreen.X + FBounds.X;
+  LScreen.Y := LScreen.Y + FBounds.Y;
+
+  LScreen.Width := LScreen.Width * LScreen.Zoom;
+  LScreen.Height := LScreen.Height * LScreen.Zoom;
+
+  LScreen.Visible := IsVisible(LScreen);
+
+  LScreen.Angle := -Angle;
+
+  aScreen := LScreen;
+end;
+
+*)
+
+procedure TlgCamera.Use(const AWindow: TlgWindow);
+var
+  LViewport: TlgRect;
+  LX, LY: Single;
+begin
+  if not Assigned(AWindow) then
+  begin
+    glPopMatrix();
+    FWindow := nil;
+    Exit;
+  end;
+
+  glPushMatrix();
+  AWindow.GetViewport(LViewport);
+
+  glTranslatef((LViewport.Width/2), (LViewport.Height/2), 0);
+  glRotatef(FRotation, 0, 0, 1);
+  glScalef(FScale, FScale, 1);
+  glTranslatef(-FX, -FY, 0);
+end;
+
+procedure TlgCamera.Reset();
+begin
+  if Assigned(FWindow) then
+  begin
+    glPopMatrix();
+  end;
+  FX := 0;
+  FY := 0;
+  FRotation := 0;
+  FScale := 1;
+end;
+
 
 {============================================================================ }
 
