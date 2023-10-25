@@ -16,7 +16,7 @@ It's robust, designed for easy use and suitable for making all types of 2D games
 if you wish to learn more about the Delphi language visit <a href="https://learndelphi.org/" target="_blank">learndelphi.org</a>.
 
 ### Features
-- **Free** and open-source with a <a href="https://github.com/tinyBigGAMES/DelphiGamekit/blob/main/LICENSE" target="_blank">BSD 3-Clause</a> license agreement.
+- **Free** and open-source with a <a href="https://github.com/tinyBigGAMES/LunaGameToolkit/blob/main/LICENSE" target="_blank">BSD 3-Clause</a> license agreement.
 - Written in **Object Pascal**
 - Support Windows 64 bit platform
 - Hardware accelerated with **OpenGL**
