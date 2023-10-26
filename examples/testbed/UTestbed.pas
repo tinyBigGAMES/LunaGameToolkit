@@ -353,7 +353,7 @@ begin
         // draw parallax
         for I := 0 to 3 do
         begin
-          LTexture[I].DrawTiled(LTexPos[I].X, LTexPos[I].Y, LWindow.DEFAULT_WIDTH, LWindow.DEFAULT_HEIGHT);
+          LTexture[I].DrawTiled(LWindow, LTexPos[I].X, LTexPos[I].Y);
         end;
 
         LPos := Math.Point(3,3);
@@ -673,11 +673,11 @@ begin
   //Test01();
   //Test02();
   //Test03();
-  //Test04();
+  Test04();
   //Test05();
   //Test06();
   //Test07();
-  Test08;
+  //Test08;
   Console.Pause();
 end;
 

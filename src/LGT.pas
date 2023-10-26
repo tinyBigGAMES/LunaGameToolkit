@@ -54,7 +54,7 @@ const
   LGT_NAME          = 'Luna Game Toolkit™';
   LGT_CODENAME      = 'Aurora';
   LGT_MAJOR_VERSION = '0';
-  LGT_MINOR_VERSION = '1';
+  LGT_MINOR_VERSION = '2';
   LGT_PATCH_VERSION = '0';
   LGT_VERSION       = LGT_MAJOR_VERSION+'.'+LGT_MINOR_VERSION+'.'+LGT_PATCH_VERSION;
   LGT_PROJECT       = LGT_NAME+' ('+LGT_CODENAME+') v'+LGT_MAJOR_VERSION+'.'+LGT_MINOR_VERSION+'.'+LGT_PATCH_VERSION;
@@ -974,7 +974,8 @@ type
     procedure GetSize(var ASize: TlgSize);
     procedure GetScaledSize(var ASize: TlgSize);
     procedure GetScale(var AScale: TlgPoint);
-    procedure GetViewport(var AViewport: TlgRect);
+    procedure GetViewport(var AViewport: TlgRect); overload;
+    procedure GetViewport(X, Y, AWidth, AHeight: PSingle); overload;
     procedure Clear(const AColor: TlgColor); overload;
     procedure Clear(const ARed, AGreen, ABlue, AAlpha: Single); overload;
     procedure StartFrame();
@@ -1061,7 +1062,7 @@ type
     procedure  SetRegion(const X, Y, AWidth, AHeight: Single); overload;
     procedure  ResetRegion();
     procedure  Draw();
-    procedure  DrawTiled(ADeltaX, ADeltaY, AViewportWidth, AViewportHeight: Single);
+    procedure  DrawTiled(const AWindow: TlgWindow; const ADeltaX, ADeltaY: Single);
     function   SaveToFile(const AFilename: string): Boolean;
     class function LoadFromFile(const AFilename: string; const AColorKey: PlgColor=nil): TlgTexture;
     class function LoadFromZipFile(const AZipFile: TlgZipFile; const AFilename: string; const AColorKey: PlgColor=nil): TlgTexture;
@@ -1558,13 +1559,14 @@ begin
     LThread := TThread.CreateAnonymousThread(
       procedure
       begin
-        //Console.PrintLn(#13'Starting taskList thread...'#13);
         while not FTerminated do
         begin
           // run tasks
           Exec([]);
+
+          // allow background threads to run
+          Sleep(0);
         end;
-        //Console.PrintLn(#13'exit tasklist thread...'#13);
       end
     );
     LThread.Priority := tpNormal;
@@ -4445,6 +4447,17 @@ begin
   AViewport.Height := Self.FSize.Height;
 end;
 
+procedure TlgWindow.GetViewport(X, Y, AWidth, AHeight: PSingle);
+var
+  LViewport: TlgRect;
+begin
+  GetViewport(LViewport);
+  if Assigned(X) then X^ := LViewport.X;
+  if Assigned(Y) then Y^ := LViewport.Y;
+  if Assigned(AWidth) then AWidth^ := LViewport.Width;
+  if Assigned(AHeight) then AHeight^ := LViewport.Height;
+end;
+
 procedure TlgWindow.Clear(const AColor: TlgColor);
 begin
   Clear(AColor.Red, AColor.Green, AColor.Blue, AColor.Alpha);
@@ -5302,7 +5315,7 @@ begin
   glBindTexture(GL_TEXTURE_2D, 0);
 end;
 
-procedure  TlgTexture.DrawTiled(ADeltaX, ADeltaY, AViewportWidth, AViewportHeight: Single);
+procedure  TlgTexture.DrawTiled(const AWindow: TlgWindow; const ADeltaX, ADeltaY: Single);
 var
   LW,LH    : Integer;
   LOX,LOY  : Integer;
@@ -5312,15 +5325,16 @@ var
   LVPW,LVPH: Integer;
   LVR,LVB  : Integer;
   LIX,LIY  : Integer;
+  LViewport: TlgRect;
 begin
   if FHandle = 0 then Exit;
 
   SetPivot(0, 0);
   SetAnchor(0, 0);
 
-  //Piro.Display.GetViewportSize(nil, nil, @LVPW, @LVPH);
-  LVPW := Round(AViewportWidth);
-  LVpH := Round(AViewportHeight);
+  AWindow.GetViewport(LViewport);
+  LVPW := Round(LViewport.Width);
+  LVPH := Round(LViewport.Height);
 
   LW := Round(FSize.Width);
   LH := Round(FSize.Height);
