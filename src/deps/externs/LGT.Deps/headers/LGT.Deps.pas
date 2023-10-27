@@ -41,6 +41,14 @@ uses
 
 const
   GLFW_EXPOSE_NATIVE_WIN32 = 1;
+  NK_INCLUDE_FIXED_TYPES = 1;
+  NK_INCLUDE_STANDARD_IO = 1;
+  NK_INCLUDE_STANDARD_VARARGS = 1;
+  NK_INCLUDE_DEFAULT_ALLOCATOR = 1;
+  NK_INCLUDE_VERTEX_BUFFER_OUTPUT = 1;
+  NK_INCLUDE_FONT_BAKING = 1;
+  NK_INCLUDE_DEFAULT_FONT = 1;
+  NK_KEYSTATE_BASED_INPUT = 1;
   GLFW_VERSION_MAJOR = 3;
   GLFW_VERSION_MINOR = 4;
   GLFW_VERSION_REVISION = 0;
@@ -510,6 +518,26 @@ const
   CLOG_DEFAULT_FORMAT = '%d %t %f(%n): %l: %m'#10;
   CLOG_DEFAULT_DATE_FORMAT = '%Y-%m-%d';
   CLOG_DEFAULT_TIME_FORMAT = '%H:%M:%S';
+  NK_UNDEFINED = (-1.0);
+  NK_UTF_INVALID = $FFFD;
+  NK_UTF_SIZE = 4;
+  NK_INPUT_MAX = 16;
+  NK_MAX_NUMBER_BUFFER = 64;
+  NK_SCROLLBAR_HIDING_TIMEOUT = 4.0;
+  NK_TEXTEDIT_UNDOSTATECOUNT = 99;
+  NK_TEXTEDIT_UNDOCHARCOUNT = 999;
+  NK_MAX_LAYOUT_ROW_TEMPLATE_COLUMNS = 16;
+  NK_CHART_MAX_SLOT = 4;
+  NK_WINDOW_MAX_NAME = 64;
+  NK_BUTTON_BEHAVIOR_STACK_SIZE = 8;
+  NK_FONT_STACK_SIZE = 8;
+  NK_STYLE_ITEM_STACK_SIZE = 16;
+  NK_FLOAT_STACK_SIZE = 32;
+  NK_VECTOR_STACK_SIZE = 16;
+  NK_FLAGS_STACK_SIZE = 32;
+  NK_COLOR_STACK_SIZE = 32;
+  NK_PI = 3.141592654;
+  NK_MAX_FLOAT_PRECISION = 2;
 
 type
   C2_TYPE = Integer;
@@ -603,6 +631,553 @@ const
   CLOG_WARN_ = 2;
   CLOG_ERROR_ = 3;
 
+const
+  nk_false = 0;
+  nk_true = 1;
+
+type
+  nk_heading = Integer;
+  Pnk_heading = ^nk_heading;
+
+const
+  NK_UP = 0;
+  NK_RIGHT = 1;
+  NK_DOWN = 2;
+  NK_LEFT = 3;
+
+type
+  nk_button_behavior = Integer;
+  Pnk_button_behavior = ^nk_button_behavior;
+
+const
+  NK_BUTTON_DEFAULT = 0;
+  NK_BUTTON_REPEATER = 1;
+
+type
+  nk_modify = Integer;
+  Pnk_modify = ^nk_modify;
+
+const
+  NK_FIXED = 0;
+  NK_MODIFIABLE = 1;
+
+type
+  nk_orientation = Integer;
+  Pnk_orientation = ^nk_orientation;
+
+const
+  NK_VERTICAL = 0;
+  NK_HORIZONTAL = 1;
+
+type
+  nk_collapse_states = Integer;
+  Pnk_collapse_states = ^nk_collapse_states;
+
+const
+  NK_MINIMIZED = 0;
+  NK_MAXIMIZED = 1;
+
+type
+  nk_show_states = Integer;
+  Pnk_show_states = ^nk_show_states;
+
+const
+  NK_HIDDEN = 0;
+  NK_SHOWN = 1;
+
+type
+  nk_chart_type = Integer;
+  Pnk_chart_type = ^nk_chart_type;
+
+const
+  NK_CHART_LINES = 0;
+  NK_CHART_COLUMN = 1;
+  NK_CHART_MAX = 2;
+
+type
+  nk_chart_event = Integer;
+  Pnk_chart_event = ^nk_chart_event;
+
+const
+  NK_CHART_HOVERING = 1;
+  NK_CHART_CLICKED = 2;
+
+type
+  nk_color_format = Integer;
+  Pnk_color_format = ^nk_color_format;
+
+const
+  NK_RGB = 0;
+  NK_RGBA = 1;
+
+type
+  nk_popup_type = Integer;
+  Pnk_popup_type = ^nk_popup_type;
+
+const
+  NK_POPUP_STATIC = 0;
+  NK_POPUP_DYNAMIC = 1;
+
+type
+  nk_layout_format = Integer;
+  Pnk_layout_format = ^nk_layout_format;
+
+const
+  NK_DYNAMIC = 0;
+  NK_STATIC = 1;
+
+type
+  nk_tree_type = Integer;
+  Pnk_tree_type = ^nk_tree_type;
+
+const
+  NK_TREE_NODE = 0;
+  NK_TREE_TAB = 1;
+
+type
+  nk_symbol_type = Integer;
+  Pnk_symbol_type = ^nk_symbol_type;
+
+const
+  NK_SYMBOL_NONE = 0;
+  NK_SYMBOL_X = 1;
+  NK_SYMBOL_UNDERSCORE = 2;
+  NK_SYMBOL_CIRCLE_SOLID = 3;
+  NK_SYMBOL_CIRCLE_OUTLINE = 4;
+  NK_SYMBOL_RECT_SOLID = 5;
+  NK_SYMBOL_RECT_OUTLINE = 6;
+  NK_SYMBOL_TRIANGLE_UP = 7;
+  NK_SYMBOL_TRIANGLE_DOWN = 8;
+  NK_SYMBOL_TRIANGLE_LEFT = 9;
+  NK_SYMBOL_TRIANGLE_RIGHT = 10;
+  NK_SYMBOL_PLUS = 11;
+  NK_SYMBOL_MINUS = 12;
+  NK_SYMBOL_MAX = 13;
+
+type
+  nk_keys = Integer;
+  Pnk_keys = ^nk_keys;
+
+const
+  NK_KEY_NONE = 0;
+  NK_KEY_SHIFT = 1;
+  NK_KEY_CTRL = 2;
+  NK_KEY_DEL = 3;
+  NK_KEY_ENTER = 4;
+  NK_KEY_TAB = 5;
+  NK_KEY_BACKSPACE = 6;
+  NK_KEY_COPY = 7;
+  NK_KEY_CUT = 8;
+  NK_KEY_PASTE = 9;
+  NK_KEY_UP = 10;
+  NK_KEY_DOWN = 11;
+  NK_KEY_LEFT = 12;
+  NK_KEY_RIGHT = 13;
+  NK_KEY_TEXT_INSERT_MODE = 14;
+  NK_KEY_TEXT_REPLACE_MODE = 15;
+  NK_KEY_TEXT_RESET_MODE = 16;
+  NK_KEY_TEXT_LINE_START = 17;
+  NK_KEY_TEXT_LINE_END = 18;
+  NK_KEY_TEXT_START = 19;
+  NK_KEY_TEXT_END = 20;
+  NK_KEY_TEXT_UNDO = 21;
+  NK_KEY_TEXT_REDO = 22;
+  NK_KEY_TEXT_SELECT_ALL = 23;
+  NK_KEY_TEXT_WORD_LEFT = 24;
+  NK_KEY_TEXT_WORD_RIGHT = 25;
+  NK_KEY_SCROLL_START = 26;
+  NK_KEY_SCROLL_END = 27;
+  NK_KEY_SCROLL_DOWN = 28;
+  NK_KEY_SCROLL_UP = 29;
+  NK_KEY_MAX = 30;
+
+type
+  nk_buttons = Integer;
+  Pnk_buttons = ^nk_buttons;
+
+const
+  NK_BUTTON_LEFT = 0;
+  NK_BUTTON_MIDDLE = 1;
+  NK_BUTTON_RIGHT = 2;
+  NK_BUTTON_DOUBLE = 3;
+  NK_BUTTON_MAX = 4;
+
+type
+  nk_anti_aliasing = Integer;
+  Pnk_anti_aliasing = ^nk_anti_aliasing;
+
+const
+  NK_ANTI_ALIASING_OFF = 0;
+  NK_ANTI_ALIASING_ON = 1;
+
+type
+  nk_convert_result = Integer;
+  Pnk_convert_result = ^nk_convert_result;
+
+const
+  NK_CONVERT_SUCCESS = 0;
+  NK_CONVERT_INVALID_PARAM = 1;
+  NK_CONVERT_COMMAND_BUFFER_FULL = 2;
+  NK_CONVERT_VERTEX_BUFFER_FULL = 4;
+  NK_CONVERT_ELEMENT_BUFFER_FULL = 8;
+
+type
+  nk_panel_flags = Integer;
+  Pnk_panel_flags = ^nk_panel_flags;
+
+const
+  NK_WINDOW_BORDER = 1;
+  NK_WINDOW_MOVABLE = 2;
+  NK_WINDOW_SCALABLE = 4;
+  NK_WINDOW_CLOSABLE = 8;
+  NK_WINDOW_MINIMIZABLE = 16;
+  NK_WINDOW_NO_SCROLLBAR = 32;
+  NK_WINDOW_TITLE = 64;
+  NK_WINDOW_SCROLL_AUTO_HIDE = 128;
+  NK_WINDOW_BACKGROUND = 256;
+  NK_WINDOW_SCALE_LEFT = 512;
+  NK_WINDOW_NO_INPUT = 1024;
+
+type
+  nk_widget_layout_states = Integer;
+  Pnk_widget_layout_states = ^nk_widget_layout_states;
+
+const
+  NK_WIDGET_INVALID = 0;
+  NK_WIDGET_VALID = 1;
+  NK_WIDGET_ROM = 2;
+
+type
+  nk_widget_states = Integer;
+  Pnk_widget_states = ^nk_widget_states;
+
+const
+  NK_WIDGET_STATE_MODIFIED = 2;
+  NK_WIDGET_STATE_INACTIVE = 4;
+  NK_WIDGET_STATE_ENTERED = 8;
+  NK_WIDGET_STATE_HOVER = 16;
+  NK_WIDGET_STATE_ACTIVED = 32;
+  NK_WIDGET_STATE_LEFT = 64;
+  NK_WIDGET_STATE_HOVERED = 18;
+  NK_WIDGET_STATE_ACTIVE = 34;
+
+type
+  nk_text_align = Integer;
+  Pnk_text_align = ^nk_text_align;
+
+const
+  NK_TEXT_ALIGN_LEFT = 1;
+  NK_TEXT_ALIGN_CENTERED = 2;
+  NK_TEXT_ALIGN_RIGHT = 4;
+  NK_TEXT_ALIGN_TOP = 8;
+  NK_TEXT_ALIGN_MIDDLE = 16;
+  NK_TEXT_ALIGN_BOTTOM = 32;
+
+type
+  nk_text_alignment = Integer;
+  Pnk_text_alignment = ^nk_text_alignment;
+
+const
+  NK_TEXT_LEFT = 17;
+  NK_TEXT_CENTERED = 18;
+  NK_TEXT_RIGHT = 20;
+
+type
+  nk_edit_flags = Integer;
+  Pnk_edit_flags = ^nk_edit_flags;
+
+const
+  NK_EDIT_DEFAULT = 0;
+  NK_EDIT_READ_ONLY = 1;
+  NK_EDIT_AUTO_SELECT = 2;
+  NK_EDIT_SIG_ENTER = 4;
+  NK_EDIT_ALLOW_TAB = 8;
+  NK_EDIT_NO_CURSOR = 16;
+  NK_EDIT_SELECTABLE = 32;
+  NK_EDIT_CLIPBOARD = 64;
+  NK_EDIT_CTRL_ENTER_NEWLINE = 128;
+  NK_EDIT_NO_HORIZONTAL_SCROLL = 256;
+  NK_EDIT_ALWAYS_INSERT_MODE = 512;
+  NK_EDIT_MULTILINE = 1024;
+  NK_EDIT_GOTO_END_ON_ACTIVATE = 2048;
+
+type
+  nk_edit_types = Integer;
+  Pnk_edit_types = ^nk_edit_types;
+
+const
+  NK_EDIT_SIMPLE = 512;
+  NK_EDIT_FIELD = 608;
+  NK_EDIT_BOX = 1640;
+  NK_EDIT_EDITOR = 1128;
+
+type
+  nk_edit_events = Integer;
+  Pnk_edit_events = ^nk_edit_events;
+
+const
+  NK_EDIT_ACTIVE = 1;
+  NK_EDIT_INACTIVE = 2;
+  NK_EDIT_ACTIVATED = 4;
+  NK_EDIT_DEACTIVATED = 8;
+  NK_EDIT_COMMITED = 16;
+
+type
+  nk_style_colors = Integer;
+  Pnk_style_colors = ^nk_style_colors;
+
+const
+  NK_COLOR_TEXT = 0;
+  NK_COLOR_WINDOW = 1;
+  NK_COLOR_HEADER = 2;
+  NK_COLOR_BORDER = 3;
+  NK_COLOR_BUTTON = 4;
+  NK_COLOR_BUTTON_HOVER = 5;
+  NK_COLOR_BUTTON_ACTIVE = 6;
+  NK_COLOR_TOGGLE = 7;
+  NK_COLOR_TOGGLE_HOVER = 8;
+  NK_COLOR_TOGGLE_CURSOR = 9;
+  NK_COLOR_SELECT = 10;
+  NK_COLOR_SELECT_ACTIVE = 11;
+  NK_COLOR_SLIDER = 12;
+  NK_COLOR_SLIDER_CURSOR = 13;
+  NK_COLOR_SLIDER_CURSOR_HOVER = 14;
+  NK_COLOR_SLIDER_CURSOR_ACTIVE = 15;
+  NK_COLOR_PROPERTY = 16;
+  NK_COLOR_EDIT = 17;
+  NK_COLOR_EDIT_CURSOR = 18;
+  NK_COLOR_COMBO = 19;
+  NK_COLOR_CHART = 20;
+  NK_COLOR_CHART_COLOR = 21;
+  NK_COLOR_CHART_COLOR_HIGHLIGHT = 22;
+  NK_COLOR_SCROLLBAR = 23;
+  NK_COLOR_SCROLLBAR_CURSOR = 24;
+  NK_COLOR_SCROLLBAR_CURSOR_HOVER = 25;
+  NK_COLOR_SCROLLBAR_CURSOR_ACTIVE = 26;
+  NK_COLOR_TAB_HEADER = 27;
+  NK_COLOR_COUNT = 28;
+
+type
+  nk_style_cursor = Integer;
+  Pnk_style_cursor = ^nk_style_cursor;
+
+const
+  NK_CURSOR_ARROW = 0;
+  NK_CURSOR_TEXT = 1;
+  NK_CURSOR_MOVE = 2;
+  NK_CURSOR_RESIZE_VERTICAL = 3;
+  NK_CURSOR_RESIZE_HORIZONTAL = 4;
+  NK_CURSOR_RESIZE_TOP_LEFT_DOWN_RIGHT = 5;
+  NK_CURSOR_RESIZE_TOP_RIGHT_DOWN_LEFT = 6;
+  NK_CURSOR_COUNT = 7;
+
+type
+  nk_font_coord_type = Integer;
+  Pnk_font_coord_type = ^nk_font_coord_type;
+
+const
+  NK_COORD_UV = 0;
+  NK_COORD_PIXEL = 1;
+
+type
+  nk_font_atlas_format = Integer;
+  Pnk_font_atlas_format = ^nk_font_atlas_format;
+
+const
+  NK_FONT_ATLAS_ALPHA8 = 0;
+  NK_FONT_ATLAS_RGBA32 = 1;
+
+type
+  nk_allocation_type = Integer;
+  Pnk_allocation_type = ^nk_allocation_type;
+
+const
+  NK_BUFFER_FIXED = 0;
+  NK_BUFFER_DYNAMIC = 1;
+
+type
+  nk_buffer_allocation_type = Integer;
+  Pnk_buffer_allocation_type = ^nk_buffer_allocation_type;
+
+const
+  NK_BUFFER_FRONT = 0;
+  NK_BUFFER_BACK = 1;
+  NK_BUFFER_MAX = 2;
+
+type
+  nk_text_edit_type = Integer;
+  Pnk_text_edit_type = ^nk_text_edit_type;
+
+const
+  NK_TEXT_EDIT_SINGLE_LINE = 0;
+  NK_TEXT_EDIT_MULTI_LINE = 1;
+
+type
+  nk_text_edit_mode = Integer;
+  Pnk_text_edit_mode = ^nk_text_edit_mode;
+
+const
+  NK_TEXT_EDIT_MODE_VIEW = 0;
+  NK_TEXT_EDIT_MODE_INSERT = 1;
+  NK_TEXT_EDIT_MODE_REPLACE = 2;
+
+type
+  nk_command_type = Integer;
+  Pnk_command_type = ^nk_command_type;
+
+const
+  NK_COMMAND_NOP_ = 0;
+  NK_COMMAND_SCISSOR_ = 1;
+  NK_COMMAND_LINE_ = 2;
+  NK_COMMAND_CURVE_ = 3;
+  NK_COMMAND_RECT_ = 4;
+  NK_COMMAND_RECT_FILLED_ = 5;
+  NK_COMMAND_RECT_MULTI_COLOR_ = 6;
+  NK_COMMAND_CIRCLE_ = 7;
+  NK_COMMAND_CIRCLE_FILLED_ = 8;
+  NK_COMMAND_ARC_ = 9;
+  NK_COMMAND_ARC_FILLED_ = 10;
+  NK_COMMAND_TRIANGLE_ = 11;
+  NK_COMMAND_TRIANGLE_FILLED_ = 12;
+  NK_COMMAND_POLYGON_ = 13;
+  NK_COMMAND_POLYGON_FILLED_ = 14;
+  NK_COMMAND_POLYLINE_ = 15;
+  NK_COMMAND_TEXT_ = 16;
+  NK_COMMAND_IMAGE_ = 17;
+  NK_COMMAND_CUSTOM_ = 18;
+
+type
+  nk_command_clipping = Integer;
+  Pnk_command_clipping = ^nk_command_clipping;
+
+const
+  NK_CLIPPING_OFF = 0;
+  NK_CLIPPING_ON = 1;
+
+type
+  nk_draw_list_stroke = Integer;
+  Pnk_draw_list_stroke = ^nk_draw_list_stroke;
+
+const
+  NK_STROKE_OPEN = 0;
+  NK_STROKE_CLOSED = 1;
+
+type
+  nk_draw_vertex_layout_attribute = Integer;
+  Pnk_draw_vertex_layout_attribute = ^nk_draw_vertex_layout_attribute;
+
+const
+  NK_VERTEX_POSITION = 0;
+  NK_VERTEX_COLOR = 1;
+  NK_VERTEX_TEXCOORD = 2;
+  NK_VERTEX_ATTRIBUTE_COUNT = 3;
+
+type
+  nk_draw_vertex_layout_format = Integer;
+  Pnk_draw_vertex_layout_format = ^nk_draw_vertex_layout_format;
+
+const
+  NK_FORMAT_SCHAR = 0;
+  NK_FORMAT_SSHORT = 1;
+  NK_FORMAT_SINT = 2;
+  NK_FORMAT_UCHAR = 3;
+  NK_FORMAT_USHORT = 4;
+  NK_FORMAT_UINT = 5;
+  NK_FORMAT_FLOAT = 6;
+  NK_FORMAT_DOUBLE = 7;
+  NK_FORMAT_COLOR_BEGIN = 8;
+  NK_FORMAT_R8G8B8 = 8;
+  NK_FORMAT_R16G15B16 = 9;
+  NK_FORMAT_R32G32B32 = 10;
+  NK_FORMAT_R8G8B8A8 = 11;
+  NK_FORMAT_B8G8R8A8 = 12;
+  NK_FORMAT_R16G15B16A16 = 13;
+  NK_FORMAT_R32G32B32A32 = 14;
+  NK_FORMAT_R32G32B32A32_FLOAT = 15;
+  NK_FORMAT_R32G32B32A32_DOUBLE = 16;
+  NK_FORMAT_RGB32 = 17;
+  NK_FORMAT_RGBA32 = 18;
+  NK_FORMAT_COLOR_END = 18;
+  NK_FORMAT_COUNT = 19;
+
+type
+  nk_style_item_type = Integer;
+  Pnk_style_item_type = ^nk_style_item_type;
+
+const
+  NK_STYLE_ITEM_COLOR = 0;
+  NK_STYLE_ITEM_IMAGE = 1;
+  NK_STYLE_ITEM_NINE_SLICE = 2;
+
+type
+  nk_style_header_align = Integer;
+  Pnk_style_header_align = ^nk_style_header_align;
+
+const
+  NK_HEADER_LEFT = 0;
+  NK_HEADER_RIGHT = 1;
+
+type
+  nk_panel_type = Integer;
+  Pnk_panel_type = ^nk_panel_type;
+
+const
+  NK_PANEL_NONE = 0;
+  NK_PANEL_WINDOW = 1;
+  NK_PANEL_GROUP = 2;
+  NK_PANEL_POPUP = 4;
+  NK_PANEL_CONTEXTUAL = 16;
+  NK_PANEL_COMBO = 32;
+  NK_PANEL_MENU = 64;
+  NK_PANEL_TOOLTIP = 128;
+
+type
+  nk_panel_set = Integer;
+  Pnk_panel_set = ^nk_panel_set;
+
+const
+  NK_PANEL_SET_NONBLOCK = 240;
+  NK_PANEL_SET_POPUP = 244;
+  NK_PANEL_SET_SUB = 246;
+
+type
+  nk_panel_row_layout_type = Integer;
+  Pnk_panel_row_layout_type = ^nk_panel_row_layout_type;
+
+const
+  NK_LAYOUT_DYNAMIC_FIXED = 0;
+  NK_LAYOUT_DYNAMIC_ROW = 1;
+  NK_LAYOUT_DYNAMIC_FREE = 2;
+  NK_LAYOUT_DYNAMIC = 3;
+  NK_LAYOUT_STATIC_FIXED = 4;
+  NK_LAYOUT_STATIC_ROW = 5;
+  NK_LAYOUT_STATIC_FREE = 6;
+  NK_LAYOUT_STATIC = 7;
+  NK_LAYOUT_TEMPLATE = 8;
+  NK_LAYOUT_COUNT = 9;
+
+type
+  nk_window_flags = Integer;
+  Pnk_window_flags = ^nk_window_flags;
+
+const
+  NK_WINDOW_PRIVATE = 2048;
+  NK_WINDOW_DYNAMIC = 2048;
+  NK_WINDOW_ROM = 4096;
+  NK_WINDOW_NOT_INTERACTIVE = 5120;
+  NK_WINDOW_HIDDEN = 8192;
+  NK_WINDOW_CLOSED = 16384;
+  NK_WINDOW_MINIMIZED = 32768;
+  NK_WINDOW_REMOVE_ROM = 65536;
+
+type
+  nk_glfw_init_state = Integer;
+  Pnk_glfw_init_state = ^nk_glfw_init_state;
+
+const
+  NK_GLFW3_DEFAULT = 0;
+  NK_GLFW3_INSTALL_CALLBACKS = 1;
+
 type
   PPUTF8Char = ^PUTF8Char;
   PPInteger = ^PInteger;
@@ -612,6 +1187,8 @@ type
   PUInt32 = ^UInt32;
   Palloc_chain = Pointer;
   PPalloc_chain = ^Palloc_chain;
+  Pnk_style_slide = Pointer;
+  PPnk_style_slide = ^Pnk_style_slide;
   PGLFWvidmode = ^GLFWvidmode;
   PGLFWgammaramp = ^GLFWgammaramp;
   PGLFWimage = ^GLFWimage;
@@ -661,6 +1238,112 @@ type
   PPstbtt_vertex = ^Pstbtt_vertex;
   Pstbtt__bitmap = ^stbtt__bitmap;
   Pclog = ^clog;
+  Pnk_color = ^nk_color;
+  Pnk_colorf = ^nk_colorf;
+  Pnk_vec2 = ^nk_vec2;
+  Pnk_vec2i = ^nk_vec2i;
+  Pnk_rect = ^nk_rect;
+  Pnk_recti = ^nk_recti;
+  Pnk_image = ^nk_image;
+  Pnk_nine_slice = ^nk_nine_slice;
+  Pnk_cursor = ^nk_cursor;
+  Pnk_scroll = ^nk_scroll;
+  Pnk_allocator = ^nk_allocator;
+  Pnk_draw_null_texture = ^nk_draw_null_texture;
+  Pnk_convert_config = ^nk_convert_config;
+  Pnk_list_view = ^nk_list_view;
+  Pnk_user_font_glyph = ^nk_user_font_glyph;
+  Pnk_user_font = ^nk_user_font;
+  PPnk_user_font = ^Pnk_user_font;
+  Pnk_baked_font = ^nk_baked_font;
+  Pnk_font_config = ^nk_font_config;
+  Pnk_font_glyph = ^nk_font_glyph;
+  Pnk_font = ^nk_font;
+  Pnk_font_atlas = ^nk_font_atlas;
+  PPnk_font_atlas = ^Pnk_font_atlas;
+  Pnk_memory_status = ^nk_memory_status;
+  Pnk_buffer_marker = ^nk_buffer_marker;
+  Pnk_memory = ^nk_memory;
+  Pnk_buffer = ^nk_buffer;
+  Pnk_str = ^nk_str;
+  Pnk_clipboard = ^nk_clipboard;
+  Pnk_text_undo_record = ^nk_text_undo_record;
+  Pnk_text_undo_state = ^nk_text_undo_state;
+  Pnk_text_edit = ^nk_text_edit;
+  Pnk_command = ^nk_command;
+  Pnk_command_scissor = ^nk_command_scissor;
+  Pnk_command_line = ^nk_command_line;
+  Pnk_command_curve = ^nk_command_curve;
+  Pnk_command_rect = ^nk_command_rect;
+  Pnk_command_rect_filled = ^nk_command_rect_filled;
+  Pnk_command_rect_multi_color = ^nk_command_rect_multi_color;
+  Pnk_command_triangle = ^nk_command_triangle;
+  Pnk_command_triangle_filled = ^nk_command_triangle_filled;
+  Pnk_command_circle = ^nk_command_circle;
+  Pnk_command_circle_filled = ^nk_command_circle_filled;
+  Pnk_command_arc = ^nk_command_arc;
+  Pnk_command_arc_filled = ^nk_command_arc_filled;
+  Pnk_command_polygon = ^nk_command_polygon;
+  Pnk_command_polygon_filled = ^nk_command_polygon_filled;
+  Pnk_command_polyline = ^nk_command_polyline;
+  Pnk_command_image = ^nk_command_image;
+  Pnk_command_custom = ^nk_command_custom;
+  Pnk_command_text = ^nk_command_text;
+  Pnk_command_buffer = ^nk_command_buffer;
+  Pnk_mouse_button = ^nk_mouse_button;
+  Pnk_mouse = ^nk_mouse;
+  Pnk_key = ^nk_key;
+  Pnk_keyboard = ^nk_keyboard;
+  Pnk_input = ^nk_input;
+  Pnk_draw_vertex_layout_element = ^nk_draw_vertex_layout_element;
+  Pnk_draw_command = ^nk_draw_command;
+  Pnk_draw_list = ^nk_draw_list;
+  Pnk_style_item = ^nk_style_item;
+  Pnk_style_text = ^nk_style_text;
+  Pnk_style_button = ^nk_style_button;
+  Pnk_style_toggle = ^nk_style_toggle;
+  Pnk_style_selectable = ^nk_style_selectable;
+  Pnk_style_slider = ^nk_style_slider;
+  Pnk_style_progress = ^nk_style_progress;
+  Pnk_style_scrollbar = ^nk_style_scrollbar;
+  Pnk_style_edit = ^nk_style_edit;
+  Pnk_style_property = ^nk_style_property;
+  Pnk_style_chart = ^nk_style_chart;
+  Pnk_style_combo = ^nk_style_combo;
+  Pnk_style_tab = ^nk_style_tab;
+  Pnk_style_window_header = ^nk_style_window_header;
+  Pnk_style_window = ^nk_style_window;
+  Pnk_style = ^nk_style;
+  Pnk_chart_slot = ^nk_chart_slot;
+  Pnk_chart = ^nk_chart;
+  Pnk_row_layout = ^nk_row_layout;
+  Pnk_popup_buffer = ^nk_popup_buffer;
+  Pnk_menu_state = ^nk_menu_state;
+  Pnk_panel = ^nk_panel;
+  Pnk_popup_state = ^nk_popup_state;
+  Pnk_edit_state = ^nk_edit_state;
+  Pnk_property_state = ^nk_property_state;
+  Pnk_window = ^nk_window;
+  Pnk_config_stack_style_item_element = ^nk_config_stack_style_item_element;
+  Pnk_config_stack_float_element = ^nk_config_stack_float_element;
+  Pnk_config_stack_vec2_element = ^nk_config_stack_vec2_element;
+  Pnk_config_stack_flags_element = ^nk_config_stack_flags_element;
+  Pnk_config_stack_color_element = ^nk_config_stack_color_element;
+  Pnk_config_stack_user_font_element = ^nk_config_stack_user_font_element;
+  Pnk_config_stack_button_behavior_element = ^nk_config_stack_button_behavior_element;
+  Pnk_config_stack_style_item = ^nk_config_stack_style_item;
+  Pnk_config_stack_float = ^nk_config_stack_float;
+  Pnk_config_stack_vec2 = ^nk_config_stack_vec2;
+  Pnk_config_stack_flags = ^nk_config_stack_flags;
+  Pnk_config_stack_color = ^nk_config_stack_color;
+  Pnk_config_stack_user_font = ^nk_config_stack_user_font;
+  Pnk_config_stack_button_behavior = ^nk_config_stack_button_behavior;
+  Pnk_configuration_stacks = ^nk_configuration_stacks;
+  Pnk_table = ^nk_table;
+  Pnk_page_element = ^nk_page_element;
+  Pnk_page = ^nk_page;
+  Pnk_pool = ^nk_pool;
+  Pnk_context = ^nk_context;
 
   GLFWglproc = procedure(); cdecl;
 
@@ -1254,6 +1937,1179 @@ type
     opened: Integer;
   end;
 
+  nk_char = Int8;
+  nk_uchar = UInt8;
+  nk_byte = UInt8;
+  Pnk_byte = ^nk_byte;
+  nk_short = Int16;
+  nk_ushort = UInt16;
+  nk_int = Int32;
+  nk_uint = UInt32;
+  Pnk_uint = ^nk_uint;
+  nk_size = UIntPtr;
+  Pnk_size = ^nk_size;
+  nk_ptr = UIntPtr;
+  nk_bool = Integer;
+  Pnk_bool = ^nk_bool;
+  nk_hash = nk_uint;
+  nk_flags = nk_uint;
+  Pnk_flags = ^nk_flags;
+  nk_rune = nk_uint;
+  Pnk_rune = ^nk_rune;
+  _dummy_array0 = array [0..0] of UTF8Char;
+  _dummy_array1 = array [0..0] of UTF8Char;
+  _dummy_array2 = array [0..0] of UTF8Char;
+  _dummy_array3 = array [0..0] of UTF8Char;
+  _dummy_array4 = array [0..0] of UTF8Char;
+  _dummy_array5 = array [0..0] of UTF8Char;
+  _dummy_array6 = array [0..0] of UTF8Char;
+  _dummy_array7 = array [0..0] of UTF8Char;
+  _dummy_array8 = array [0..0] of UTF8Char;
+  _dummy_array9 = array [0..0] of UTF8Char;
+
+  nk_color = record
+    r: nk_byte;
+    g: nk_byte;
+    b: nk_byte;
+    a: nk_byte;
+  end;
+
+  nk_colorf = record
+    r: Single;
+    g: Single;
+    b: Single;
+    a: Single;
+  end;
+
+  nk_vec2 = record
+    x: Single;
+    y: Single;
+  end;
+
+  nk_vec2i = record
+    x: Smallint;
+    y: Smallint;
+  end;
+
+  nk_rect = record
+    x: Single;
+    y: Single;
+    w: Single;
+    h: Single;
+  end;
+
+  nk_recti = record
+    x: Smallint;
+    y: Smallint;
+    w: Smallint;
+    h: Smallint;
+  end;
+
+  nk_glyph = array [0..3] of UTF8Char;
+
+  nk_handle = record
+    case Integer of
+      0: (ptr: Pointer);
+      1: (id: Integer);
+  end;
+
+  nk_image = record
+    handle: nk_handle;
+    w: nk_ushort;
+    h: nk_ushort;
+    region: array [0..3] of nk_ushort;
+  end;
+
+  nk_nine_slice = record
+    img: nk_image;
+    l: nk_ushort;
+    t: nk_ushort;
+    r: nk_ushort;
+    b: nk_ushort;
+  end;
+
+  nk_cursor = record
+    img: nk_image;
+    size: nk_vec2;
+    offset: nk_vec2;
+  end;
+
+  nk_scroll = record
+    x: nk_uint;
+    y: nk_uint;
+  end;
+
+  nk_plugin_alloc = function(p1: nk_handle; old: Pointer; p3: nk_size): Pointer; cdecl;
+
+  nk_plugin_free = procedure(p1: nk_handle; old: Pointer); cdecl;
+
+  nk_plugin_filter = function(const p1: Pnk_text_edit; unicode: nk_rune): nk_bool; cdecl;
+
+  nk_plugin_paste = procedure(p1: nk_handle; p2: Pnk_text_edit); cdecl;
+
+  nk_plugin_copy = procedure(p1: nk_handle; const p2: PUTF8Char; len: Integer); cdecl;
+
+  nk_allocator = record
+    userdata: nk_handle;
+    alloc: nk_plugin_alloc;
+    free: nk_plugin_free;
+  end;
+
+  nk_draw_null_texture = record
+    texture: nk_handle;
+    uv: nk_vec2;
+  end;
+
+  nk_convert_config = record
+    global_alpha: Single;
+    line_AA: nk_anti_aliasing;
+    shape_AA: nk_anti_aliasing;
+    circle_segment_count: Cardinal;
+    arc_segment_count: Cardinal;
+    curve_segment_count: Cardinal;
+    tex_null: nk_draw_null_texture;
+    vertex_layout: Pnk_draw_vertex_layout_element;
+    vertex_size: nk_size;
+    vertex_alignment: nk_size;
+  end;
+
+  nk_list_view = record
+    &begin: Integer;
+    &end: Integer;
+    count: Integer;
+    total_height: Integer;
+    ctx: Pnk_context;
+    scroll_pointer: Pnk_uint;
+    scroll_value: nk_uint;
+  end;
+
+  nk_text_width_f = function(p1: nk_handle; h: Single; const p3: PUTF8Char; len: Integer): Single; cdecl;
+
+  nk_query_font_glyph_f = procedure(handle: nk_handle; font_height: Single; glyph: Pnk_user_font_glyph; codepoint: nk_rune; next_codepoint: nk_rune); cdecl;
+
+  nk_user_font_glyph = record
+    uv: array [0..1] of nk_vec2;
+    offset: nk_vec2;
+    width: Single;
+    height: Single;
+    xadvance: Single;
+  end;
+
+  nk_user_font = record
+    userdata: nk_handle;
+    height: Single;
+    width: nk_text_width_f;
+    query: nk_query_font_glyph_f;
+    texture: nk_handle;
+  end;
+
+  nk_baked_font = record
+    height: Single;
+    ascent: Single;
+    descent: Single;
+    glyph_offset: nk_rune;
+    glyph_count: nk_rune;
+    ranges: Pnk_rune;
+  end;
+
+  nk_font_config = record
+    next: Pnk_font_config;
+    ttf_blob: Pointer;
+    ttf_size: nk_size;
+    ttf_data_owned_by_atlas: Byte;
+    merge_mode: Byte;
+    pixel_snap: Byte;
+    oversample_v: Byte;
+    oversample_h: Byte;
+    padding: array [0..2] of Byte;
+    size: Single;
+    coord_type: nk_font_coord_type;
+    spacing: nk_vec2;
+    range: Pnk_rune;
+    font: Pnk_baked_font;
+    fallback_glyph: nk_rune;
+    n: Pnk_font_config;
+    p: Pnk_font_config;
+  end;
+
+  nk_font_glyph = record
+    codepoint: nk_rune;
+    xadvance: Single;
+    x0: Single;
+    y0: Single;
+    x1: Single;
+    y1: Single;
+    w: Single;
+    h: Single;
+    u0: Single;
+    v0: Single;
+    u1: Single;
+    v1: Single;
+  end;
+
+  nk_font = record
+    next: Pnk_font;
+    handle: nk_user_font;
+    info: nk_baked_font;
+    scale: Single;
+    glyphs: Pnk_font_glyph;
+    fallback: Pnk_font_glyph;
+    fallback_codepoint: nk_rune;
+    texture: nk_handle;
+    config: Pnk_font_config;
+  end;
+
+  nk_font_atlas = record
+    pixel: Pointer;
+    tex_width: Integer;
+    tex_height: Integer;
+    permanent: nk_allocator;
+    temporary: nk_allocator;
+    custom: nk_recti;
+    cursors: array [0..6] of nk_cursor;
+    glyph_count: Integer;
+    glyphs: Pnk_font_glyph;
+    default_font: Pnk_font;
+    fonts: Pnk_font;
+    config: Pnk_font_config;
+    font_num: Integer;
+  end;
+
+  nk_memory_status = record
+    memory: Pointer;
+    &type: Cardinal;
+    size: nk_size;
+    allocated: nk_size;
+    needed: nk_size;
+    calls: nk_size;
+  end;
+
+  nk_buffer_marker = record
+    active: nk_bool;
+    offset: nk_size;
+  end;
+
+  nk_memory = record
+    ptr: Pointer;
+    size: nk_size;
+  end;
+
+  nk_buffer = record
+    marker: array [0..1] of nk_buffer_marker;
+    pool: nk_allocator;
+    &type: nk_allocation_type;
+    memory: nk_memory;
+    grow_factor: Single;
+    allocated: nk_size;
+    needed: nk_size;
+    calls: nk_size;
+    size: nk_size;
+  end;
+
+  nk_str = record
+    buffer: nk_buffer;
+    len: Integer;
+  end;
+
+  nk_clipboard = record
+    userdata: nk_handle;
+    paste: nk_plugin_paste;
+    copy: nk_plugin_copy;
+  end;
+
+  nk_text_undo_record = record
+    where: Integer;
+    insert_length: Smallint;
+    delete_length: Smallint;
+    char_storage: Smallint;
+  end;
+
+  nk_text_undo_state = record
+    undo_rec: array [0..98] of nk_text_undo_record;
+    undo_char: array [0..998] of nk_rune;
+    undo_point: Smallint;
+    redo_point: Smallint;
+    undo_char_point: Smallint;
+    redo_char_point: Smallint;
+  end;
+
+  nk_text_edit = record
+    clip: nk_clipboard;
+    &string: nk_str;
+    filter: nk_plugin_filter;
+    scrollbar: nk_vec2;
+    cursor: Integer;
+    select_start: Integer;
+    select_end: Integer;
+    mode: Byte;
+    cursor_at_end_of_line: Byte;
+    initialized: Byte;
+    has_preferred_x: Byte;
+    single_line: Byte;
+    active: Byte;
+    padding1: Byte;
+    preferred_x: Single;
+    undo: nk_text_undo_state;
+  end;
+
+  nk_command = record
+    &type: nk_command_type;
+    next: nk_size;
+  end;
+
+  nk_command_scissor = record
+    header: nk_command;
+    x: Smallint;
+    y: Smallint;
+    w: Word;
+    h: Word;
+  end;
+
+  nk_command_line = record
+    header: nk_command;
+    line_thickness: Word;
+    &begin: nk_vec2i;
+    &end: nk_vec2i;
+    color: nk_color;
+  end;
+
+  nk_command_curve = record
+    header: nk_command;
+    line_thickness: Word;
+    &begin: nk_vec2i;
+    &end: nk_vec2i;
+    ctrl: array [0..1] of nk_vec2i;
+    color: nk_color;
+  end;
+
+  nk_command_rect = record
+    header: nk_command;
+    rounding: Word;
+    line_thickness: Word;
+    x: Smallint;
+    y: Smallint;
+    w: Word;
+    h: Word;
+    color: nk_color;
+  end;
+
+  nk_command_rect_filled = record
+    header: nk_command;
+    rounding: Word;
+    x: Smallint;
+    y: Smallint;
+    w: Word;
+    h: Word;
+    color: nk_color;
+  end;
+
+  nk_command_rect_multi_color = record
+    header: nk_command;
+    x: Smallint;
+    y: Smallint;
+    w: Word;
+    h: Word;
+    left: nk_color;
+    top: nk_color;
+    bottom: nk_color;
+    right: nk_color;
+  end;
+
+  nk_command_triangle = record
+    header: nk_command;
+    line_thickness: Word;
+    a: nk_vec2i;
+    b: nk_vec2i;
+    c: nk_vec2i;
+    color: nk_color;
+  end;
+
+  nk_command_triangle_filled = record
+    header: nk_command;
+    a: nk_vec2i;
+    b: nk_vec2i;
+    c: nk_vec2i;
+    color: nk_color;
+  end;
+
+  nk_command_circle = record
+    header: nk_command;
+    x: Smallint;
+    y: Smallint;
+    line_thickness: Word;
+    w: Word;
+    h: Word;
+    color: nk_color;
+  end;
+
+  nk_command_circle_filled = record
+    header: nk_command;
+    x: Smallint;
+    y: Smallint;
+    w: Word;
+    h: Word;
+    color: nk_color;
+  end;
+
+  nk_command_arc = record
+    header: nk_command;
+    cx: Smallint;
+    cy: Smallint;
+    r: Word;
+    line_thickness: Word;
+    a: array [0..1] of Single;
+    color: nk_color;
+  end;
+
+  nk_command_arc_filled = record
+    header: nk_command;
+    cx: Smallint;
+    cy: Smallint;
+    r: Word;
+    a: array [0..1] of Single;
+    color: nk_color;
+  end;
+
+  nk_command_polygon = record
+    header: nk_command;
+    color: nk_color;
+    line_thickness: Word;
+    point_count: Word;
+    points: array [0..0] of nk_vec2i;
+  end;
+
+  nk_command_polygon_filled = record
+    header: nk_command;
+    color: nk_color;
+    point_count: Word;
+    points: array [0..0] of nk_vec2i;
+  end;
+
+  nk_command_polyline = record
+    header: nk_command;
+    color: nk_color;
+    line_thickness: Word;
+    point_count: Word;
+    points: array [0..0] of nk_vec2i;
+  end;
+
+  nk_command_image = record
+    header: nk_command;
+    x: Smallint;
+    y: Smallint;
+    w: Word;
+    h: Word;
+    img: nk_image;
+    col: nk_color;
+  end;
+
+  nk_command_custom_callback = procedure(canvas: Pointer; x: Smallint; y: Smallint; w: Word; h: Word; callback_data: nk_handle); cdecl;
+
+  nk_command_custom = record
+    header: nk_command;
+    x: Smallint;
+    y: Smallint;
+    w: Word;
+    h: Word;
+    callback_data: nk_handle;
+    callback: nk_command_custom_callback;
+  end;
+
+  nk_command_text = record
+    header: nk_command;
+    font: Pnk_user_font;
+    background: nk_color;
+    foreground: nk_color;
+    x: Smallint;
+    y: Smallint;
+    w: Word;
+    h: Word;
+    height: Single;
+    length: Integer;
+    &string: array [0..0] of UTF8Char;
+  end;
+
+  nk_command_buffer = record
+    base: Pnk_buffer;
+    clip: nk_rect;
+    use_clipping: Integer;
+    userdata: nk_handle;
+    &begin: nk_size;
+    &end: nk_size;
+    last: nk_size;
+  end;
+
+  nk_mouse_button = record
+    down: nk_bool;
+    clicked: Cardinal;
+    clicked_pos: nk_vec2;
+  end;
+
+  nk_mouse = record
+    buttons: array [0..3] of nk_mouse_button;
+    pos: nk_vec2;
+    prev: nk_vec2;
+    delta: nk_vec2;
+    scroll_delta: nk_vec2;
+    grab: Byte;
+    grabbed: Byte;
+    ungrab: Byte;
+  end;
+
+  nk_key = record
+    down: nk_bool;
+    clicked: Cardinal;
+  end;
+
+  nk_keyboard = record
+    keys: array [0..29] of nk_key;
+    text: array [0..15] of UTF8Char;
+    text_len: Integer;
+  end;
+
+  nk_input = record
+    keyboard: nk_keyboard;
+    mouse: nk_mouse;
+  end;
+
+  nk_draw_index = nk_ushort;
+
+  nk_draw_vertex_layout_element = record
+    attribute: nk_draw_vertex_layout_attribute;
+    format: nk_draw_vertex_layout_format;
+    offset: nk_size;
+  end;
+
+  nk_draw_command = record
+    elem_count: Cardinal;
+    clip_rect: nk_rect;
+    texture: nk_handle;
+  end;
+
+  nk_draw_list = record
+    clip_rect: nk_rect;
+    circle_vtx: array [0..11] of nk_vec2;
+    config: nk_convert_config;
+    buffer: Pnk_buffer;
+    vertices: Pnk_buffer;
+    elements: Pnk_buffer;
+    element_count: Cardinal;
+    vertex_count: Cardinal;
+    cmd_count: Cardinal;
+    cmd_offset: nk_size;
+    path_count: Cardinal;
+    path_offset: Cardinal;
+    line_AA: nk_anti_aliasing;
+    shape_AA: nk_anti_aliasing;
+  end;
+
+  nk_style_item_data = record
+    case Integer of
+      0: (color: nk_color);
+      1: (image: nk_image);
+      2: (slice: nk_nine_slice);
+  end;
+
+  nk_style_item = record
+    &type: nk_style_item_type;
+    data: nk_style_item_data;
+  end;
+
+  nk_style_text = record
+    color: nk_color;
+    padding: nk_vec2;
+  end;
+
+  nk_style_button = record
+    normal: nk_style_item;
+    hover: nk_style_item;
+    active: nk_style_item;
+    border_color: nk_color;
+    text_background: nk_color;
+    text_normal: nk_color;
+    text_hover: nk_color;
+    text_active: nk_color;
+    text_alignment: nk_flags;
+    border: Single;
+    rounding: Single;
+    padding: nk_vec2;
+    image_padding: nk_vec2;
+    touch_padding: nk_vec2;
+    userdata: nk_handle;
+    draw_begin: procedure(p1: Pnk_command_buffer; userdata: nk_handle); cdecl;
+    draw_end: procedure(p1: Pnk_command_buffer; userdata: nk_handle); cdecl;
+  end;
+
+  nk_style_toggle = record
+    normal: nk_style_item;
+    hover: nk_style_item;
+    active: nk_style_item;
+    border_color: nk_color;
+    cursor_normal: nk_style_item;
+    cursor_hover: nk_style_item;
+    text_normal: nk_color;
+    text_hover: nk_color;
+    text_active: nk_color;
+    text_background: nk_color;
+    text_alignment: nk_flags;
+    padding: nk_vec2;
+    touch_padding: nk_vec2;
+    spacing: Single;
+    border: Single;
+    userdata: nk_handle;
+    draw_begin: procedure(p1: Pnk_command_buffer; p2: nk_handle); cdecl;
+    draw_end: procedure(p1: Pnk_command_buffer; p2: nk_handle); cdecl;
+  end;
+
+  nk_style_selectable = record
+    normal: nk_style_item;
+    hover: nk_style_item;
+    pressed: nk_style_item;
+    normal_active: nk_style_item;
+    hover_active: nk_style_item;
+    pressed_active: nk_style_item;
+    text_normal: nk_color;
+    text_hover: nk_color;
+    text_pressed: nk_color;
+    text_normal_active: nk_color;
+    text_hover_active: nk_color;
+    text_pressed_active: nk_color;
+    text_background: nk_color;
+    text_alignment: nk_flags;
+    rounding: Single;
+    padding: nk_vec2;
+    touch_padding: nk_vec2;
+    image_padding: nk_vec2;
+    userdata: nk_handle;
+    draw_begin: procedure(p1: Pnk_command_buffer; p2: nk_handle); cdecl;
+    draw_end: procedure(p1: Pnk_command_buffer; p2: nk_handle); cdecl;
+  end;
+
+  nk_style_slider = record
+    normal: nk_style_item;
+    hover: nk_style_item;
+    active: nk_style_item;
+    border_color: nk_color;
+    bar_normal: nk_color;
+    bar_hover: nk_color;
+    bar_active: nk_color;
+    bar_filled: nk_color;
+    cursor_normal: nk_style_item;
+    cursor_hover: nk_style_item;
+    cursor_active: nk_style_item;
+    border: Single;
+    rounding: Single;
+    bar_height: Single;
+    padding: nk_vec2;
+    spacing: nk_vec2;
+    cursor_size: nk_vec2;
+    show_buttons: Integer;
+    inc_button: nk_style_button;
+    dec_button: nk_style_button;
+    inc_symbol: nk_symbol_type;
+    dec_symbol: nk_symbol_type;
+    userdata: nk_handle;
+    draw_begin: procedure(p1: Pnk_command_buffer; p2: nk_handle); cdecl;
+    draw_end: procedure(p1: Pnk_command_buffer; p2: nk_handle); cdecl;
+  end;
+
+  nk_style_progress = record
+    normal: nk_style_item;
+    hover: nk_style_item;
+    active: nk_style_item;
+    border_color: nk_color;
+    cursor_normal: nk_style_item;
+    cursor_hover: nk_style_item;
+    cursor_active: nk_style_item;
+    cursor_border_color: nk_color;
+    rounding: Single;
+    border: Single;
+    cursor_border: Single;
+    cursor_rounding: Single;
+    padding: nk_vec2;
+    userdata: nk_handle;
+    draw_begin: procedure(p1: Pnk_command_buffer; p2: nk_handle); cdecl;
+    draw_end: procedure(p1: Pnk_command_buffer; p2: nk_handle); cdecl;
+  end;
+
+  nk_style_scrollbar = record
+    normal: nk_style_item;
+    hover: nk_style_item;
+    active: nk_style_item;
+    border_color: nk_color;
+    cursor_normal: nk_style_item;
+    cursor_hover: nk_style_item;
+    cursor_active: nk_style_item;
+    cursor_border_color: nk_color;
+    border: Single;
+    rounding: Single;
+    border_cursor: Single;
+    rounding_cursor: Single;
+    padding: nk_vec2;
+    show_buttons: Integer;
+    inc_button: nk_style_button;
+    dec_button: nk_style_button;
+    inc_symbol: nk_symbol_type;
+    dec_symbol: nk_symbol_type;
+    userdata: nk_handle;
+    draw_begin: procedure(p1: Pnk_command_buffer; p2: nk_handle); cdecl;
+    draw_end: procedure(p1: Pnk_command_buffer; p2: nk_handle); cdecl;
+  end;
+
+  nk_style_edit = record
+    normal: nk_style_item;
+    hover: nk_style_item;
+    active: nk_style_item;
+    border_color: nk_color;
+    scrollbar: nk_style_scrollbar;
+    cursor_normal: nk_color;
+    cursor_hover: nk_color;
+    cursor_text_normal: nk_color;
+    cursor_text_hover: nk_color;
+    text_normal: nk_color;
+    text_hover: nk_color;
+    text_active: nk_color;
+    selected_normal: nk_color;
+    selected_hover: nk_color;
+    selected_text_normal: nk_color;
+    selected_text_hover: nk_color;
+    border: Single;
+    rounding: Single;
+    cursor_size: Single;
+    scrollbar_size: nk_vec2;
+    padding: nk_vec2;
+    row_padding: Single;
+  end;
+
+  nk_style_property = record
+    normal: nk_style_item;
+    hover: nk_style_item;
+    active: nk_style_item;
+    border_color: nk_color;
+    label_normal: nk_color;
+    label_hover: nk_color;
+    label_active: nk_color;
+    sym_left: nk_symbol_type;
+    sym_right: nk_symbol_type;
+    border: Single;
+    rounding: Single;
+    padding: nk_vec2;
+    edit: nk_style_edit;
+    inc_button: nk_style_button;
+    dec_button: nk_style_button;
+    userdata: nk_handle;
+    draw_begin: procedure(p1: Pnk_command_buffer; p2: nk_handle); cdecl;
+    draw_end: procedure(p1: Pnk_command_buffer; p2: nk_handle); cdecl;
+  end;
+
+  nk_style_chart = record
+    background: nk_style_item;
+    border_color: nk_color;
+    selected_color: nk_color;
+    color: nk_color;
+    border: Single;
+    rounding: Single;
+    padding: nk_vec2;
+  end;
+
+  nk_style_combo = record
+    normal: nk_style_item;
+    hover: nk_style_item;
+    active: nk_style_item;
+    border_color: nk_color;
+    label_normal: nk_color;
+    label_hover: nk_color;
+    label_active: nk_color;
+    symbol_normal: nk_color;
+    symbol_hover: nk_color;
+    symbol_active: nk_color;
+    button: nk_style_button;
+    sym_normal: nk_symbol_type;
+    sym_hover: nk_symbol_type;
+    sym_active: nk_symbol_type;
+    border: Single;
+    rounding: Single;
+    content_padding: nk_vec2;
+    button_padding: nk_vec2;
+    spacing: nk_vec2;
+  end;
+
+  nk_style_tab = record
+    background: nk_style_item;
+    border_color: nk_color;
+    text: nk_color;
+    tab_maximize_button: nk_style_button;
+    tab_minimize_button: nk_style_button;
+    node_maximize_button: nk_style_button;
+    node_minimize_button: nk_style_button;
+    sym_minimize: nk_symbol_type;
+    sym_maximize: nk_symbol_type;
+    border: Single;
+    rounding: Single;
+    indent: Single;
+    padding: nk_vec2;
+    spacing: nk_vec2;
+  end;
+
+  nk_style_window_header = record
+    normal: nk_style_item;
+    hover: nk_style_item;
+    active: nk_style_item;
+    close_button: nk_style_button;
+    minimize_button: nk_style_button;
+    close_symbol: nk_symbol_type;
+    minimize_symbol: nk_symbol_type;
+    maximize_symbol: nk_symbol_type;
+    label_normal: nk_color;
+    label_hover: nk_color;
+    label_active: nk_color;
+    align: nk_style_header_align;
+    padding: nk_vec2;
+    label_padding: nk_vec2;
+    spacing: nk_vec2;
+  end;
+
+  nk_style_window = record
+    header: nk_style_window_header;
+    fixed_background: nk_style_item;
+    background: nk_color;
+    border_color: nk_color;
+    popup_border_color: nk_color;
+    combo_border_color: nk_color;
+    contextual_border_color: nk_color;
+    menu_border_color: nk_color;
+    group_border_color: nk_color;
+    tooltip_border_color: nk_color;
+    scaler: nk_style_item;
+    border: Single;
+    combo_border: Single;
+    contextual_border: Single;
+    menu_border: Single;
+    group_border: Single;
+    tooltip_border: Single;
+    popup_border: Single;
+    min_row_height_padding: Single;
+    rounding: Single;
+    spacing: nk_vec2;
+    scrollbar_size: nk_vec2;
+    min_size: nk_vec2;
+    padding: nk_vec2;
+    group_padding: nk_vec2;
+    popup_padding: nk_vec2;
+    combo_padding: nk_vec2;
+    contextual_padding: nk_vec2;
+    menu_padding: nk_vec2;
+    tooltip_padding: nk_vec2;
+  end;
+
+  nk_style = record
+    font: Pnk_user_font;
+    cursors: array [0..6] of Pnk_cursor;
+    cursor_active: Pnk_cursor;
+    cursor_last: Pnk_cursor;
+    cursor_visible: Integer;
+    text: nk_style_text;
+    button: nk_style_button;
+    contextual_button: nk_style_button;
+    menu_button: nk_style_button;
+    option: nk_style_toggle;
+    checkbox: nk_style_toggle;
+    selectable: nk_style_selectable;
+    slider: nk_style_slider;
+    progress: nk_style_progress;
+    &property: nk_style_property;
+    edit: nk_style_edit;
+    chart: nk_style_chart;
+    scrollh: nk_style_scrollbar;
+    scrollv: nk_style_scrollbar;
+    tab: nk_style_tab;
+    combo: nk_style_combo;
+    window: nk_style_window;
+  end;
+
+  nk_chart_slot = record
+    &type: nk_chart_type;
+    color: nk_color;
+    highlight: nk_color;
+    min: Single;
+    max: Single;
+    range: Single;
+    count: Integer;
+    last: nk_vec2;
+    index: Integer;
+  end;
+
+  nk_chart = record
+    slot: Integer;
+    x: Single;
+    y: Single;
+    w: Single;
+    h: Single;
+    slots: array [0..3] of nk_chart_slot;
+  end;
+
+  nk_row_layout = record
+    &type: nk_panel_row_layout_type;
+    index: Integer;
+    height: Single;
+    min_height: Single;
+    columns: Integer;
+    ratio: PSingle;
+    item_width: Single;
+    item_height: Single;
+    item_offset: Single;
+    filled: Single;
+    item: nk_rect;
+    tree_depth: Integer;
+    templates: array [0..15] of Single;
+  end;
+
+  nk_popup_buffer = record
+    &begin: nk_size;
+    parent: nk_size;
+    last: nk_size;
+    &end: nk_size;
+    active: nk_bool;
+  end;
+
+  nk_menu_state = record
+    x: Single;
+    y: Single;
+    w: Single;
+    h: Single;
+    offset: nk_scroll;
+  end;
+
+  nk_panel = record
+    &type: nk_panel_type;
+    flags: nk_flags;
+    bounds: nk_rect;
+    offset_x: Pnk_uint;
+    offset_y: Pnk_uint;
+    at_x: Single;
+    at_y: Single;
+    max_x: Single;
+    footer_height: Single;
+    header_height: Single;
+    border: Single;
+    has_scrolling: Cardinal;
+    clip: nk_rect;
+    menu: nk_menu_state;
+    row: nk_row_layout;
+    chart: nk_chart;
+    buffer: Pnk_command_buffer;
+    parent: Pnk_panel;
+  end;
+
+  nk_popup_state = record
+    win: Pnk_window;
+    &type: nk_panel_type;
+    buf: nk_popup_buffer;
+    name: nk_hash;
+    active: nk_bool;
+    combo_count: Cardinal;
+    con_count: Cardinal;
+    con_old: Cardinal;
+    active_con: Cardinal;
+    header: nk_rect;
+  end;
+
+  nk_edit_state = record
+    name: nk_hash;
+    seq: Cardinal;
+    old: Cardinal;
+    active: Integer;
+    prev: Integer;
+    cursor: Integer;
+    sel_start: Integer;
+    sel_end: Integer;
+    scrollbar: nk_scroll;
+    mode: Byte;
+    single_line: Byte;
+  end;
+
+  nk_property_state = record
+    active: Integer;
+    prev: Integer;
+    buffer: array [0..63] of UTF8Char;
+    length: Integer;
+    cursor: Integer;
+    select_start: Integer;
+    select_end: Integer;
+    name: nk_hash;
+    seq: Cardinal;
+    old: Cardinal;
+    state: Integer;
+  end;
+
+  nk_window = record
+    seq: Cardinal;
+    name: nk_hash;
+    name_string: array [0..63] of UTF8Char;
+    flags: nk_flags;
+    bounds: nk_rect;
+    scrollbar: nk_scroll;
+    buffer: nk_command_buffer;
+    layout: Pnk_panel;
+    scrollbar_hiding_timer: Single;
+    &property: nk_property_state;
+    popup: nk_popup_state;
+    edit: nk_edit_state;
+    scrolled: Cardinal;
+    tables: Pnk_table;
+    table_count: Cardinal;
+    next: Pnk_window;
+    prev: Pnk_window;
+    parent: Pnk_window;
+  end;
+
+  nk_config_stack_style_item_element = record
+    address: Pnk_style_item;
+    old_value: nk_style_item;
+  end;
+
+  nk_config_stack_float_element = record
+    address: PSingle;
+    old_value: Single;
+  end;
+
+  nk_config_stack_vec2_element = record
+    address: Pnk_vec2;
+    old_value: nk_vec2;
+  end;
+
+  nk_config_stack_flags_element = record
+    address: Pnk_flags;
+    old_value: nk_flags;
+  end;
+
+  nk_config_stack_color_element = record
+    address: Pnk_color;
+    old_value: nk_color;
+  end;
+
+  nk_config_stack_user_font_element = record
+    address: PPnk_user_font;
+    old_value: Pnk_user_font;
+  end;
+
+  nk_config_stack_button_behavior_element = record
+    address: Pnk_button_behavior;
+    old_value: nk_button_behavior;
+  end;
+
+  nk_config_stack_style_item = record
+    head: Integer;
+    elements: array [0..15] of nk_config_stack_style_item_element;
+  end;
+
+  nk_config_stack_float = record
+    head: Integer;
+    elements: array [0..31] of nk_config_stack_float_element;
+  end;
+
+  nk_config_stack_vec2 = record
+    head: Integer;
+    elements: array [0..15] of nk_config_stack_vec2_element;
+  end;
+
+  nk_config_stack_flags = record
+    head: Integer;
+    elements: array [0..31] of nk_config_stack_flags_element;
+  end;
+
+  nk_config_stack_color = record
+    head: Integer;
+    elements: array [0..31] of nk_config_stack_color_element;
+  end;
+
+  nk_config_stack_user_font = record
+    head: Integer;
+    elements: array [0..7] of nk_config_stack_user_font_element;
+  end;
+
+  nk_config_stack_button_behavior = record
+    head: Integer;
+    elements: array [0..7] of nk_config_stack_button_behavior_element;
+  end;
+
+  nk_configuration_stacks = record
+    style_items: nk_config_stack_style_item;
+    floats: nk_config_stack_float;
+    vectors: nk_config_stack_vec2;
+    flags: nk_config_stack_flags;
+    colors: nk_config_stack_color;
+    fonts: nk_config_stack_user_font;
+    button_behaviors: nk_config_stack_button_behavior;
+  end;
+
+  nk_table = record
+    seq: Cardinal;
+    size: Cardinal;
+    keys: array [0..58] of nk_hash;
+    values: array [0..58] of nk_uint;
+    next: Pnk_table;
+    prev: Pnk_table;
+  end;
+
+  nk_page_data = record
+    case Integer of
+      0: (tbl: nk_table);
+      1: (pan: nk_panel);
+      2: (win: nk_window);
+  end;
+
+  nk_page_element = record
+    data: nk_page_data;
+    next: Pnk_page_element;
+    prev: Pnk_page_element;
+  end;
+
+  nk_page = record
+    size: Cardinal;
+    next: Pnk_page;
+    win: array [0..0] of nk_page_element;
+  end;
+
+  nk_pool = record
+    alloc: nk_allocator;
+    &type: nk_allocation_type;
+    page_count: Cardinal;
+    pages: Pnk_page;
+    freelist: Pnk_page_element;
+    capacity: Cardinal;
+    size: nk_size;
+    cap: nk_size;
+  end;
+
+  nk_context = record
+    input: nk_input;
+    style: nk_style;
+    memory: nk_buffer;
+    clip: nk_clipboard;
+    last_widget_state: nk_flags;
+    button_behavior: nk_button_behavior;
+    stacks: nk_configuration_stacks;
+    delta_time_seconds: Single;
+    draw_list: nk_draw_list;
+    text_edit: nk_text_edit;
+    overlay: nk_command_buffer;
+    build: Integer;
+    use_pool: Integer;
+    pool: nk_pool;
+    &begin: Pnk_window;
+    &end: Pnk_window;
+    active: Pnk_window;
+    current: Pnk_window;
+    freelist: Pnk_page_element;
+    count: Cardinal;
+    seq: Cardinal;
+  end;
+
+  GLADapiproc = procedure(); cdecl;
+
+  GLADloadfunc = function(const name: PUTF8Char): GLADapiproc; cdecl;
+
 const
   PLM_DEMUX_PACKET_PRIVATE: Integer = $BD;
   PLM_DEMUX_PACKET_AUDIO_1: Integer = $C0;
@@ -1264,6 +3120,15 @@ const
 
 type
   ov_read_filter_filter = procedure(pcm: PPSingle; channels: Integer; samples: Integer; filter_param: Pointer); cdecl;
+
+type
+  nk_plot_function_value_getter = function(user: Pointer; index: Integer): Single; cdecl;
+
+type
+  nk_combo_callback_item_getter = procedure(p1: Pointer; p2: Integer; p3: PPUTF8Char); cdecl;
+
+type
+  nk_combobox_callback_item_getter = procedure(p1: Pointer; p2: Integer; p3: PPUTF8Char); cdecl;
 
 var
   glfwInit: function(): Integer; cdecl;
@@ -1768,6 +3633,544 @@ var
   clog_set_time_fmt: function(id: Integer; const fmt: PUTF8Char): Integer; cdecl;
   clog_set_date_fmt: function(id: Integer; const fmt: PUTF8Char): Integer; cdecl;
   clog_set_fmt: function(id: Integer; const fmt: PUTF8Char): Integer; cdecl;
+  nk_init_default: function(p1: Pnk_context; const p2: Pnk_user_font): nk_bool; cdecl;
+  nk_init_fixed: function(p1: Pnk_context; memory: Pointer; size: nk_size; const p4: Pnk_user_font): nk_bool; cdecl;
+  nk_init: function(p1: Pnk_context; p2: Pnk_allocator; const p3: Pnk_user_font): nk_bool; cdecl;
+  nk_init_custom: function(p1: Pnk_context; cmds: Pnk_buffer; pool: Pnk_buffer; const p4: Pnk_user_font): nk_bool; cdecl;
+  nk_clear: procedure(p1: Pnk_context); cdecl;
+  nk_free: procedure(p1: Pnk_context); cdecl;
+  nk_input_begin: procedure(p1: Pnk_context); cdecl;
+  nk_input_motion: procedure(p1: Pnk_context; x: Integer; y: Integer); cdecl;
+  nk_input_key: procedure(p1: Pnk_context; p2: nk_keys; down: nk_bool); cdecl;
+  nk_input_button: procedure(p1: Pnk_context; p2: nk_buttons; x: Integer; y: Integer; down: nk_bool); cdecl;
+  nk_input_scroll: procedure(p1: Pnk_context; val: nk_vec2); cdecl;
+  nk_input_char: procedure(p1: Pnk_context; p2: UTF8Char); cdecl;
+  nk_input_glyph: procedure(p1: Pnk_context; const p2: nk_glyph); cdecl;
+  nk_input_unicode: procedure(p1: Pnk_context; p2: nk_rune); cdecl;
+  nk_input_end: procedure(p1: Pnk_context); cdecl;
+  nk__begin: function(p1: Pnk_context): Pnk_command; cdecl;
+  nk__next: function(p1: Pnk_context; const p2: Pnk_command): Pnk_command; cdecl;
+  nk_convert: function(p1: Pnk_context; cmds: Pnk_buffer; vertices: Pnk_buffer; elements: Pnk_buffer; const p5: Pnk_convert_config): nk_flags; cdecl;
+  nk__draw_begin: function(const p1: Pnk_context; const p2: Pnk_buffer): Pnk_draw_command; cdecl;
+  nk__draw_end: function(const p1: Pnk_context; const p2: Pnk_buffer): Pnk_draw_command; cdecl;
+  nk__draw_next: function(const p1: Pnk_draw_command; const p2: Pnk_buffer; const p3: Pnk_context): Pnk_draw_command; cdecl;
+  nk_begin: function(ctx: Pnk_context; const title: PUTF8Char; bounds: nk_rect; flags: nk_flags): nk_bool; cdecl;
+  nk_begin_titled: function(ctx: Pnk_context; const name: PUTF8Char; const title: PUTF8Char; bounds: nk_rect; flags: nk_flags): nk_bool; cdecl;
+  nk_end: procedure(ctx: Pnk_context); cdecl;
+  nk_window_find: function(ctx: Pnk_context; const name: PUTF8Char): Pnk_window; cdecl;
+  nk_window_get_bounds: function(const ctx: Pnk_context): nk_rect; cdecl;
+  nk_window_get_position: function(const ctx: Pnk_context): nk_vec2; cdecl;
+  nk_window_get_size: function(const p1: Pnk_context): nk_vec2; cdecl;
+  nk_window_get_width: function(const p1: Pnk_context): Single; cdecl;
+  nk_window_get_height: function(const p1: Pnk_context): Single; cdecl;
+  nk_window_get_panel: function(p1: Pnk_context): Pnk_panel; cdecl;
+  nk_window_get_content_region: function(p1: Pnk_context): nk_rect; cdecl;
+  nk_window_get_content_region_min: function(p1: Pnk_context): nk_vec2; cdecl;
+  nk_window_get_content_region_max: function(p1: Pnk_context): nk_vec2; cdecl;
+  nk_window_get_content_region_size: function(p1: Pnk_context): nk_vec2; cdecl;
+  nk_window_get_canvas: function(p1: Pnk_context): Pnk_command_buffer; cdecl;
+  nk_window_get_scroll: procedure(p1: Pnk_context; offset_x: Pnk_uint; offset_y: Pnk_uint); cdecl;
+  nk_window_has_focus: function(const p1: Pnk_context): nk_bool; cdecl;
+  nk_window_is_hovered: function(p1: Pnk_context): nk_bool; cdecl;
+  nk_window_is_collapsed: function(ctx: Pnk_context; const name: PUTF8Char): nk_bool; cdecl;
+  nk_window_is_closed: function(p1: Pnk_context; const p2: PUTF8Char): nk_bool; cdecl;
+  nk_window_is_hidden: function(p1: Pnk_context; const p2: PUTF8Char): nk_bool; cdecl;
+  nk_window_is_active: function(p1: Pnk_context; const p2: PUTF8Char): nk_bool; cdecl;
+  nk_window_is_any_hovered: function(p1: Pnk_context): nk_bool; cdecl;
+  nk_item_is_any_active: function(p1: Pnk_context): nk_bool; cdecl;
+  nk_window_set_bounds: procedure(p1: Pnk_context; const name: PUTF8Char; bounds: nk_rect); cdecl;
+  nk_window_set_position: procedure(p1: Pnk_context; const name: PUTF8Char; pos: nk_vec2); cdecl;
+  nk_window_set_size: procedure(p1: Pnk_context; const name: PUTF8Char; p3: nk_vec2); cdecl;
+  nk_window_set_focus: procedure(p1: Pnk_context; const name: PUTF8Char); cdecl;
+  nk_window_set_scroll: procedure(p1: Pnk_context; offset_x: nk_uint; offset_y: nk_uint); cdecl;
+  nk_window_close: procedure(ctx: Pnk_context; const name: PUTF8Char); cdecl;
+  nk_window_collapse: procedure(p1: Pnk_context; const name: PUTF8Char; state: nk_collapse_states); cdecl;
+  nk_window_collapse_if: procedure(p1: Pnk_context; const name: PUTF8Char; p3: nk_collapse_states; cond: Integer); cdecl;
+  nk_window_show: procedure(p1: Pnk_context; const name: PUTF8Char; p3: nk_show_states); cdecl;
+  nk_window_show_if: procedure(p1: Pnk_context; const name: PUTF8Char; p3: nk_show_states; cond: Integer); cdecl;
+  nk_layout_set_min_row_height: procedure(p1: Pnk_context; height: Single); cdecl;
+  nk_layout_reset_min_row_height: procedure(p1: Pnk_context); cdecl;
+  nk_layout_widget_bounds: function(p1: Pnk_context): nk_rect; cdecl;
+  nk_layout_ratio_from_pixel: function(p1: Pnk_context; pixel_width: Single): Single; cdecl;
+  nk_layout_row_dynamic: procedure(ctx: Pnk_context; height: Single; cols: Integer); cdecl;
+  nk_layout_row_static: procedure(ctx: Pnk_context; height: Single; item_width: Integer; cols: Integer); cdecl;
+  nk_layout_row_begin: procedure(ctx: Pnk_context; fmt: nk_layout_format; row_height: Single; cols: Integer); cdecl;
+  nk_layout_row_push: procedure(p1: Pnk_context; value: Single); cdecl;
+  nk_layout_row_end: procedure(p1: Pnk_context); cdecl;
+  nk_layout_row: procedure(p1: Pnk_context; p2: nk_layout_format; height: Single; cols: Integer; const ratio: PSingle); cdecl;
+  nk_layout_row_template_begin: procedure(p1: Pnk_context; row_height: Single); cdecl;
+  nk_layout_row_template_push_dynamic: procedure(p1: Pnk_context); cdecl;
+  nk_layout_row_template_push_variable: procedure(p1: Pnk_context; min_width: Single); cdecl;
+  nk_layout_row_template_push_static: procedure(p1: Pnk_context; width: Single); cdecl;
+  nk_layout_row_template_end: procedure(p1: Pnk_context); cdecl;
+  nk_layout_space_begin: procedure(p1: Pnk_context; p2: nk_layout_format; height: Single; widget_count: Integer); cdecl;
+  nk_layout_space_push: procedure(p1: Pnk_context; bounds: nk_rect); cdecl;
+  nk_layout_space_end: procedure(p1: Pnk_context); cdecl;
+  nk_layout_space_bounds: function(p1: Pnk_context): nk_rect; cdecl;
+  nk_layout_space_to_screen: function(p1: Pnk_context; p2: nk_vec2): nk_vec2; cdecl;
+  nk_layout_space_to_local: function(p1: Pnk_context; p2: nk_vec2): nk_vec2; cdecl;
+  nk_layout_space_rect_to_screen: function(p1: Pnk_context; p2: nk_rect): nk_rect; cdecl;
+  nk_layout_space_rect_to_local: function(p1: Pnk_context; p2: nk_rect): nk_rect; cdecl;
+  nk_spacer: procedure(p1: Pnk_context); cdecl;
+  nk_group_begin: function(p1: Pnk_context; const title: PUTF8Char; p3: nk_flags): nk_bool; cdecl;
+  nk_group_begin_titled: function(p1: Pnk_context; const name: PUTF8Char; const title: PUTF8Char; p4: nk_flags): nk_bool; cdecl;
+  nk_group_end: procedure(p1: Pnk_context); cdecl;
+  nk_group_scrolled_offset_begin: function(p1: Pnk_context; x_offset: Pnk_uint; y_offset: Pnk_uint; const title: PUTF8Char; flags: nk_flags): nk_bool; cdecl;
+  nk_group_scrolled_begin: function(p1: Pnk_context; off: Pnk_scroll; const title: PUTF8Char; p4: nk_flags): nk_bool; cdecl;
+  nk_group_scrolled_end: procedure(p1: Pnk_context); cdecl;
+  nk_group_get_scroll: procedure(p1: Pnk_context; const id: PUTF8Char; x_offset: Pnk_uint; y_offset: Pnk_uint); cdecl;
+  nk_group_set_scroll: procedure(p1: Pnk_context; const id: PUTF8Char; x_offset: nk_uint; y_offset: nk_uint); cdecl;
+  nk_tree_push_hashed: function(p1: Pnk_context; p2: nk_tree_type; const title: PUTF8Char; initial_state: nk_collapse_states; const hash: PUTF8Char; len: Integer; seed: Integer): nk_bool; cdecl;
+  nk_tree_image_push_hashed: function(p1: Pnk_context; p2: nk_tree_type; p3: nk_image; const title: PUTF8Char; initial_state: nk_collapse_states; const hash: PUTF8Char; len: Integer; seed: Integer): nk_bool; cdecl;
+  nk_tree_pop: procedure(p1: Pnk_context); cdecl;
+  nk_tree_state_push: function(p1: Pnk_context; p2: nk_tree_type; const title: PUTF8Char; state: Pnk_collapse_states): nk_bool; cdecl;
+  nk_tree_state_image_push: function(p1: Pnk_context; p2: nk_tree_type; p3: nk_image; const title: PUTF8Char; state: Pnk_collapse_states): nk_bool; cdecl;
+  nk_tree_state_pop: procedure(p1: Pnk_context); cdecl;
+  nk_tree_element_push_hashed: function(p1: Pnk_context; p2: nk_tree_type; const title: PUTF8Char; initial_state: nk_collapse_states; selected: Pnk_bool; const hash: PUTF8Char; len: Integer; seed: Integer): nk_bool; cdecl;
+  nk_tree_element_image_push_hashed: function(p1: Pnk_context; p2: nk_tree_type; p3: nk_image; const title: PUTF8Char; initial_state: nk_collapse_states; selected: Pnk_bool; const hash: PUTF8Char; len: Integer; seed: Integer): nk_bool; cdecl;
+  nk_tree_element_pop: procedure(p1: Pnk_context); cdecl;
+  nk_list_view_begin: function(p1: Pnk_context; &out: Pnk_list_view; const id: PUTF8Char; p4: nk_flags; row_height: Integer; row_count: Integer): nk_bool; cdecl;
+  nk_list_view_end: procedure(p1: Pnk_list_view); cdecl;
+  nk_widget: function(p1: Pnk_rect; const p2: Pnk_context): nk_widget_layout_states; cdecl;
+  nk_widget_fitting: function(p1: Pnk_rect; p2: Pnk_context; p3: nk_vec2): nk_widget_layout_states; cdecl;
+  nk_widget_bounds: function(p1: Pnk_context): nk_rect; cdecl;
+  nk_widget_position: function(p1: Pnk_context): nk_vec2; cdecl;
+  nk_widget_size: function(p1: Pnk_context): nk_vec2; cdecl;
+  nk_widget_width: function(p1: Pnk_context): Single; cdecl;
+  nk_widget_height: function(p1: Pnk_context): Single; cdecl;
+  nk_widget_is_hovered: function(p1: Pnk_context): nk_bool; cdecl;
+  nk_widget_is_mouse_clicked: function(p1: Pnk_context; p2: nk_buttons): nk_bool; cdecl;
+  nk_widget_has_mouse_click_down: function(p1: Pnk_context; p2: nk_buttons; down: nk_bool): nk_bool; cdecl;
+  nk_spacing: procedure(p1: Pnk_context; cols: Integer); cdecl;
+  nk_text: procedure(p1: Pnk_context; const p2: PUTF8Char; p3: Integer; p4: nk_flags); cdecl;
+  nk_text_colored: procedure(p1: Pnk_context; const p2: PUTF8Char; p3: Integer; p4: nk_flags; p5: nk_color); cdecl;
+  nk_text_wrap: procedure(p1: Pnk_context; const p2: PUTF8Char; p3: Integer); cdecl;
+  nk_text_wrap_colored: procedure(p1: Pnk_context; const p2: PUTF8Char; p3: Integer; p4: nk_color); cdecl;
+  nk_label: procedure(p1: Pnk_context; const p2: PUTF8Char; align: nk_flags); cdecl;
+  nk_label_colored: procedure(p1: Pnk_context; const p2: PUTF8Char; align: nk_flags; p4: nk_color); cdecl;
+  nk_label_wrap: procedure(p1: Pnk_context; const p2: PUTF8Char); cdecl;
+  nk_label_colored_wrap: procedure(p1: Pnk_context; const p2: PUTF8Char; p3: nk_color); cdecl;
+  nk_image_rtn: procedure(p1: Pnk_context; p2: nk_image); cdecl;
+  nk_image_color: procedure(p1: Pnk_context; p2: nk_image; p3: nk_color); cdecl;
+  nk_labelf: procedure(p1: Pnk_context; p2: nk_flags; const p3: PUTF8Char) varargs; cdecl;
+  nk_labelf_colored: procedure(p1: Pnk_context; p2: nk_flags; p3: nk_color; const p4: PUTF8Char) varargs; cdecl;
+  nk_labelf_wrap: procedure(p1: Pnk_context; const p2: PUTF8Char) varargs; cdecl;
+  nk_labelf_colored_wrap: procedure(p1: Pnk_context; p2: nk_color; const p3: PUTF8Char) varargs; cdecl;
+  nk_labelfv: procedure(p1: Pnk_context; p2: nk_flags; const p3: PUTF8Char; p4: Pointer); cdecl;
+  nk_labelfv_colored: procedure(p1: Pnk_context; p2: nk_flags; p3: nk_color; const p4: PUTF8Char; p5: Pointer); cdecl;
+  nk_labelfv_wrap: procedure(p1: Pnk_context; const p2: PUTF8Char; p3: Pointer); cdecl;
+  nk_labelfv_colored_wrap: procedure(p1: Pnk_context; p2: nk_color; const p3: PUTF8Char; p4: Pointer); cdecl;
+  nk_value_bool: procedure(p1: Pnk_context; const prefix: PUTF8Char; p3: Integer); cdecl;
+  nk_value_int: procedure(p1: Pnk_context; const prefix: PUTF8Char; p3: Integer); cdecl;
+  nk_value_uint: procedure(p1: Pnk_context; const prefix: PUTF8Char; p3: Cardinal); cdecl;
+  nk_value_float: procedure(p1: Pnk_context; const prefix: PUTF8Char; p3: Single); cdecl;
+  nk_value_color_byte: procedure(p1: Pnk_context; const prefix: PUTF8Char; p3: nk_color); cdecl;
+  nk_value_color_float: procedure(p1: Pnk_context; const prefix: PUTF8Char; p3: nk_color); cdecl;
+  nk_value_color_hex: procedure(p1: Pnk_context; const prefix: PUTF8Char; p3: nk_color); cdecl;
+  nk_button_text: function(p1: Pnk_context; const title: PUTF8Char; len: Integer): nk_bool; cdecl;
+  nk_button_label: function(p1: Pnk_context; const title: PUTF8Char): nk_bool; cdecl;
+  nk_button_color: function(p1: Pnk_context; p2: nk_color): nk_bool; cdecl;
+  nk_button_symbol: function(p1: Pnk_context; p2: nk_symbol_type): nk_bool; cdecl;
+  nk_button_image: function(p1: Pnk_context; img: nk_image): nk_bool; cdecl;
+  nk_button_symbol_label: function(p1: Pnk_context; p2: nk_symbol_type; const p3: PUTF8Char; text_alignment: nk_flags): nk_bool; cdecl;
+  nk_button_symbol_text: function(p1: Pnk_context; p2: nk_symbol_type; const p3: PUTF8Char; p4: Integer; alignment: nk_flags): nk_bool; cdecl;
+  nk_button_image_label: function(p1: Pnk_context; img: nk_image; const p3: PUTF8Char; text_alignment: nk_flags): nk_bool; cdecl;
+  nk_button_image_text: function(p1: Pnk_context; img: nk_image; const p3: PUTF8Char; p4: Integer; alignment: nk_flags): nk_bool; cdecl;
+  nk_button_text_styled: function(p1: Pnk_context; const p2: Pnk_style_button; const title: PUTF8Char; len: Integer): nk_bool; cdecl;
+  nk_button_label_styled: function(p1: Pnk_context; const p2: Pnk_style_button; const title: PUTF8Char): nk_bool; cdecl;
+  nk_button_symbol_styled: function(p1: Pnk_context; const p2: Pnk_style_button; p3: nk_symbol_type): nk_bool; cdecl;
+  nk_button_image_styled: function(p1: Pnk_context; const p2: Pnk_style_button; img: nk_image): nk_bool; cdecl;
+  nk_button_symbol_text_styled: function(p1: Pnk_context; const p2: Pnk_style_button; p3: nk_symbol_type; const p4: PUTF8Char; p5: Integer; alignment: nk_flags): nk_bool; cdecl;
+  nk_button_symbol_label_styled: function(ctx: Pnk_context; const style: Pnk_style_button; symbol: nk_symbol_type; const title: PUTF8Char; align: nk_flags): nk_bool; cdecl;
+  nk_button_image_label_styled: function(p1: Pnk_context; const p2: Pnk_style_button; img: nk_image; const p4: PUTF8Char; text_alignment: nk_flags): nk_bool; cdecl;
+  nk_button_image_text_styled: function(p1: Pnk_context; const p2: Pnk_style_button; img: nk_image; const p4: PUTF8Char; p5: Integer; alignment: nk_flags): nk_bool; cdecl;
+  nk_button_set_behavior: procedure(p1: Pnk_context; p2: nk_button_behavior); cdecl;
+  nk_button_push_behavior: function(p1: Pnk_context; p2: nk_button_behavior): nk_bool; cdecl;
+  nk_button_pop_behavior: function(p1: Pnk_context): nk_bool; cdecl;
+  nk_check_label: function(p1: Pnk_context; const p2: PUTF8Char; active: nk_bool): nk_bool; cdecl;
+  nk_check_text: function(p1: Pnk_context; const p2: PUTF8Char; p3: Integer; active: nk_bool): nk_bool; cdecl;
+  nk_check_flags_label: function(p1: Pnk_context; const p2: PUTF8Char; flags: Cardinal; value: Cardinal): Cardinal; cdecl;
+  nk_check_flags_text: function(p1: Pnk_context; const p2: PUTF8Char; p3: Integer; flags: Cardinal; value: Cardinal): Cardinal; cdecl;
+  nk_checkbox_label: function(p1: Pnk_context; const p2: PUTF8Char; active: Pnk_bool): nk_bool; cdecl;
+  nk_checkbox_text: function(p1: Pnk_context; const p2: PUTF8Char; p3: Integer; active: Pnk_bool): nk_bool; cdecl;
+  nk_checkbox_flags_label: function(p1: Pnk_context; const p2: PUTF8Char; flags: PCardinal; value: Cardinal): nk_bool; cdecl;
+  nk_checkbox_flags_text: function(p1: Pnk_context; const p2: PUTF8Char; p3: Integer; flags: PCardinal; value: Cardinal): nk_bool; cdecl;
+  nk_radio_label: function(p1: Pnk_context; const p2: PUTF8Char; active: Pnk_bool): nk_bool; cdecl;
+  nk_radio_text: function(p1: Pnk_context; const p2: PUTF8Char; p3: Integer; active: Pnk_bool): nk_bool; cdecl;
+  nk_option_label: function(p1: Pnk_context; const p2: PUTF8Char; active: nk_bool): nk_bool; cdecl;
+  nk_option_text: function(p1: Pnk_context; const p2: PUTF8Char; p3: Integer; active: nk_bool): nk_bool; cdecl;
+  nk_selectable_label: function(p1: Pnk_context; const p2: PUTF8Char; align: nk_flags; value: Pnk_bool): nk_bool; cdecl;
+  nk_selectable_text: function(p1: Pnk_context; const p2: PUTF8Char; p3: Integer; align: nk_flags; value: Pnk_bool): nk_bool; cdecl;
+  nk_selectable_image_label: function(p1: Pnk_context; p2: nk_image; const p3: PUTF8Char; align: nk_flags; value: Pnk_bool): nk_bool; cdecl;
+  nk_selectable_image_text: function(p1: Pnk_context; p2: nk_image; const p3: PUTF8Char; p4: Integer; align: nk_flags; value: Pnk_bool): nk_bool; cdecl;
+  nk_selectable_symbol_label: function(p1: Pnk_context; p2: nk_symbol_type; const p3: PUTF8Char; align: nk_flags; value: Pnk_bool): nk_bool; cdecl;
+  nk_selectable_symbol_text: function(p1: Pnk_context; p2: nk_symbol_type; const p3: PUTF8Char; p4: Integer; align: nk_flags; value: Pnk_bool): nk_bool; cdecl;
+  nk_select_label: function(p1: Pnk_context; const p2: PUTF8Char; align: nk_flags; value: nk_bool): nk_bool; cdecl;
+  nk_select_text: function(p1: Pnk_context; const p2: PUTF8Char; p3: Integer; align: nk_flags; value: nk_bool): nk_bool; cdecl;
+  nk_select_image_label: function(p1: Pnk_context; p2: nk_image; const p3: PUTF8Char; align: nk_flags; value: nk_bool): nk_bool; cdecl;
+  nk_select_image_text: function(p1: Pnk_context; p2: nk_image; const p3: PUTF8Char; p4: Integer; align: nk_flags; value: nk_bool): nk_bool; cdecl;
+  nk_select_symbol_label: function(p1: Pnk_context; p2: nk_symbol_type; const p3: PUTF8Char; align: nk_flags; value: nk_bool): nk_bool; cdecl;
+  nk_select_symbol_text: function(p1: Pnk_context; p2: nk_symbol_type; const p3: PUTF8Char; p4: Integer; align: nk_flags; value: nk_bool): nk_bool; cdecl;
+  nk_slide_float: function(p1: Pnk_context; min: Single; val: Single; max: Single; step: Single): Single; cdecl;
+  nk_slide_int: function(p1: Pnk_context; min: Integer; val: Integer; max: Integer; step: Integer): Integer; cdecl;
+  nk_slider_float: function(p1: Pnk_context; min: Single; val: PSingle; max: Single; step: Single): nk_bool; cdecl;
+  nk_slider_int: function(p1: Pnk_context; min: Integer; val: PInteger; max: Integer; step: Integer): nk_bool; cdecl;
+  nk_progress: function(p1: Pnk_context; cur: Pnk_size; max: nk_size; modifyable: nk_bool): nk_bool; cdecl;
+  nk_prog: function(p1: Pnk_context; cur: nk_size; max: nk_size; modifyable: nk_bool): nk_size; cdecl;
+  nk_color_picker: function(p1: Pnk_context; p2: nk_colorf; p3: nk_color_format): nk_colorf; cdecl;
+  nk_color_pick: function(p1: Pnk_context; p2: Pnk_colorf; p3: nk_color_format): nk_bool; cdecl;
+  nk_property_int: procedure(p1: Pnk_context; const name: PUTF8Char; min: Integer; val: PInteger; max: Integer; step: Integer; inc_per_pixel: Single); cdecl;
+  nk_property_float: procedure(p1: Pnk_context; const name: PUTF8Char; min: Single; val: PSingle; max: Single; step: Single; inc_per_pixel: Single); cdecl;
+  nk_property_double: procedure(p1: Pnk_context; const name: PUTF8Char; min: Double; val: PDouble; max: Double; step: Double; inc_per_pixel: Single); cdecl;
+  nk_propertyi: function(p1: Pnk_context; const name: PUTF8Char; min: Integer; val: Integer; max: Integer; step: Integer; inc_per_pixel: Single): Integer; cdecl;
+  nk_propertyf: function(p1: Pnk_context; const name: PUTF8Char; min: Single; val: Single; max: Single; step: Single; inc_per_pixel: Single): Single; cdecl;
+  nk_propertyd: function(p1: Pnk_context; const name: PUTF8Char; min: Double; val: Double; max: Double; step: Double; inc_per_pixel: Single): Double; cdecl;
+  nk_edit_string: function(p1: Pnk_context; p2: nk_flags; buffer: PUTF8Char; len: PInteger; max: Integer; p6: nk_plugin_filter): nk_flags; cdecl;
+  nk_edit_string_zero_terminated: function(p1: Pnk_context; p2: nk_flags; buffer: PUTF8Char; max: Integer; p5: nk_plugin_filter): nk_flags; cdecl;
+  nk_edit_buffer: function(p1: Pnk_context; p2: nk_flags; p3: Pnk_text_edit; p4: nk_plugin_filter): nk_flags; cdecl;
+  nk_edit_focus: procedure(p1: Pnk_context; flags: nk_flags); cdecl;
+  nk_edit_unfocus: procedure(p1: Pnk_context); cdecl;
+  nk_chart_begin: function(p1: Pnk_context; p2: nk_chart_type; num: Integer; min: Single; max: Single): nk_bool; cdecl;
+  nk_chart_begin_colored: function(p1: Pnk_context; p2: nk_chart_type; p3: nk_color; active: nk_color; num: Integer; min: Single; max: Single): nk_bool; cdecl;
+  nk_chart_add_slot: procedure(ctx: Pnk_context; const p2: nk_chart_type; count: Integer; min_value: Single; max_value: Single); cdecl;
+  nk_chart_add_slot_colored: procedure(ctx: Pnk_context; const p2: nk_chart_type; p3: nk_color; active: nk_color; count: Integer; min_value: Single; max_value: Single); cdecl;
+  nk_chart_push: function(p1: Pnk_context; p2: Single): nk_flags; cdecl;
+  nk_chart_push_slot: function(p1: Pnk_context; p2: Single; p3: Integer): nk_flags; cdecl;
+  nk_chart_end: procedure(p1: Pnk_context); cdecl;
+  nk_plot: procedure(p1: Pnk_context; p2: nk_chart_type; const values: PSingle; count: Integer; offset: Integer); cdecl;
+  nk_plot_function: procedure(p1: Pnk_context; p2: nk_chart_type; userdata: Pointer; value_getter: nk_plot_function_value_getter; count: Integer; offset: Integer); cdecl;
+  nk_popup_begin: function(p1: Pnk_context; p2: nk_popup_type; const p3: PUTF8Char; p4: nk_flags; bounds: nk_rect): nk_bool; cdecl;
+  nk_popup_close: procedure(p1: Pnk_context); cdecl;
+  nk_popup_end: procedure(p1: Pnk_context); cdecl;
+  nk_popup_get_scroll: procedure(p1: Pnk_context; offset_x: Pnk_uint; offset_y: Pnk_uint); cdecl;
+  nk_popup_set_scroll: procedure(p1: Pnk_context; offset_x: nk_uint; offset_y: nk_uint); cdecl;
+  nk_combo: function(p1: Pnk_context; items: PPUTF8Char; count: Integer; selected: Integer; item_height: Integer; size: nk_vec2): Integer; cdecl;
+  nk_combo_separator: function(p1: Pnk_context; const items_separated_by_separator: PUTF8Char; separator: Integer; selected: Integer; count: Integer; item_height: Integer; size: nk_vec2): Integer; cdecl;
+  nk_combo_string: function(p1: Pnk_context; const items_separated_by_zeros: PUTF8Char; selected: Integer; count: Integer; item_height: Integer; size: nk_vec2): Integer; cdecl;
+  nk_combo_callback: function(p1: Pnk_context; item_getter: nk_combo_callback_item_getter; userdata: Pointer; selected: Integer; count: Integer; item_height: Integer; size: nk_vec2): Integer; cdecl;
+  nk_combobox: procedure(p1: Pnk_context; items: PPUTF8Char; count: Integer; selected: PInteger; item_height: Integer; size: nk_vec2); cdecl;
+  nk_combobox_string: procedure(p1: Pnk_context; const items_separated_by_zeros: PUTF8Char; selected: PInteger; count: Integer; item_height: Integer; size: nk_vec2); cdecl;
+  nk_combobox_separator: procedure(p1: Pnk_context; const items_separated_by_separator: PUTF8Char; separator: Integer; selected: PInteger; count: Integer; item_height: Integer; size: nk_vec2); cdecl;
+  nk_combobox_callback: procedure(p1: Pnk_context; item_getter: nk_combobox_callback_item_getter; p3: Pointer; selected: PInteger; count: Integer; item_height: Integer; size: nk_vec2); cdecl;
+  nk_combo_begin_text: function(p1: Pnk_context; const selected: PUTF8Char; p3: Integer; size: nk_vec2): nk_bool; cdecl;
+  nk_combo_begin_label: function(p1: Pnk_context; const selected: PUTF8Char; size: nk_vec2): nk_bool; cdecl;
+  nk_combo_begin_color: function(p1: Pnk_context; color: nk_color; size: nk_vec2): nk_bool; cdecl;
+  nk_combo_begin_symbol: function(p1: Pnk_context; p2: nk_symbol_type; size: nk_vec2): nk_bool; cdecl;
+  nk_combo_begin_symbol_label: function(p1: Pnk_context; const selected: PUTF8Char; p3: nk_symbol_type; size: nk_vec2): nk_bool; cdecl;
+  nk_combo_begin_symbol_text: function(p1: Pnk_context; const selected: PUTF8Char; p3: Integer; p4: nk_symbol_type; size: nk_vec2): nk_bool; cdecl;
+  nk_combo_begin_image: function(p1: Pnk_context; img: nk_image; size: nk_vec2): nk_bool; cdecl;
+  nk_combo_begin_image_label: function(p1: Pnk_context; const selected: PUTF8Char; p3: nk_image; size: nk_vec2): nk_bool; cdecl;
+  nk_combo_begin_image_text: function(p1: Pnk_context; const selected: PUTF8Char; p3: Integer; p4: nk_image; size: nk_vec2): nk_bool; cdecl;
+  nk_combo_item_label: function(p1: Pnk_context; const p2: PUTF8Char; alignment: nk_flags): nk_bool; cdecl;
+  nk_combo_item_text: function(p1: Pnk_context; const p2: PUTF8Char; p3: Integer; alignment: nk_flags): nk_bool; cdecl;
+  nk_combo_item_image_label: function(p1: Pnk_context; p2: nk_image; const p3: PUTF8Char; alignment: nk_flags): nk_bool; cdecl;
+  nk_combo_item_image_text: function(p1: Pnk_context; p2: nk_image; const p3: PUTF8Char; p4: Integer; alignment: nk_flags): nk_bool; cdecl;
+  nk_combo_item_symbol_label: function(p1: Pnk_context; p2: nk_symbol_type; const p3: PUTF8Char; alignment: nk_flags): nk_bool; cdecl;
+  nk_combo_item_symbol_text: function(p1: Pnk_context; p2: nk_symbol_type; const p3: PUTF8Char; p4: Integer; alignment: nk_flags): nk_bool; cdecl;
+  nk_combo_close: procedure(p1: Pnk_context); cdecl;
+  nk_combo_end: procedure(p1: Pnk_context); cdecl;
+  nk_contextual_begin: function(p1: Pnk_context; p2: nk_flags; p3: nk_vec2; trigger_bounds: nk_rect): nk_bool; cdecl;
+  nk_contextual_item_text: function(p1: Pnk_context; const p2: PUTF8Char; p3: Integer; align: nk_flags): nk_bool; cdecl;
+  nk_contextual_item_label: function(p1: Pnk_context; const p2: PUTF8Char; align: nk_flags): nk_bool; cdecl;
+  nk_contextual_item_image_label: function(p1: Pnk_context; p2: nk_image; const p3: PUTF8Char; alignment: nk_flags): nk_bool; cdecl;
+  nk_contextual_item_image_text: function(p1: Pnk_context; p2: nk_image; const p3: PUTF8Char; len: Integer; alignment: nk_flags): nk_bool; cdecl;
+  nk_contextual_item_symbol_label: function(p1: Pnk_context; p2: nk_symbol_type; const p3: PUTF8Char; alignment: nk_flags): nk_bool; cdecl;
+  nk_contextual_item_symbol_text: function(p1: Pnk_context; p2: nk_symbol_type; const p3: PUTF8Char; p4: Integer; alignment: nk_flags): nk_bool; cdecl;
+  nk_contextual_close: procedure(p1: Pnk_context); cdecl;
+  nk_contextual_end: procedure(p1: Pnk_context); cdecl;
+  nk_tooltip: procedure(p1: Pnk_context; const p2: PUTF8Char); cdecl;
+  nk_tooltipf: procedure(p1: Pnk_context; const p2: PUTF8Char) varargs; cdecl;
+  nk_tooltipfv: procedure(p1: Pnk_context; const p2: PUTF8Char; p3: Pointer); cdecl;
+  nk_tooltip_begin: function(p1: Pnk_context; width: Single): nk_bool; cdecl;
+  nk_tooltip_end: procedure(p1: Pnk_context); cdecl;
+  nk_menubar_begin: procedure(p1: Pnk_context); cdecl;
+  nk_menubar_end: procedure(p1: Pnk_context); cdecl;
+  nk_menu_begin_text: function(p1: Pnk_context; const title: PUTF8Char; title_len: Integer; align: nk_flags; size: nk_vec2): nk_bool; cdecl;
+  nk_menu_begin_label: function(p1: Pnk_context; const p2: PUTF8Char; align: nk_flags; size: nk_vec2): nk_bool; cdecl;
+  nk_menu_begin_image: function(p1: Pnk_context; const p2: PUTF8Char; p3: nk_image; size: nk_vec2): nk_bool; cdecl;
+  nk_menu_begin_image_text: function(p1: Pnk_context; const p2: PUTF8Char; p3: Integer; align: nk_flags; p5: nk_image; size: nk_vec2): nk_bool; cdecl;
+  nk_menu_begin_image_label: function(p1: Pnk_context; const p2: PUTF8Char; align: nk_flags; p4: nk_image; size: nk_vec2): nk_bool; cdecl;
+  nk_menu_begin_symbol: function(p1: Pnk_context; const p2: PUTF8Char; p3: nk_symbol_type; size: nk_vec2): nk_bool; cdecl;
+  nk_menu_begin_symbol_text: function(p1: Pnk_context; const p2: PUTF8Char; p3: Integer; align: nk_flags; p5: nk_symbol_type; size: nk_vec2): nk_bool; cdecl;
+  nk_menu_begin_symbol_label: function(p1: Pnk_context; const p2: PUTF8Char; align: nk_flags; p4: nk_symbol_type; size: nk_vec2): nk_bool; cdecl;
+  nk_menu_item_text: function(p1: Pnk_context; const p2: PUTF8Char; p3: Integer; align: nk_flags): nk_bool; cdecl;
+  nk_menu_item_label: function(p1: Pnk_context; const p2: PUTF8Char; alignment: nk_flags): nk_bool; cdecl;
+  nk_menu_item_image_label: function(p1: Pnk_context; p2: nk_image; const p3: PUTF8Char; alignment: nk_flags): nk_bool; cdecl;
+  nk_menu_item_image_text: function(p1: Pnk_context; p2: nk_image; const p3: PUTF8Char; len: Integer; alignment: nk_flags): nk_bool; cdecl;
+  nk_menu_item_symbol_text: function(p1: Pnk_context; p2: nk_symbol_type; const p3: PUTF8Char; p4: Integer; alignment: nk_flags): nk_bool; cdecl;
+  nk_menu_item_symbol_label: function(p1: Pnk_context; p2: nk_symbol_type; const p3: PUTF8Char; alignment: nk_flags): nk_bool; cdecl;
+  nk_menu_close: procedure(p1: Pnk_context); cdecl;
+  nk_menu_end: procedure(p1: Pnk_context); cdecl;
+  nk_style_default: procedure(p1: Pnk_context); cdecl;
+  nk_style_from_table: procedure(p1: Pnk_context; const p2: Pnk_color); cdecl;
+  nk_style_load_cursor: procedure(p1: Pnk_context; p2: nk_style_cursor; const p3: Pnk_cursor); cdecl;
+  nk_style_load_all_cursors: procedure(p1: Pnk_context; p2: Pnk_cursor); cdecl;
+  nk_style_get_color_by_name: function(p1: nk_style_colors): PUTF8Char; cdecl;
+  nk_style_set_font: procedure(p1: Pnk_context; const p2: Pnk_user_font); cdecl;
+  nk_style_set_cursor: function(p1: Pnk_context; p2: nk_style_cursor): nk_bool; cdecl;
+  nk_style_show_cursor: procedure(p1: Pnk_context); cdecl;
+  nk_style_hide_cursor: procedure(p1: Pnk_context); cdecl;
+  nk_style_push_font: function(p1: Pnk_context; const p2: Pnk_user_font): nk_bool; cdecl;
+  nk_style_push_float: function(p1: Pnk_context; p2: PSingle; p3: Single): nk_bool; cdecl;
+  nk_style_push_vec2: function(p1: Pnk_context; p2: Pnk_vec2; p3: nk_vec2): nk_bool; cdecl;
+  nk_style_push_style_item: function(p1: Pnk_context; p2: Pnk_style_item; p3: nk_style_item): nk_bool; cdecl;
+  nk_style_push_flags: function(p1: Pnk_context; p2: Pnk_flags; p3: nk_flags): nk_bool; cdecl;
+  nk_style_push_color: function(p1: Pnk_context; p2: Pnk_color; p3: nk_color): nk_bool; cdecl;
+  nk_style_pop_font: function(p1: Pnk_context): nk_bool; cdecl;
+  nk_style_pop_float: function(p1: Pnk_context): nk_bool; cdecl;
+  nk_style_pop_vec2: function(p1: Pnk_context): nk_bool; cdecl;
+  nk_style_pop_style_item: function(p1: Pnk_context): nk_bool; cdecl;
+  nk_style_pop_flags: function(p1: Pnk_context): nk_bool; cdecl;
+  nk_style_pop_color: function(p1: Pnk_context): nk_bool; cdecl;
+  nk_rgb_rtn: function(r: Integer; g: Integer; b: Integer): nk_color; cdecl;
+  nk_rgb_iv: function(const rgb: PInteger): nk_color; cdecl;
+  nk_rgb_bv: function(const rgb: Pnk_byte): nk_color; cdecl;
+  nk_rgb_f: function(r: Single; g: Single; b: Single): nk_color; cdecl;
+  nk_rgb_fv: function(const rgb: PSingle): nk_color; cdecl;
+  nk_rgb_cf: function(c: nk_colorf): nk_color; cdecl;
+  nk_rgb_hex: function(const rgb: PUTF8Char): nk_color; cdecl;
+  nk_rgba_rtn: function(r: Integer; g: Integer; b: Integer; a: Integer): nk_color; cdecl;
+  nk_rgba_u32: function(p1: nk_uint): nk_color; cdecl;
+  nk_rgba_iv: function(const rgba: PInteger): nk_color; cdecl;
+  nk_rgba_bv: function(const rgba: Pnk_byte): nk_color; cdecl;
+  nk_rgba_f: function(r: Single; g: Single; b: Single; a: Single): nk_color; cdecl;
+  nk_rgba_fv: function(const rgba: PSingle): nk_color; cdecl;
+  nk_rgba_cf: function(c: nk_colorf): nk_color; cdecl;
+  nk_rgba_hex: function(const rgb: PUTF8Char): nk_color; cdecl;
+  nk_hsva_colorf: function(h: Single; s: Single; v: Single; a: Single): nk_colorf; cdecl;
+  nk_hsva_colorfv: function(c: PSingle): nk_colorf; cdecl;
+  nk_colorf_hsva_f: procedure(out_h: PSingle; out_s: PSingle; out_v: PSingle; out_a: PSingle; &in: nk_colorf); cdecl;
+  nk_colorf_hsva_fv: procedure(hsva: PSingle; &in: nk_colorf); cdecl;
+  nk_hsv: function(h: Integer; s: Integer; v: Integer): nk_color; cdecl;
+  nk_hsv_iv: function(const hsv: PInteger): nk_color; cdecl;
+  nk_hsv_bv: function(const hsv: Pnk_byte): nk_color; cdecl;
+  nk_hsv_f: function(h: Single; s: Single; v: Single): nk_color; cdecl;
+  nk_hsv_fv: function(const hsv: PSingle): nk_color; cdecl;
+  nk_hsva: function(h: Integer; s: Integer; v: Integer; a: Integer): nk_color; cdecl;
+  nk_hsva_iv: function(const hsva: PInteger): nk_color; cdecl;
+  nk_hsva_bv: function(const hsva: Pnk_byte): nk_color; cdecl;
+  nk_hsva_f: function(h: Single; s: Single; v: Single; a: Single): nk_color; cdecl;
+  nk_hsva_fv: function(const hsva: PSingle): nk_color; cdecl;
+  nk_color_f: procedure(r: PSingle; g: PSingle; b: PSingle; a: PSingle; p5: nk_color); cdecl;
+  nk_color_fv: procedure(rgba_out: PSingle; p2: nk_color); cdecl;
+  nk_color_cf: function(p1: nk_color): nk_colorf; cdecl;
+  nk_color_d: procedure(r: PDouble; g: PDouble; b: PDouble; a: PDouble; p5: nk_color); cdecl;
+  nk_color_dv: procedure(rgba_out: PDouble; p2: nk_color); cdecl;
+  nk_color_u32: function(p1: nk_color): nk_uint; cdecl;
+  nk_color_hex_rgba: procedure(output: PUTF8Char; p2: nk_color); cdecl;
+  nk_color_hex_rgb: procedure(output: PUTF8Char; p2: nk_color); cdecl;
+  nk_color_hsv_i: procedure(out_h: PInteger; out_s: PInteger; out_v: PInteger; p4: nk_color); cdecl;
+  nk_color_hsv_b: procedure(out_h: Pnk_byte; out_s: Pnk_byte; out_v: Pnk_byte; p4: nk_color); cdecl;
+  nk_color_hsv_iv: procedure(hsv_out: PInteger; p2: nk_color); cdecl;
+  nk_color_hsv_bv: procedure(hsv_out: Pnk_byte; p2: nk_color); cdecl;
+  nk_color_hsv_f: procedure(out_h: PSingle; out_s: PSingle; out_v: PSingle; p4: nk_color); cdecl;
+  nk_color_hsv_fv: procedure(hsv_out: PSingle; p2: nk_color); cdecl;
+  nk_color_hsva_i: procedure(h: PInteger; s: PInteger; v: PInteger; a: PInteger; p5: nk_color); cdecl;
+  nk_color_hsva_b: procedure(h: Pnk_byte; s: Pnk_byte; v: Pnk_byte; a: Pnk_byte; p5: nk_color); cdecl;
+  nk_color_hsva_iv: procedure(hsva_out: PInteger; p2: nk_color); cdecl;
+  nk_color_hsva_bv: procedure(hsva_out: Pnk_byte; p2: nk_color); cdecl;
+  nk_color_hsva_f: procedure(out_h: PSingle; out_s: PSingle; out_v: PSingle; out_a: PSingle; p5: nk_color); cdecl;
+  nk_color_hsva_fv: procedure(hsva_out: PSingle; p2: nk_color); cdecl;
+  nk_handle_ptr: function(p1: Pointer): nk_handle; cdecl;
+  nk_handle_id: function(p1: Integer): nk_handle; cdecl;
+  nk_image_handle: function(p1: nk_handle): nk_image; cdecl;
+  nk_image_ptr: function(p1: Pointer): nk_image; cdecl;
+  nk_image_id: function(p1: Integer): nk_image; cdecl;
+  nk_image_is_subimage: function(const img: Pnk_image): nk_bool; cdecl;
+  nk_subimage_ptr: function(p1: Pointer; w: nk_ushort; h: nk_ushort; sub_region: nk_rect): nk_image; cdecl;
+  nk_subimage_id: function(p1: Integer; w: nk_ushort; h: nk_ushort; sub_region: nk_rect): nk_image; cdecl;
+  nk_subimage_handle: function(p1: nk_handle; w: nk_ushort; h: nk_ushort; sub_region: nk_rect): nk_image; cdecl;
+  nk_nine_slice_handle: function(p1: nk_handle; l: nk_ushort; t: nk_ushort; r: nk_ushort; b: nk_ushort): nk_nine_slice; cdecl;
+  nk_nine_slice_ptr: function(p1: Pointer; l: nk_ushort; t: nk_ushort; r: nk_ushort; b: nk_ushort): nk_nine_slice; cdecl;
+  nk_nine_slice_id: function(p1: Integer; l: nk_ushort; t: nk_ushort; r: nk_ushort; b: nk_ushort): nk_nine_slice; cdecl;
+  nk_nine_slice_is_sub9slice: function(const img: Pnk_nine_slice): Integer; cdecl;
+  nk_sub9slice_ptr: function(p1: Pointer; w: nk_ushort; h: nk_ushort; sub_region: nk_rect; l: nk_ushort; t: nk_ushort; r: nk_ushort; b: nk_ushort): nk_nine_slice; cdecl;
+  nk_sub9slice_id: function(p1: Integer; w: nk_ushort; h: nk_ushort; sub_region: nk_rect; l: nk_ushort; t: nk_ushort; r: nk_ushort; b: nk_ushort): nk_nine_slice; cdecl;
+  nk_sub9slice_handle: function(p1: nk_handle; w: nk_ushort; h: nk_ushort; sub_region: nk_rect; l: nk_ushort; t: nk_ushort; r: nk_ushort; b: nk_ushort): nk_nine_slice; cdecl;
+  nk_murmur_hash: function(const key: Pointer; len: Integer; seed: nk_hash): nk_hash; cdecl;
+  nk_triangle_from_direction: procedure(result: Pnk_vec2; r: nk_rect; pad_x: Single; pad_y: Single; p5: nk_heading); cdecl;
+  nk_vec2_rtn: function(x: Single; y: Single): nk_vec2; cdecl;
+  nk_vec2i_rtn: function(x: Integer; y: Integer): nk_vec2; cdecl;
+  nk_vec2v: function(const xy: PSingle): nk_vec2; cdecl;
+  nk_vec2iv: function(const xy: PInteger): nk_vec2; cdecl;
+  nk_get_null_rect: function(): nk_rect; cdecl;
+  nk_rect_rtn: function(x: Single; y: Single; w: Single; h: Single): nk_rect; cdecl;
+  nk_recti_rtn: function(x: Integer; y: Integer; w: Integer; h: Integer): nk_rect; cdecl;
+  nk_recta: function(pos: nk_vec2; size: nk_vec2): nk_rect; cdecl;
+  nk_rectv: function(const xywh: PSingle): nk_rect; cdecl;
+  nk_rectiv: function(const xywh: PInteger): nk_rect; cdecl;
+  nk_rect_pos: function(p1: nk_rect): nk_vec2; cdecl;
+  nk_rect_size: function(p1: nk_rect): nk_vec2; cdecl;
+  nk_strlen: function(const str: PUTF8Char): Integer; cdecl;
+  nk_stricmp: function(const s1: PUTF8Char; const s2: PUTF8Char): Integer; cdecl;
+  nk_stricmpn: function(const s1: PUTF8Char; const s2: PUTF8Char; n: Integer): Integer; cdecl;
+  nk_strtoi: function(const str: PUTF8Char; endptr: PPUTF8Char): Integer; cdecl;
+  nk_strtof: function(const str: PUTF8Char; endptr: PPUTF8Char): Single; cdecl;
+  nk_strtod: function(const str: PUTF8Char; endptr: PPUTF8Char): Double; cdecl;
+  nk_strfilter: function(const text: PUTF8Char; const regexp: PUTF8Char): Integer; cdecl;
+  nk_strmatch_fuzzy_string: function(const str: PUTF8Char; const pattern: PUTF8Char; out_score: PInteger): Integer; cdecl;
+  nk_strmatch_fuzzy_text: function(const txt: PUTF8Char; txt_len: Integer; const pattern: PUTF8Char; out_score: PInteger): Integer; cdecl;
+  nk_utf_decode: function(const p1: PUTF8Char; p2: Pnk_rune; p3: Integer): Integer; cdecl;
+  nk_utf_encode: function(p1: nk_rune; p2: PUTF8Char; p3: Integer): Integer; cdecl;
+  nk_utf_len: function(const p1: PUTF8Char; byte_len: Integer): Integer; cdecl;
+  nk_utf_at: function(const buffer: PUTF8Char; length: Integer; index: Integer; unicode: Pnk_rune; len: PInteger): PUTF8Char; cdecl;
+  nk_font_default_glyph_ranges: function(): Pnk_rune; cdecl;
+  nk_font_chinese_glyph_ranges: function(): Pnk_rune; cdecl;
+  nk_font_cyrillic_glyph_ranges: function(): Pnk_rune; cdecl;
+  nk_font_korean_glyph_ranges: function(): Pnk_rune; cdecl;
+  nk_font_atlas_init_default: procedure(p1: Pnk_font_atlas); cdecl;
+  nk_font_atlas_init: procedure(p1: Pnk_font_atlas; p2: Pnk_allocator); cdecl;
+  nk_font_atlas_init_custom: procedure(p1: Pnk_font_atlas; persistent: Pnk_allocator; transient: Pnk_allocator); cdecl;
+  nk_font_atlas_begin: procedure(p1: Pnk_font_atlas); cdecl;
+  nk_font_config_rtn: function(pixel_height: Single): nk_font_config; cdecl;
+  nk_font_atlas_add: function(p1: Pnk_font_atlas; const p2: Pnk_font_config): Pnk_font; cdecl;
+  nk_font_atlas_add_default: function(p1: Pnk_font_atlas; height: Single; const p3: Pnk_font_config): Pnk_font; cdecl;
+  nk_font_atlas_add_from_memory: function(atlas: Pnk_font_atlas; memory: Pointer; size: nk_size; height: Single; const config: Pnk_font_config): Pnk_font; cdecl;
+  nk_font_atlas_add_from_file: function(atlas: Pnk_font_atlas; const file_path: PUTF8Char; height: Single; const p4: Pnk_font_config): Pnk_font; cdecl;
+  nk_font_atlas_add_compressed: function(p1: Pnk_font_atlas; memory: Pointer; size: nk_size; height: Single; const p5: Pnk_font_config): Pnk_font; cdecl;
+  nk_font_atlas_add_compressed_base85: function(p1: Pnk_font_atlas; const data: PUTF8Char; height: Single; const config: Pnk_font_config): Pnk_font; cdecl;
+  nk_font_atlas_bake: function(p1: Pnk_font_atlas; width: PInteger; height: PInteger; p4: nk_font_atlas_format): Pointer; cdecl;
+  nk_font_atlas_end: procedure(p1: Pnk_font_atlas; tex: nk_handle; p3: Pnk_draw_null_texture); cdecl;
+  nk_font_find_glyph: function(p1: Pnk_font; unicode: nk_rune): Pnk_font_glyph; cdecl;
+  nk_font_atlas_cleanup: procedure(atlas: Pnk_font_atlas); cdecl;
+  nk_font_atlas_clear: procedure(p1: Pnk_font_atlas); cdecl;
+  nk_buffer_init_default: procedure(p1: Pnk_buffer); cdecl;
+  nk_buffer_init: procedure(p1: Pnk_buffer; const p2: Pnk_allocator; size: nk_size); cdecl;
+  nk_buffer_init_fixed: procedure(p1: Pnk_buffer; memory: Pointer; size: nk_size); cdecl;
+  nk_buffer_info: procedure(p1: Pnk_memory_status; p2: Pnk_buffer); cdecl;
+  nk_buffer_push: procedure(p1: Pnk_buffer; &type: nk_buffer_allocation_type; const memory: Pointer; size: nk_size; align: nk_size); cdecl;
+  nk_buffer_mark: procedure(p1: Pnk_buffer; &type: nk_buffer_allocation_type); cdecl;
+  nk_buffer_reset: procedure(p1: Pnk_buffer; &type: nk_buffer_allocation_type); cdecl;
+  nk_buffer_clear: procedure(p1: Pnk_buffer); cdecl;
+  nk_buffer_free: procedure(p1: Pnk_buffer); cdecl;
+  nk_buffer_memory: function(p1: Pnk_buffer): Pointer; cdecl;
+  nk_buffer_memory_const: function(const p1: Pnk_buffer): Pointer; cdecl;
+  nk_buffer_total: function(p1: Pnk_buffer): nk_size; cdecl;
+  nk_str_init_default: procedure(p1: Pnk_str); cdecl;
+  nk_str_init: procedure(p1: Pnk_str; const p2: Pnk_allocator; size: nk_size); cdecl;
+  nk_str_init_fixed: procedure(p1: Pnk_str; memory: Pointer; size: nk_size); cdecl;
+  nk_str_clear: procedure(p1: Pnk_str); cdecl;
+  nk_str_free: procedure(p1: Pnk_str); cdecl;
+  nk_str_append_text_char: function(p1: Pnk_str; const p2: PUTF8Char; p3: Integer): Integer; cdecl;
+  nk_str_append_str_char: function(p1: Pnk_str; const p2: PUTF8Char): Integer; cdecl;
+  nk_str_append_text_utf8: function(p1: Pnk_str; const p2: PUTF8Char; p3: Integer): Integer; cdecl;
+  nk_str_append_str_utf8: function(p1: Pnk_str; const p2: PUTF8Char): Integer; cdecl;
+  nk_str_append_text_runes: function(p1: Pnk_str; const p2: Pnk_rune; p3: Integer): Integer; cdecl;
+  nk_str_append_str_runes: function(p1: Pnk_str; const p2: Pnk_rune): Integer; cdecl;
+  nk_str_insert_at_char: function(p1: Pnk_str; pos: Integer; const p3: PUTF8Char; p4: Integer): Integer; cdecl;
+  nk_str_insert_at_rune: function(p1: Pnk_str; pos: Integer; const p3: PUTF8Char; p4: Integer): Integer; cdecl;
+  nk_str_insert_text_char: function(p1: Pnk_str; pos: Integer; const p3: PUTF8Char; p4: Integer): Integer; cdecl;
+  nk_str_insert_str_char: function(p1: Pnk_str; pos: Integer; const p3: PUTF8Char): Integer; cdecl;
+  nk_str_insert_text_utf8: function(p1: Pnk_str; pos: Integer; const p3: PUTF8Char; p4: Integer): Integer; cdecl;
+  nk_str_insert_str_utf8: function(p1: Pnk_str; pos: Integer; const p3: PUTF8Char): Integer; cdecl;
+  nk_str_insert_text_runes: function(p1: Pnk_str; pos: Integer; const p3: Pnk_rune; p4: Integer): Integer; cdecl;
+  nk_str_insert_str_runes: function(p1: Pnk_str; pos: Integer; const p3: Pnk_rune): Integer; cdecl;
+  nk_str_remove_chars: procedure(p1: Pnk_str; len: Integer); cdecl;
+  nk_str_remove_runes: procedure(str: Pnk_str; len: Integer); cdecl;
+  nk_str_delete_chars: procedure(p1: Pnk_str; pos: Integer; len: Integer); cdecl;
+  nk_str_delete_runes: procedure(p1: Pnk_str; pos: Integer; len: Integer); cdecl;
+  nk_str_at_char: function(p1: Pnk_str; pos: Integer): PUTF8Char; cdecl;
+  nk_str_at_rune: function(p1: Pnk_str; pos: Integer; unicode: Pnk_rune; len: PInteger): PUTF8Char; cdecl;
+  nk_str_rune_at: function(const p1: Pnk_str; pos: Integer): nk_rune; cdecl;
+  nk_str_at_char_const: function(const p1: Pnk_str; pos: Integer): PUTF8Char; cdecl;
+  nk_str_at_const: function(const p1: Pnk_str; pos: Integer; unicode: Pnk_rune; len: PInteger): PUTF8Char; cdecl;
+  nk_str_get: function(p1: Pnk_str): PUTF8Char; cdecl;
+  nk_str_get_const: function(const p1: Pnk_str): PUTF8Char; cdecl;
+  nk_str_len: function(p1: Pnk_str): Integer; cdecl;
+  nk_str_len_char: function(p1: Pnk_str): Integer; cdecl;
+  nk_filter_default: function(const p1: Pnk_text_edit; unicode: nk_rune): nk_bool; cdecl;
+  nk_filter_ascii: function(const p1: Pnk_text_edit; unicode: nk_rune): nk_bool; cdecl;
+  nk_filter_float: function(const p1: Pnk_text_edit; unicode: nk_rune): nk_bool; cdecl;
+  nk_filter_decimal: function(const p1: Pnk_text_edit; unicode: nk_rune): nk_bool; cdecl;
+  nk_filter_hex: function(const p1: Pnk_text_edit; unicode: nk_rune): nk_bool; cdecl;
+  nk_filter_oct: function(const p1: Pnk_text_edit; unicode: nk_rune): nk_bool; cdecl;
+  nk_filter_binary: function(const p1: Pnk_text_edit; unicode: nk_rune): nk_bool; cdecl;
+  nk_textedit_init_default: procedure(p1: Pnk_text_edit); cdecl;
+  nk_textedit_init: procedure(p1: Pnk_text_edit; p2: Pnk_allocator; size: nk_size); cdecl;
+  nk_textedit_init_fixed: procedure(p1: Pnk_text_edit; memory: Pointer; size: nk_size); cdecl;
+  nk_textedit_free: procedure(p1: Pnk_text_edit); cdecl;
+  nk_textedit_text: procedure(p1: Pnk_text_edit; const p2: PUTF8Char; total_len: Integer); cdecl;
+  nk_textedit_delete: procedure(p1: Pnk_text_edit; where: Integer; len: Integer); cdecl;
+  nk_textedit_delete_selection: procedure(p1: Pnk_text_edit); cdecl;
+  nk_textedit_select_all: procedure(p1: Pnk_text_edit); cdecl;
+  nk_textedit_cut: function(p1: Pnk_text_edit): nk_bool; cdecl;
+  nk_textedit_paste: function(p1: Pnk_text_edit; const p2: PUTF8Char; len: Integer): nk_bool; cdecl;
+  nk_textedit_undo: procedure(p1: Pnk_text_edit); cdecl;
+  nk_textedit_redo: procedure(p1: Pnk_text_edit); cdecl;
+  nk_stroke_line: procedure(b: Pnk_command_buffer; x0: Single; y0: Single; x1: Single; y1: Single; line_thickness: Single; p7: nk_color); cdecl;
+  nk_stroke_curve: procedure(p1: Pnk_command_buffer; p2: Single; p3: Single; p4: Single; p5: Single; p6: Single; p7: Single; p8: Single; p9: Single; line_thickness: Single; p11: nk_color); cdecl;
+  nk_stroke_rect: procedure(p1: Pnk_command_buffer; p2: nk_rect; rounding: Single; line_thickness: Single; p5: nk_color); cdecl;
+  nk_stroke_circle: procedure(p1: Pnk_command_buffer; p2: nk_rect; line_thickness: Single; p4: nk_color); cdecl;
+  nk_stroke_arc: procedure(p1: Pnk_command_buffer; cx: Single; cy: Single; radius: Single; a_min: Single; a_max: Single; line_thickness: Single; p8: nk_color); cdecl;
+  nk_stroke_triangle: procedure(p1: Pnk_command_buffer; p2: Single; p3: Single; p4: Single; p5: Single; p6: Single; p7: Single; line_thichness: Single; p9: nk_color); cdecl;
+  nk_stroke_polyline: procedure(p1: Pnk_command_buffer; points: PSingle; point_count: Integer; line_thickness: Single; col: nk_color); cdecl;
+  nk_stroke_polygon: procedure(p1: Pnk_command_buffer; p2: PSingle; point_count: Integer; line_thickness: Single; p5: nk_color); cdecl;
+  nk_fill_rect: procedure(p1: Pnk_command_buffer; p2: nk_rect; rounding: Single; p4: nk_color); cdecl;
+  nk_fill_rect_multi_color: procedure(p1: Pnk_command_buffer; p2: nk_rect; left: nk_color; top: nk_color; right: nk_color; bottom: nk_color); cdecl;
+  nk_fill_circle: procedure(p1: Pnk_command_buffer; p2: nk_rect; p3: nk_color); cdecl;
+  nk_fill_arc: procedure(p1: Pnk_command_buffer; cx: Single; cy: Single; radius: Single; a_min: Single; a_max: Single; p7: nk_color); cdecl;
+  nk_fill_triangle: procedure(p1: Pnk_command_buffer; x0: Single; y0: Single; x1: Single; y1: Single; x2: Single; y2: Single; p8: nk_color); cdecl;
+  nk_fill_polygon: procedure(p1: Pnk_command_buffer; p2: PSingle; point_count: Integer; p4: nk_color); cdecl;
+  nk_draw_image: procedure(p1: Pnk_command_buffer; p2: nk_rect; const p3: Pnk_image; p4: nk_color); cdecl;
+  nk_draw_nine_slice: procedure(p1: Pnk_command_buffer; p2: nk_rect; const p3: Pnk_nine_slice; p4: nk_color); cdecl;
+  nk_draw_text: procedure(p1: Pnk_command_buffer; p2: nk_rect; const text: PUTF8Char; len: Integer; const p5: Pnk_user_font; p6: nk_color; p7: nk_color); cdecl;
+  nk_push_scissor: procedure(p1: Pnk_command_buffer; p2: nk_rect); cdecl;
+  nk_push_custom: procedure(p1: Pnk_command_buffer; p2: nk_rect; p3: nk_command_custom_callback; usr: nk_handle); cdecl;
+  nk_input_has_mouse_click: function(const p1: Pnk_input; p2: nk_buttons): nk_bool; cdecl;
+  nk_input_has_mouse_click_in_rect: function(const p1: Pnk_input; p2: nk_buttons; p3: nk_rect): nk_bool; cdecl;
+  nk_input_has_mouse_click_in_button_rect: function(const p1: Pnk_input; p2: nk_buttons; p3: nk_rect): nk_bool; cdecl;
+  nk_input_has_mouse_click_down_in_rect: function(const p1: Pnk_input; p2: nk_buttons; p3: nk_rect; down: nk_bool): nk_bool; cdecl;
+  nk_input_is_mouse_click_in_rect: function(const p1: Pnk_input; p2: nk_buttons; p3: nk_rect): nk_bool; cdecl;
+  nk_input_is_mouse_click_down_in_rect: function(const i: Pnk_input; id: nk_buttons; b: nk_rect; down: nk_bool): nk_bool; cdecl;
+  nk_input_any_mouse_click_in_rect: function(const p1: Pnk_input; p2: nk_rect): nk_bool; cdecl;
+  nk_input_is_mouse_prev_hovering_rect: function(const p1: Pnk_input; p2: nk_rect): nk_bool; cdecl;
+  nk_input_is_mouse_hovering_rect: function(const p1: Pnk_input; p2: nk_rect): nk_bool; cdecl;
+  nk_input_mouse_clicked: function(const p1: Pnk_input; p2: nk_buttons; p3: nk_rect): nk_bool; cdecl;
+  nk_input_is_mouse_down: function(const p1: Pnk_input; p2: nk_buttons): nk_bool; cdecl;
+  nk_input_is_mouse_pressed: function(const p1: Pnk_input; p2: nk_buttons): nk_bool; cdecl;
+  nk_input_is_mouse_released: function(const p1: Pnk_input; p2: nk_buttons): nk_bool; cdecl;
+  nk_input_is_key_pressed: function(const p1: Pnk_input; p2: nk_keys): nk_bool; cdecl;
+  nk_input_is_key_released: function(const p1: Pnk_input; p2: nk_keys): nk_bool; cdecl;
+  nk_input_is_key_down: function(const p1: Pnk_input; p2: nk_keys): nk_bool; cdecl;
+  nk_draw_list_init: procedure(p1: Pnk_draw_list); cdecl;
+  nk_draw_list_setup: procedure(p1: Pnk_draw_list; const p2: Pnk_convert_config; cmds: Pnk_buffer; vertices: Pnk_buffer; elements: Pnk_buffer; line_aa: nk_anti_aliasing; shape_aa: nk_anti_aliasing); cdecl;
+  nk__draw_list_begin: function(const p1: Pnk_draw_list; const p2: Pnk_buffer): Pnk_draw_command; cdecl;
+  nk__draw_list_next: function(const p1: Pnk_draw_command; const p2: Pnk_buffer; const p3: Pnk_draw_list): Pnk_draw_command; cdecl;
+  nk__draw_list_end: function(const p1: Pnk_draw_list; const p2: Pnk_buffer): Pnk_draw_command; cdecl;
+  nk_draw_list_path_clear: procedure(p1: Pnk_draw_list); cdecl;
+  nk_draw_list_path_line_to: procedure(p1: Pnk_draw_list; pos: nk_vec2); cdecl;
+  nk_draw_list_path_arc_to_fast: procedure(p1: Pnk_draw_list; center: nk_vec2; radius: Single; a_min: Integer; a_max: Integer); cdecl;
+  nk_draw_list_path_arc_to: procedure(p1: Pnk_draw_list; center: nk_vec2; radius: Single; a_min: Single; a_max: Single; segments: Cardinal); cdecl;
+  nk_draw_list_path_rect_to: procedure(p1: Pnk_draw_list; a: nk_vec2; b: nk_vec2; rounding: Single); cdecl;
+  nk_draw_list_path_curve_to: procedure(p1: Pnk_draw_list; p2: nk_vec2; p3: nk_vec2; p4: nk_vec2; num_segments: Cardinal); cdecl;
+  nk_draw_list_path_fill: procedure(p1: Pnk_draw_list; p2: nk_color); cdecl;
+  nk_draw_list_path_stroke: procedure(p1: Pnk_draw_list; p2: nk_color; closed: nk_draw_list_stroke; thickness: Single); cdecl;
+  nk_draw_list_stroke_line: procedure(p1: Pnk_draw_list; a: nk_vec2; b: nk_vec2; p4: nk_color; thickness: Single); cdecl;
+  nk_draw_list_stroke_rect: procedure(p1: Pnk_draw_list; rect: nk_rect; p3: nk_color; rounding: Single; thickness: Single); cdecl;
+  nk_draw_list_stroke_triangle: procedure(p1: Pnk_draw_list; a: nk_vec2; b: nk_vec2; c: nk_vec2; p5: nk_color; thickness: Single); cdecl;
+  nk_draw_list_stroke_circle: procedure(p1: Pnk_draw_list; center: nk_vec2; radius: Single; p4: nk_color; segs: Cardinal; thickness: Single); cdecl;
+  nk_draw_list_stroke_curve: procedure(p1: Pnk_draw_list; p0: nk_vec2; cp0: nk_vec2; cp1: nk_vec2; p5: nk_vec2; p6: nk_color; segments: Cardinal; thickness: Single); cdecl;
+  nk_draw_list_stroke_poly_line: procedure(p1: Pnk_draw_list; const pnts: Pnk_vec2; const cnt: Cardinal; p4: nk_color; p5: nk_draw_list_stroke; thickness: Single; p7: nk_anti_aliasing); cdecl;
+  nk_draw_list_fill_rect: procedure(p1: Pnk_draw_list; rect: nk_rect; p3: nk_color; rounding: Single); cdecl;
+  nk_draw_list_fill_rect_multi_color: procedure(p1: Pnk_draw_list; rect: nk_rect; left: nk_color; top: nk_color; right: nk_color; bottom: nk_color); cdecl;
+  nk_draw_list_fill_triangle: procedure(p1: Pnk_draw_list; a: nk_vec2; b: nk_vec2; c: nk_vec2; p5: nk_color); cdecl;
+  nk_draw_list_fill_circle: procedure(p1: Pnk_draw_list; center: nk_vec2; radius: Single; col: nk_color; segs: Cardinal); cdecl;
+  nk_draw_list_fill_poly_convex: procedure(p1: Pnk_draw_list; const points: Pnk_vec2; const count: Cardinal; p4: nk_color; p5: nk_anti_aliasing); cdecl;
+  nk_draw_list_add_image: procedure(p1: Pnk_draw_list; texture: nk_image; rect: nk_rect; p4: nk_color); cdecl;
+  nk_draw_list_add_text: procedure(p1: Pnk_draw_list; const p2: Pnk_user_font; p3: nk_rect; const text: PUTF8Char; len: Integer; font_height: Single; p7: nk_color); cdecl;
+  nk_style_item_color_rtn: function(p1: nk_color): nk_style_item; cdecl;
+  nk_style_item_image_rtn: function(img: nk_image): nk_style_item; cdecl;
+  nk_style_item_nine_slice_rtn: function(slice: nk_nine_slice): nk_style_item; cdecl;
+  nk_style_item_hide: function(): nk_style_item; cdecl;
+  nk_glfw3_init: function(win: PGLFWwindow; p2: nk_glfw_init_state): Pnk_context; cdecl;
+  nk_glfw3_font_stash_begin: procedure(atlas: PPnk_font_atlas); cdecl;
+  nk_glfw3_font_stash_end: procedure(); cdecl;
+  nk_glfw3_new_frame: procedure(); cdecl;
+  nk_glfw3_render: procedure(p1: nk_anti_aliasing); cdecl;
+  nk_glfw3_shutdown: procedure(); cdecl;
+  nk_glfw3_char_callback: procedure(win: PGLFWwindow; codepoint: Cardinal); cdecl;
+  nk_gflw3_scroll_callback: procedure(win: PGLFWwindow; xoff: Double; yoff: Double); cdecl;
+  gladLoadGL: function(load: GLADloadfunc): Integer; cdecl;
 
 procedure GetExports(const aDLLHandle: THandle);
 
@@ -1913,6 +4316,7 @@ begin
   clog_set_time_fmt := GetProcAddress(aDLLHandle, 'clog_set_time_fmt');
   clog_warn := GetProcAddress(aDLLHandle, 'clog_warn');
   crc32 := GetProcAddress(aDLLHandle, 'crc32');
+  gladLoadGL := GetProcAddress(aDLLHandle, 'gladLoadGL');
   glfwCreateCursor := GetProcAddress(aDLLHandle, 'glfwCreateCursor');
   glfwCreateStandardCursor := GetProcAddress(aDLLHandle, 'glfwCreateStandardCursor');
   glfwCreateWindow := GetProcAddress(aDLLHandle, 'glfwCreateWindow');
@@ -2035,6 +4439,543 @@ begin
   glfwWindowHint := GetProcAddress(aDLLHandle, 'glfwWindowHint');
   glfwWindowHintString := GetProcAddress(aDLLHandle, 'glfwWindowHintString');
   glfwWindowShouldClose := GetProcAddress(aDLLHandle, 'glfwWindowShouldClose');
+  nk__begin := GetProcAddress(aDLLHandle, 'nk__begin');
+  nk__draw_begin := GetProcAddress(aDLLHandle, 'nk__draw_begin');
+  nk__draw_end := GetProcAddress(aDLLHandle, 'nk__draw_end');
+  nk__draw_list_begin := GetProcAddress(aDLLHandle, 'nk__draw_list_begin');
+  nk__draw_list_end := GetProcAddress(aDLLHandle, 'nk__draw_list_end');
+  nk__draw_list_next := GetProcAddress(aDLLHandle, 'nk__draw_list_next');
+  nk__draw_next := GetProcAddress(aDLLHandle, 'nk__draw_next');
+  nk__next := GetProcAddress(aDLLHandle, 'nk__next');
+  nk_begin := GetProcAddress(aDLLHandle, 'nk_begin');
+  nk_begin_titled := GetProcAddress(aDLLHandle, 'nk_begin_titled');
+  nk_buffer_clear := GetProcAddress(aDLLHandle, 'nk_buffer_clear');
+  nk_buffer_free := GetProcAddress(aDLLHandle, 'nk_buffer_free');
+  nk_buffer_info := GetProcAddress(aDLLHandle, 'nk_buffer_info');
+  nk_buffer_init := GetProcAddress(aDLLHandle, 'nk_buffer_init');
+  nk_buffer_init_default := GetProcAddress(aDLLHandle, 'nk_buffer_init_default');
+  nk_buffer_init_fixed := GetProcAddress(aDLLHandle, 'nk_buffer_init_fixed');
+  nk_buffer_mark := GetProcAddress(aDLLHandle, 'nk_buffer_mark');
+  nk_buffer_memory := GetProcAddress(aDLLHandle, 'nk_buffer_memory');
+  nk_buffer_memory_const := GetProcAddress(aDLLHandle, 'nk_buffer_memory_const');
+  nk_buffer_push := GetProcAddress(aDLLHandle, 'nk_buffer_push');
+  nk_buffer_reset := GetProcAddress(aDLLHandle, 'nk_buffer_reset');
+  nk_buffer_total := GetProcAddress(aDLLHandle, 'nk_buffer_total');
+  nk_button_color := GetProcAddress(aDLLHandle, 'nk_button_color');
+  nk_button_image := GetProcAddress(aDLLHandle, 'nk_button_image');
+  nk_button_image_label := GetProcAddress(aDLLHandle, 'nk_button_image_label');
+  nk_button_image_label_styled := GetProcAddress(aDLLHandle, 'nk_button_image_label_styled');
+  nk_button_image_styled := GetProcAddress(aDLLHandle, 'nk_button_image_styled');
+  nk_button_image_text := GetProcAddress(aDLLHandle, 'nk_button_image_text');
+  nk_button_image_text_styled := GetProcAddress(aDLLHandle, 'nk_button_image_text_styled');
+  nk_button_label := GetProcAddress(aDLLHandle, 'nk_button_label');
+  nk_button_label_styled := GetProcAddress(aDLLHandle, 'nk_button_label_styled');
+  nk_button_pop_behavior := GetProcAddress(aDLLHandle, 'nk_button_pop_behavior');
+  nk_button_push_behavior := GetProcAddress(aDLLHandle, 'nk_button_push_behavior');
+  nk_button_set_behavior := GetProcAddress(aDLLHandle, 'nk_button_set_behavior');
+  nk_button_symbol := GetProcAddress(aDLLHandle, 'nk_button_symbol');
+  nk_button_symbol_label := GetProcAddress(aDLLHandle, 'nk_button_symbol_label');
+  nk_button_symbol_label_styled := GetProcAddress(aDLLHandle, 'nk_button_symbol_label_styled');
+  nk_button_symbol_styled := GetProcAddress(aDLLHandle, 'nk_button_symbol_styled');
+  nk_button_symbol_text := GetProcAddress(aDLLHandle, 'nk_button_symbol_text');
+  nk_button_symbol_text_styled := GetProcAddress(aDLLHandle, 'nk_button_symbol_text_styled');
+  nk_button_text := GetProcAddress(aDLLHandle, 'nk_button_text');
+  nk_button_text_styled := GetProcAddress(aDLLHandle, 'nk_button_text_styled');
+  nk_chart_add_slot := GetProcAddress(aDLLHandle, 'nk_chart_add_slot');
+  nk_chart_add_slot_colored := GetProcAddress(aDLLHandle, 'nk_chart_add_slot_colored');
+  nk_chart_begin := GetProcAddress(aDLLHandle, 'nk_chart_begin');
+  nk_chart_begin_colored := GetProcAddress(aDLLHandle, 'nk_chart_begin_colored');
+  nk_chart_end := GetProcAddress(aDLLHandle, 'nk_chart_end');
+  nk_chart_push := GetProcAddress(aDLLHandle, 'nk_chart_push');
+  nk_chart_push_slot := GetProcAddress(aDLLHandle, 'nk_chart_push_slot');
+  nk_check_flags_label := GetProcAddress(aDLLHandle, 'nk_check_flags_label');
+  nk_check_flags_text := GetProcAddress(aDLLHandle, 'nk_check_flags_text');
+  nk_check_label := GetProcAddress(aDLLHandle, 'nk_check_label');
+  nk_check_text := GetProcAddress(aDLLHandle, 'nk_check_text');
+  nk_checkbox_flags_label := GetProcAddress(aDLLHandle, 'nk_checkbox_flags_label');
+  nk_checkbox_flags_text := GetProcAddress(aDLLHandle, 'nk_checkbox_flags_text');
+  nk_checkbox_label := GetProcAddress(aDLLHandle, 'nk_checkbox_label');
+  nk_checkbox_text := GetProcAddress(aDLLHandle, 'nk_checkbox_text');
+  nk_clear := GetProcAddress(aDLLHandle, 'nk_clear');
+  nk_color_cf := GetProcAddress(aDLLHandle, 'nk_color_cf');
+  nk_color_d := GetProcAddress(aDLLHandle, 'nk_color_d');
+  nk_color_dv := GetProcAddress(aDLLHandle, 'nk_color_dv');
+  nk_color_f := GetProcAddress(aDLLHandle, 'nk_color_f');
+  nk_color_fv := GetProcAddress(aDLLHandle, 'nk_color_fv');
+  nk_color_hex_rgb := GetProcAddress(aDLLHandle, 'nk_color_hex_rgb');
+  nk_color_hex_rgba := GetProcAddress(aDLLHandle, 'nk_color_hex_rgba');
+  nk_color_hsv_b := GetProcAddress(aDLLHandle, 'nk_color_hsv_b');
+  nk_color_hsv_bv := GetProcAddress(aDLLHandle, 'nk_color_hsv_bv');
+  nk_color_hsv_f := GetProcAddress(aDLLHandle, 'nk_color_hsv_f');
+  nk_color_hsv_fv := GetProcAddress(aDLLHandle, 'nk_color_hsv_fv');
+  nk_color_hsv_i := GetProcAddress(aDLLHandle, 'nk_color_hsv_i');
+  nk_color_hsv_iv := GetProcAddress(aDLLHandle, 'nk_color_hsv_iv');
+  nk_color_hsva_b := GetProcAddress(aDLLHandle, 'nk_color_hsva_b');
+  nk_color_hsva_bv := GetProcAddress(aDLLHandle, 'nk_color_hsva_bv');
+  nk_color_hsva_f := GetProcAddress(aDLLHandle, 'nk_color_hsva_f');
+  nk_color_hsva_fv := GetProcAddress(aDLLHandle, 'nk_color_hsva_fv');
+  nk_color_hsva_i := GetProcAddress(aDLLHandle, 'nk_color_hsva_i');
+  nk_color_hsva_iv := GetProcAddress(aDLLHandle, 'nk_color_hsva_iv');
+  nk_color_pick := GetProcAddress(aDLLHandle, 'nk_color_pick');
+  nk_color_picker := GetProcAddress(aDLLHandle, 'nk_color_picker');
+  nk_color_u32 := GetProcAddress(aDLLHandle, 'nk_color_u32');
+  nk_colorf_hsva_f := GetProcAddress(aDLLHandle, 'nk_colorf_hsva_f');
+  nk_colorf_hsva_fv := GetProcAddress(aDLLHandle, 'nk_colorf_hsva_fv');
+  nk_combo := GetProcAddress(aDLLHandle, 'nk_combo');
+  nk_combo_begin_color := GetProcAddress(aDLLHandle, 'nk_combo_begin_color');
+  nk_combo_begin_image := GetProcAddress(aDLLHandle, 'nk_combo_begin_image');
+  nk_combo_begin_image_label := GetProcAddress(aDLLHandle, 'nk_combo_begin_image_label');
+  nk_combo_begin_image_text := GetProcAddress(aDLLHandle, 'nk_combo_begin_image_text');
+  nk_combo_begin_label := GetProcAddress(aDLLHandle, 'nk_combo_begin_label');
+  nk_combo_begin_symbol := GetProcAddress(aDLLHandle, 'nk_combo_begin_symbol');
+  nk_combo_begin_symbol_label := GetProcAddress(aDLLHandle, 'nk_combo_begin_symbol_label');
+  nk_combo_begin_symbol_text := GetProcAddress(aDLLHandle, 'nk_combo_begin_symbol_text');
+  nk_combo_begin_text := GetProcAddress(aDLLHandle, 'nk_combo_begin_text');
+  nk_combo_callback := GetProcAddress(aDLLHandle, 'nk_combo_callback');
+  nk_combo_close := GetProcAddress(aDLLHandle, 'nk_combo_close');
+  nk_combo_end := GetProcAddress(aDLLHandle, 'nk_combo_end');
+  nk_combo_item_image_label := GetProcAddress(aDLLHandle, 'nk_combo_item_image_label');
+  nk_combo_item_image_text := GetProcAddress(aDLLHandle, 'nk_combo_item_image_text');
+  nk_combo_item_label := GetProcAddress(aDLLHandle, 'nk_combo_item_label');
+  nk_combo_item_symbol_label := GetProcAddress(aDLLHandle, 'nk_combo_item_symbol_label');
+  nk_combo_item_symbol_text := GetProcAddress(aDLLHandle, 'nk_combo_item_symbol_text');
+  nk_combo_item_text := GetProcAddress(aDLLHandle, 'nk_combo_item_text');
+  nk_combo_separator := GetProcAddress(aDLLHandle, 'nk_combo_separator');
+  nk_combo_string := GetProcAddress(aDLLHandle, 'nk_combo_string');
+  nk_combobox := GetProcAddress(aDLLHandle, 'nk_combobox');
+  nk_combobox_callback := GetProcAddress(aDLLHandle, 'nk_combobox_callback');
+  nk_combobox_separator := GetProcAddress(aDLLHandle, 'nk_combobox_separator');
+  nk_combobox_string := GetProcAddress(aDLLHandle, 'nk_combobox_string');
+  nk_contextual_begin := GetProcAddress(aDLLHandle, 'nk_contextual_begin');
+  nk_contextual_close := GetProcAddress(aDLLHandle, 'nk_contextual_close');
+  nk_contextual_end := GetProcAddress(aDLLHandle, 'nk_contextual_end');
+  nk_contextual_item_image_label := GetProcAddress(aDLLHandle, 'nk_contextual_item_image_label');
+  nk_contextual_item_image_text := GetProcAddress(aDLLHandle, 'nk_contextual_item_image_text');
+  nk_contextual_item_label := GetProcAddress(aDLLHandle, 'nk_contextual_item_label');
+  nk_contextual_item_symbol_label := GetProcAddress(aDLLHandle, 'nk_contextual_item_symbol_label');
+  nk_contextual_item_symbol_text := GetProcAddress(aDLLHandle, 'nk_contextual_item_symbol_text');
+  nk_contextual_item_text := GetProcAddress(aDLLHandle, 'nk_contextual_item_text');
+  nk_convert := GetProcAddress(aDLLHandle, 'nk_convert');
+  nk_draw_image := GetProcAddress(aDLLHandle, 'nk_draw_image');
+  nk_draw_list_add_image := GetProcAddress(aDLLHandle, 'nk_draw_list_add_image');
+  nk_draw_list_add_text := GetProcAddress(aDLLHandle, 'nk_draw_list_add_text');
+  nk_draw_list_fill_circle := GetProcAddress(aDLLHandle, 'nk_draw_list_fill_circle');
+  nk_draw_list_fill_poly_convex := GetProcAddress(aDLLHandle, 'nk_draw_list_fill_poly_convex');
+  nk_draw_list_fill_rect := GetProcAddress(aDLLHandle, 'nk_draw_list_fill_rect');
+  nk_draw_list_fill_rect_multi_color := GetProcAddress(aDLLHandle, 'nk_draw_list_fill_rect_multi_color');
+  nk_draw_list_fill_triangle := GetProcAddress(aDLLHandle, 'nk_draw_list_fill_triangle');
+  nk_draw_list_init := GetProcAddress(aDLLHandle, 'nk_draw_list_init');
+  nk_draw_list_path_arc_to := GetProcAddress(aDLLHandle, 'nk_draw_list_path_arc_to');
+  nk_draw_list_path_arc_to_fast := GetProcAddress(aDLLHandle, 'nk_draw_list_path_arc_to_fast');
+  nk_draw_list_path_clear := GetProcAddress(aDLLHandle, 'nk_draw_list_path_clear');
+  nk_draw_list_path_curve_to := GetProcAddress(aDLLHandle, 'nk_draw_list_path_curve_to');
+  nk_draw_list_path_fill := GetProcAddress(aDLLHandle, 'nk_draw_list_path_fill');
+  nk_draw_list_path_line_to := GetProcAddress(aDLLHandle, 'nk_draw_list_path_line_to');
+  nk_draw_list_path_rect_to := GetProcAddress(aDLLHandle, 'nk_draw_list_path_rect_to');
+  nk_draw_list_path_stroke := GetProcAddress(aDLLHandle, 'nk_draw_list_path_stroke');
+  nk_draw_list_setup := GetProcAddress(aDLLHandle, 'nk_draw_list_setup');
+  nk_draw_list_stroke_circle := GetProcAddress(aDLLHandle, 'nk_draw_list_stroke_circle');
+  nk_draw_list_stroke_curve := GetProcAddress(aDLLHandle, 'nk_draw_list_stroke_curve');
+  nk_draw_list_stroke_line := GetProcAddress(aDLLHandle, 'nk_draw_list_stroke_line');
+  nk_draw_list_stroke_poly_line := GetProcAddress(aDLLHandle, 'nk_draw_list_stroke_poly_line');
+  nk_draw_list_stroke_rect := GetProcAddress(aDLLHandle, 'nk_draw_list_stroke_rect');
+  nk_draw_list_stroke_triangle := GetProcAddress(aDLLHandle, 'nk_draw_list_stroke_triangle');
+  nk_draw_nine_slice := GetProcAddress(aDLLHandle, 'nk_draw_nine_slice');
+  nk_draw_text := GetProcAddress(aDLLHandle, 'nk_draw_text');
+  nk_edit_buffer := GetProcAddress(aDLLHandle, 'nk_edit_buffer');
+  nk_edit_focus := GetProcAddress(aDLLHandle, 'nk_edit_focus');
+  nk_edit_string := GetProcAddress(aDLLHandle, 'nk_edit_string');
+  nk_edit_string_zero_terminated := GetProcAddress(aDLLHandle, 'nk_edit_string_zero_terminated');
+  nk_edit_unfocus := GetProcAddress(aDLLHandle, 'nk_edit_unfocus');
+  nk_end := GetProcAddress(aDLLHandle, 'nk_end');
+  nk_fill_arc := GetProcAddress(aDLLHandle, 'nk_fill_arc');
+  nk_fill_circle := GetProcAddress(aDLLHandle, 'nk_fill_circle');
+  nk_fill_polygon := GetProcAddress(aDLLHandle, 'nk_fill_polygon');
+  nk_fill_rect := GetProcAddress(aDLLHandle, 'nk_fill_rect');
+  nk_fill_rect_multi_color := GetProcAddress(aDLLHandle, 'nk_fill_rect_multi_color');
+  nk_fill_triangle := GetProcAddress(aDLLHandle, 'nk_fill_triangle');
+  nk_filter_ascii := GetProcAddress(aDLLHandle, 'nk_filter_ascii');
+  nk_filter_binary := GetProcAddress(aDLLHandle, 'nk_filter_binary');
+  nk_filter_decimal := GetProcAddress(aDLLHandle, 'nk_filter_decimal');
+  nk_filter_default := GetProcAddress(aDLLHandle, 'nk_filter_default');
+  nk_filter_float := GetProcAddress(aDLLHandle, 'nk_filter_float');
+  nk_filter_hex := GetProcAddress(aDLLHandle, 'nk_filter_hex');
+  nk_filter_oct := GetProcAddress(aDLLHandle, 'nk_filter_oct');
+  nk_font_atlas_add := GetProcAddress(aDLLHandle, 'nk_font_atlas_add');
+  nk_font_atlas_add_compressed := GetProcAddress(aDLLHandle, 'nk_font_atlas_add_compressed');
+  nk_font_atlas_add_compressed_base85 := GetProcAddress(aDLLHandle, 'nk_font_atlas_add_compressed_base85');
+  nk_font_atlas_add_default := GetProcAddress(aDLLHandle, 'nk_font_atlas_add_default');
+  nk_font_atlas_add_from_file := GetProcAddress(aDLLHandle, 'nk_font_atlas_add_from_file');
+  nk_font_atlas_add_from_memory := GetProcAddress(aDLLHandle, 'nk_font_atlas_add_from_memory');
+  nk_font_atlas_bake := GetProcAddress(aDLLHandle, 'nk_font_atlas_bake');
+  nk_font_atlas_begin := GetProcAddress(aDLLHandle, 'nk_font_atlas_begin');
+  nk_font_atlas_cleanup := GetProcAddress(aDLLHandle, 'nk_font_atlas_cleanup');
+  nk_font_atlas_clear := GetProcAddress(aDLLHandle, 'nk_font_atlas_clear');
+  nk_font_atlas_end := GetProcAddress(aDLLHandle, 'nk_font_atlas_end');
+  nk_font_atlas_init := GetProcAddress(aDLLHandle, 'nk_font_atlas_init');
+  nk_font_atlas_init_custom := GetProcAddress(aDLLHandle, 'nk_font_atlas_init_custom');
+  nk_font_atlas_init_default := GetProcAddress(aDLLHandle, 'nk_font_atlas_init_default');
+  nk_font_chinese_glyph_ranges := GetProcAddress(aDLLHandle, 'nk_font_chinese_glyph_ranges');
+  nk_font_config_rtn := GetProcAddress(aDLLHandle, 'nk_font_config');
+  nk_font_cyrillic_glyph_ranges := GetProcAddress(aDLLHandle, 'nk_font_cyrillic_glyph_ranges');
+  nk_font_default_glyph_ranges := GetProcAddress(aDLLHandle, 'nk_font_default_glyph_ranges');
+  nk_font_find_glyph := GetProcAddress(aDLLHandle, 'nk_font_find_glyph');
+  nk_font_korean_glyph_ranges := GetProcAddress(aDLLHandle, 'nk_font_korean_glyph_ranges');
+  nk_free := GetProcAddress(aDLLHandle, 'nk_free');
+  nk_get_null_rect := GetProcAddress(aDLLHandle, 'nk_get_null_rect');
+  nk_gflw3_scroll_callback := GetProcAddress(aDLLHandle, 'nk_gflw3_scroll_callback');
+  nk_glfw3_char_callback := GetProcAddress(aDLLHandle, 'nk_glfw3_char_callback');
+  nk_glfw3_font_stash_begin := GetProcAddress(aDLLHandle, 'nk_glfw3_font_stash_begin');
+  nk_glfw3_font_stash_end := GetProcAddress(aDLLHandle, 'nk_glfw3_font_stash_end');
+  nk_glfw3_init := GetProcAddress(aDLLHandle, 'nk_glfw3_init');
+  nk_glfw3_new_frame := GetProcAddress(aDLLHandle, 'nk_glfw3_new_frame');
+  nk_glfw3_render := GetProcAddress(aDLLHandle, 'nk_glfw3_render');
+  nk_glfw3_shutdown := GetProcAddress(aDLLHandle, 'nk_glfw3_shutdown');
+  nk_group_begin := GetProcAddress(aDLLHandle, 'nk_group_begin');
+  nk_group_begin_titled := GetProcAddress(aDLLHandle, 'nk_group_begin_titled');
+  nk_group_end := GetProcAddress(aDLLHandle, 'nk_group_end');
+  nk_group_get_scroll := GetProcAddress(aDLLHandle, 'nk_group_get_scroll');
+  nk_group_scrolled_begin := GetProcAddress(aDLLHandle, 'nk_group_scrolled_begin');
+  nk_group_scrolled_end := GetProcAddress(aDLLHandle, 'nk_group_scrolled_end');
+  nk_group_scrolled_offset_begin := GetProcAddress(aDLLHandle, 'nk_group_scrolled_offset_begin');
+  nk_group_set_scroll := GetProcAddress(aDLLHandle, 'nk_group_set_scroll');
+  nk_handle_id := GetProcAddress(aDLLHandle, 'nk_handle_id');
+  nk_handle_ptr := GetProcAddress(aDLLHandle, 'nk_handle_ptr');
+  nk_hsv := GetProcAddress(aDLLHandle, 'nk_hsv');
+  nk_hsv_bv := GetProcAddress(aDLLHandle, 'nk_hsv_bv');
+  nk_hsv_f := GetProcAddress(aDLLHandle, 'nk_hsv_f');
+  nk_hsv_fv := GetProcAddress(aDLLHandle, 'nk_hsv_fv');
+  nk_hsv_iv := GetProcAddress(aDLLHandle, 'nk_hsv_iv');
+  nk_hsva := GetProcAddress(aDLLHandle, 'nk_hsva');
+  nk_hsva_bv := GetProcAddress(aDLLHandle, 'nk_hsva_bv');
+  nk_hsva_colorf := GetProcAddress(aDLLHandle, 'nk_hsva_colorf');
+  nk_hsva_colorfv := GetProcAddress(aDLLHandle, 'nk_hsva_colorfv');
+  nk_hsva_f := GetProcAddress(aDLLHandle, 'nk_hsva_f');
+  nk_hsva_fv := GetProcAddress(aDLLHandle, 'nk_hsva_fv');
+  nk_hsva_iv := GetProcAddress(aDLLHandle, 'nk_hsva_iv');
+  nk_image_color := GetProcAddress(aDLLHandle, 'nk_image_color');
+  nk_image_handle := GetProcAddress(aDLLHandle, 'nk_image_handle');
+  nk_image_id := GetProcAddress(aDLLHandle, 'nk_image_id');
+  nk_image_is_subimage := GetProcAddress(aDLLHandle, 'nk_image_is_subimage');
+  nk_image_ptr := GetProcAddress(aDLLHandle, 'nk_image_ptr');
+  nk_image_rtn := GetProcAddress(aDLLHandle, 'nk_image');
+  nk_init := GetProcAddress(aDLLHandle, 'nk_init');
+  nk_init_custom := GetProcAddress(aDLLHandle, 'nk_init_custom');
+  nk_init_default := GetProcAddress(aDLLHandle, 'nk_init_default');
+  nk_init_fixed := GetProcAddress(aDLLHandle, 'nk_init_fixed');
+  nk_input_any_mouse_click_in_rect := GetProcAddress(aDLLHandle, 'nk_input_any_mouse_click_in_rect');
+  nk_input_begin := GetProcAddress(aDLLHandle, 'nk_input_begin');
+  nk_input_button := GetProcAddress(aDLLHandle, 'nk_input_button');
+  nk_input_char := GetProcAddress(aDLLHandle, 'nk_input_char');
+  nk_input_end := GetProcAddress(aDLLHandle, 'nk_input_end');
+  nk_input_glyph := GetProcAddress(aDLLHandle, 'nk_input_glyph');
+  nk_input_has_mouse_click := GetProcAddress(aDLLHandle, 'nk_input_has_mouse_click');
+  nk_input_has_mouse_click_down_in_rect := GetProcAddress(aDLLHandle, 'nk_input_has_mouse_click_down_in_rect');
+  nk_input_has_mouse_click_in_button_rect := GetProcAddress(aDLLHandle, 'nk_input_has_mouse_click_in_button_rect');
+  nk_input_has_mouse_click_in_rect := GetProcAddress(aDLLHandle, 'nk_input_has_mouse_click_in_rect');
+  nk_input_is_key_down := GetProcAddress(aDLLHandle, 'nk_input_is_key_down');
+  nk_input_is_key_pressed := GetProcAddress(aDLLHandle, 'nk_input_is_key_pressed');
+  nk_input_is_key_released := GetProcAddress(aDLLHandle, 'nk_input_is_key_released');
+  nk_input_is_mouse_click_down_in_rect := GetProcAddress(aDLLHandle, 'nk_input_is_mouse_click_down_in_rect');
+  nk_input_is_mouse_click_in_rect := GetProcAddress(aDLLHandle, 'nk_input_is_mouse_click_in_rect');
+  nk_input_is_mouse_down := GetProcAddress(aDLLHandle, 'nk_input_is_mouse_down');
+  nk_input_is_mouse_hovering_rect := GetProcAddress(aDLLHandle, 'nk_input_is_mouse_hovering_rect');
+  nk_input_is_mouse_pressed := GetProcAddress(aDLLHandle, 'nk_input_is_mouse_pressed');
+  nk_input_is_mouse_prev_hovering_rect := GetProcAddress(aDLLHandle, 'nk_input_is_mouse_prev_hovering_rect');
+  nk_input_is_mouse_released := GetProcAddress(aDLLHandle, 'nk_input_is_mouse_released');
+  nk_input_key := GetProcAddress(aDLLHandle, 'nk_input_key');
+  nk_input_motion := GetProcAddress(aDLLHandle, 'nk_input_motion');
+  nk_input_mouse_clicked := GetProcAddress(aDLLHandle, 'nk_input_mouse_clicked');
+  nk_input_scroll := GetProcAddress(aDLLHandle, 'nk_input_scroll');
+  nk_input_unicode := GetProcAddress(aDLLHandle, 'nk_input_unicode');
+  nk_item_is_any_active := GetProcAddress(aDLLHandle, 'nk_item_is_any_active');
+  nk_label := GetProcAddress(aDLLHandle, 'nk_label');
+  nk_label_colored := GetProcAddress(aDLLHandle, 'nk_label_colored');
+  nk_label_colored_wrap := GetProcAddress(aDLLHandle, 'nk_label_colored_wrap');
+  nk_label_wrap := GetProcAddress(aDLLHandle, 'nk_label_wrap');
+  nk_labelf := GetProcAddress(aDLLHandle, 'nk_labelf');
+  nk_labelf_colored := GetProcAddress(aDLLHandle, 'nk_labelf_colored');
+  nk_labelf_colored_wrap := GetProcAddress(aDLLHandle, 'nk_labelf_colored_wrap');
+  nk_labelf_wrap := GetProcAddress(aDLLHandle, 'nk_labelf_wrap');
+  nk_labelfv := GetProcAddress(aDLLHandle, 'nk_labelfv');
+  nk_labelfv_colored := GetProcAddress(aDLLHandle, 'nk_labelfv_colored');
+  nk_labelfv_colored_wrap := GetProcAddress(aDLLHandle, 'nk_labelfv_colored_wrap');
+  nk_labelfv_wrap := GetProcAddress(aDLLHandle, 'nk_labelfv_wrap');
+  nk_layout_ratio_from_pixel := GetProcAddress(aDLLHandle, 'nk_layout_ratio_from_pixel');
+  nk_layout_reset_min_row_height := GetProcAddress(aDLLHandle, 'nk_layout_reset_min_row_height');
+  nk_layout_row := GetProcAddress(aDLLHandle, 'nk_layout_row');
+  nk_layout_row_begin := GetProcAddress(aDLLHandle, 'nk_layout_row_begin');
+  nk_layout_row_dynamic := GetProcAddress(aDLLHandle, 'nk_layout_row_dynamic');
+  nk_layout_row_end := GetProcAddress(aDLLHandle, 'nk_layout_row_end');
+  nk_layout_row_push := GetProcAddress(aDLLHandle, 'nk_layout_row_push');
+  nk_layout_row_static := GetProcAddress(aDLLHandle, 'nk_layout_row_static');
+  nk_layout_row_template_begin := GetProcAddress(aDLLHandle, 'nk_layout_row_template_begin');
+  nk_layout_row_template_end := GetProcAddress(aDLLHandle, 'nk_layout_row_template_end');
+  nk_layout_row_template_push_dynamic := GetProcAddress(aDLLHandle, 'nk_layout_row_template_push_dynamic');
+  nk_layout_row_template_push_static := GetProcAddress(aDLLHandle, 'nk_layout_row_template_push_static');
+  nk_layout_row_template_push_variable := GetProcAddress(aDLLHandle, 'nk_layout_row_template_push_variable');
+  nk_layout_set_min_row_height := GetProcAddress(aDLLHandle, 'nk_layout_set_min_row_height');
+  nk_layout_space_begin := GetProcAddress(aDLLHandle, 'nk_layout_space_begin');
+  nk_layout_space_bounds := GetProcAddress(aDLLHandle, 'nk_layout_space_bounds');
+  nk_layout_space_end := GetProcAddress(aDLLHandle, 'nk_layout_space_end');
+  nk_layout_space_push := GetProcAddress(aDLLHandle, 'nk_layout_space_push');
+  nk_layout_space_rect_to_local := GetProcAddress(aDLLHandle, 'nk_layout_space_rect_to_local');
+  nk_layout_space_rect_to_screen := GetProcAddress(aDLLHandle, 'nk_layout_space_rect_to_screen');
+  nk_layout_space_to_local := GetProcAddress(aDLLHandle, 'nk_layout_space_to_local');
+  nk_layout_space_to_screen := GetProcAddress(aDLLHandle, 'nk_layout_space_to_screen');
+  nk_layout_widget_bounds := GetProcAddress(aDLLHandle, 'nk_layout_widget_bounds');
+  nk_list_view_begin := GetProcAddress(aDLLHandle, 'nk_list_view_begin');
+  nk_list_view_end := GetProcAddress(aDLLHandle, 'nk_list_view_end');
+  nk_menu_begin_image := GetProcAddress(aDLLHandle, 'nk_menu_begin_image');
+  nk_menu_begin_image_label := GetProcAddress(aDLLHandle, 'nk_menu_begin_image_label');
+  nk_menu_begin_image_text := GetProcAddress(aDLLHandle, 'nk_menu_begin_image_text');
+  nk_menu_begin_label := GetProcAddress(aDLLHandle, 'nk_menu_begin_label');
+  nk_menu_begin_symbol := GetProcAddress(aDLLHandle, 'nk_menu_begin_symbol');
+  nk_menu_begin_symbol_label := GetProcAddress(aDLLHandle, 'nk_menu_begin_symbol_label');
+  nk_menu_begin_symbol_text := GetProcAddress(aDLLHandle, 'nk_menu_begin_symbol_text');
+  nk_menu_begin_text := GetProcAddress(aDLLHandle, 'nk_menu_begin_text');
+  nk_menu_close := GetProcAddress(aDLLHandle, 'nk_menu_close');
+  nk_menu_end := GetProcAddress(aDLLHandle, 'nk_menu_end');
+  nk_menu_item_image_label := GetProcAddress(aDLLHandle, 'nk_menu_item_image_label');
+  nk_menu_item_image_text := GetProcAddress(aDLLHandle, 'nk_menu_item_image_text');
+  nk_menu_item_label := GetProcAddress(aDLLHandle, 'nk_menu_item_label');
+  nk_menu_item_symbol_label := GetProcAddress(aDLLHandle, 'nk_menu_item_symbol_label');
+  nk_menu_item_symbol_text := GetProcAddress(aDLLHandle, 'nk_menu_item_symbol_text');
+  nk_menu_item_text := GetProcAddress(aDLLHandle, 'nk_menu_item_text');
+  nk_menubar_begin := GetProcAddress(aDLLHandle, 'nk_menubar_begin');
+  nk_menubar_end := GetProcAddress(aDLLHandle, 'nk_menubar_end');
+  nk_murmur_hash := GetProcAddress(aDLLHandle, 'nk_murmur_hash');
+  nk_nine_slice_handle := GetProcAddress(aDLLHandle, 'nk_nine_slice_handle');
+  nk_nine_slice_id := GetProcAddress(aDLLHandle, 'nk_nine_slice_id');
+  nk_nine_slice_is_sub9slice := GetProcAddress(aDLLHandle, 'nk_nine_slice_is_sub9slice');
+  nk_nine_slice_ptr := GetProcAddress(aDLLHandle, 'nk_nine_slice_ptr');
+  nk_option_label := GetProcAddress(aDLLHandle, 'nk_option_label');
+  nk_option_text := GetProcAddress(aDLLHandle, 'nk_option_text');
+  nk_plot := GetProcAddress(aDLLHandle, 'nk_plot');
+  nk_plot_function := GetProcAddress(aDLLHandle, 'nk_plot_function');
+  nk_popup_begin := GetProcAddress(aDLLHandle, 'nk_popup_begin');
+  nk_popup_close := GetProcAddress(aDLLHandle, 'nk_popup_close');
+  nk_popup_end := GetProcAddress(aDLLHandle, 'nk_popup_end');
+  nk_popup_get_scroll := GetProcAddress(aDLLHandle, 'nk_popup_get_scroll');
+  nk_popup_set_scroll := GetProcAddress(aDLLHandle, 'nk_popup_set_scroll');
+  nk_prog := GetProcAddress(aDLLHandle, 'nk_prog');
+  nk_progress := GetProcAddress(aDLLHandle, 'nk_progress');
+  nk_property_double := GetProcAddress(aDLLHandle, 'nk_property_double');
+  nk_property_float := GetProcAddress(aDLLHandle, 'nk_property_float');
+  nk_property_int := GetProcAddress(aDLLHandle, 'nk_property_int');
+  nk_propertyd := GetProcAddress(aDLLHandle, 'nk_propertyd');
+  nk_propertyf := GetProcAddress(aDLLHandle, 'nk_propertyf');
+  nk_propertyi := GetProcAddress(aDLLHandle, 'nk_propertyi');
+  nk_push_custom := GetProcAddress(aDLLHandle, 'nk_push_custom');
+  nk_push_scissor := GetProcAddress(aDLLHandle, 'nk_push_scissor');
+  nk_radio_label := GetProcAddress(aDLLHandle, 'nk_radio_label');
+  nk_radio_text := GetProcAddress(aDLLHandle, 'nk_radio_text');
+  nk_rect_pos := GetProcAddress(aDLLHandle, 'nk_rect_pos');
+  nk_rect_rtn := GetProcAddress(aDLLHandle, 'nk_rect');
+  nk_rect_size := GetProcAddress(aDLLHandle, 'nk_rect_size');
+  nk_recta := GetProcAddress(aDLLHandle, 'nk_recta');
+  nk_recti_rtn := GetProcAddress(aDLLHandle, 'nk_recti');
+  nk_rectiv := GetProcAddress(aDLLHandle, 'nk_rectiv');
+  nk_rectv := GetProcAddress(aDLLHandle, 'nk_rectv');
+  nk_rgb_bv := GetProcAddress(aDLLHandle, 'nk_rgb_bv');
+  nk_rgb_cf := GetProcAddress(aDLLHandle, 'nk_rgb_cf');
+  nk_rgb_f := GetProcAddress(aDLLHandle, 'nk_rgb_f');
+  nk_rgb_fv := GetProcAddress(aDLLHandle, 'nk_rgb_fv');
+  nk_rgb_hex := GetProcAddress(aDLLHandle, 'nk_rgb_hex');
+  nk_rgb_iv := GetProcAddress(aDLLHandle, 'nk_rgb_iv');
+  nk_rgb_rtn := GetProcAddress(aDLLHandle, 'nk_rgb');
+  nk_rgba_bv := GetProcAddress(aDLLHandle, 'nk_rgba_bv');
+  nk_rgba_cf := GetProcAddress(aDLLHandle, 'nk_rgba_cf');
+  nk_rgba_f := GetProcAddress(aDLLHandle, 'nk_rgba_f');
+  nk_rgba_fv := GetProcAddress(aDLLHandle, 'nk_rgba_fv');
+  nk_rgba_hex := GetProcAddress(aDLLHandle, 'nk_rgba_hex');
+  nk_rgba_iv := GetProcAddress(aDLLHandle, 'nk_rgba_iv');
+  nk_rgba_rtn := GetProcAddress(aDLLHandle, 'nk_rgba');
+  nk_rgba_u32 := GetProcAddress(aDLLHandle, 'nk_rgba_u32');
+  nk_select_image_label := GetProcAddress(aDLLHandle, 'nk_select_image_label');
+  nk_select_image_text := GetProcAddress(aDLLHandle, 'nk_select_image_text');
+  nk_select_label := GetProcAddress(aDLLHandle, 'nk_select_label');
+  nk_select_symbol_label := GetProcAddress(aDLLHandle, 'nk_select_symbol_label');
+  nk_select_symbol_text := GetProcAddress(aDLLHandle, 'nk_select_symbol_text');
+  nk_select_text := GetProcAddress(aDLLHandle, 'nk_select_text');
+  nk_selectable_image_label := GetProcAddress(aDLLHandle, 'nk_selectable_image_label');
+  nk_selectable_image_text := GetProcAddress(aDLLHandle, 'nk_selectable_image_text');
+  nk_selectable_label := GetProcAddress(aDLLHandle, 'nk_selectable_label');
+  nk_selectable_symbol_label := GetProcAddress(aDLLHandle, 'nk_selectable_symbol_label');
+  nk_selectable_symbol_text := GetProcAddress(aDLLHandle, 'nk_selectable_symbol_text');
+  nk_selectable_text := GetProcAddress(aDLLHandle, 'nk_selectable_text');
+  nk_slide_float := GetProcAddress(aDLLHandle, 'nk_slide_float');
+  nk_slide_int := GetProcAddress(aDLLHandle, 'nk_slide_int');
+  nk_slider_float := GetProcAddress(aDLLHandle, 'nk_slider_float');
+  nk_slider_int := GetProcAddress(aDLLHandle, 'nk_slider_int');
+  nk_spacer := GetProcAddress(aDLLHandle, 'nk_spacer');
+  nk_spacing := GetProcAddress(aDLLHandle, 'nk_spacing');
+  nk_str_append_str_char := GetProcAddress(aDLLHandle, 'nk_str_append_str_char');
+  nk_str_append_str_runes := GetProcAddress(aDLLHandle, 'nk_str_append_str_runes');
+  nk_str_append_str_utf8 := GetProcAddress(aDLLHandle, 'nk_str_append_str_utf8');
+  nk_str_append_text_char := GetProcAddress(aDLLHandle, 'nk_str_append_text_char');
+  nk_str_append_text_runes := GetProcAddress(aDLLHandle, 'nk_str_append_text_runes');
+  nk_str_append_text_utf8 := GetProcAddress(aDLLHandle, 'nk_str_append_text_utf8');
+  nk_str_at_char := GetProcAddress(aDLLHandle, 'nk_str_at_char');
+  nk_str_at_char_const := GetProcAddress(aDLLHandle, 'nk_str_at_char_const');
+  nk_str_at_const := GetProcAddress(aDLLHandle, 'nk_str_at_const');
+  nk_str_at_rune := GetProcAddress(aDLLHandle, 'nk_str_at_rune');
+  nk_str_clear := GetProcAddress(aDLLHandle, 'nk_str_clear');
+  nk_str_delete_chars := GetProcAddress(aDLLHandle, 'nk_str_delete_chars');
+  nk_str_delete_runes := GetProcAddress(aDLLHandle, 'nk_str_delete_runes');
+  nk_str_free := GetProcAddress(aDLLHandle, 'nk_str_free');
+  nk_str_get := GetProcAddress(aDLLHandle, 'nk_str_get');
+  nk_str_get_const := GetProcAddress(aDLLHandle, 'nk_str_get_const');
+  nk_str_init := GetProcAddress(aDLLHandle, 'nk_str_init');
+  nk_str_init_default := GetProcAddress(aDLLHandle, 'nk_str_init_default');
+  nk_str_init_fixed := GetProcAddress(aDLLHandle, 'nk_str_init_fixed');
+  nk_str_insert_at_char := GetProcAddress(aDLLHandle, 'nk_str_insert_at_char');
+  nk_str_insert_at_rune := GetProcAddress(aDLLHandle, 'nk_str_insert_at_rune');
+  nk_str_insert_str_char := GetProcAddress(aDLLHandle, 'nk_str_insert_str_char');
+  nk_str_insert_str_runes := GetProcAddress(aDLLHandle, 'nk_str_insert_str_runes');
+  nk_str_insert_str_utf8 := GetProcAddress(aDLLHandle, 'nk_str_insert_str_utf8');
+  nk_str_insert_text_char := GetProcAddress(aDLLHandle, 'nk_str_insert_text_char');
+  nk_str_insert_text_runes := GetProcAddress(aDLLHandle, 'nk_str_insert_text_runes');
+  nk_str_insert_text_utf8 := GetProcAddress(aDLLHandle, 'nk_str_insert_text_utf8');
+  nk_str_len := GetProcAddress(aDLLHandle, 'nk_str_len');
+  nk_str_len_char := GetProcAddress(aDLLHandle, 'nk_str_len_char');
+  nk_str_remove_chars := GetProcAddress(aDLLHandle, 'nk_str_remove_chars');
+  nk_str_remove_runes := GetProcAddress(aDLLHandle, 'nk_str_remove_runes');
+  nk_str_rune_at := GetProcAddress(aDLLHandle, 'nk_str_rune_at');
+  nk_strfilter := GetProcAddress(aDLLHandle, 'nk_strfilter');
+  nk_stricmp := GetProcAddress(aDLLHandle, 'nk_stricmp');
+  nk_stricmpn := GetProcAddress(aDLLHandle, 'nk_stricmpn');
+  nk_strlen := GetProcAddress(aDLLHandle, 'nk_strlen');
+  nk_strmatch_fuzzy_string := GetProcAddress(aDLLHandle, 'nk_strmatch_fuzzy_string');
+  nk_strmatch_fuzzy_text := GetProcAddress(aDLLHandle, 'nk_strmatch_fuzzy_text');
+  nk_stroke_arc := GetProcAddress(aDLLHandle, 'nk_stroke_arc');
+  nk_stroke_circle := GetProcAddress(aDLLHandle, 'nk_stroke_circle');
+  nk_stroke_curve := GetProcAddress(aDLLHandle, 'nk_stroke_curve');
+  nk_stroke_line := GetProcAddress(aDLLHandle, 'nk_stroke_line');
+  nk_stroke_polygon := GetProcAddress(aDLLHandle, 'nk_stroke_polygon');
+  nk_stroke_polyline := GetProcAddress(aDLLHandle, 'nk_stroke_polyline');
+  nk_stroke_rect := GetProcAddress(aDLLHandle, 'nk_stroke_rect');
+  nk_stroke_triangle := GetProcAddress(aDLLHandle, 'nk_stroke_triangle');
+  nk_strtod := GetProcAddress(aDLLHandle, 'nk_strtod');
+  nk_strtof := GetProcAddress(aDLLHandle, 'nk_strtof');
+  nk_strtoi := GetProcAddress(aDLLHandle, 'nk_strtoi');
+  nk_style_default := GetProcAddress(aDLLHandle, 'nk_style_default');
+  nk_style_from_table := GetProcAddress(aDLLHandle, 'nk_style_from_table');
+  nk_style_get_color_by_name := GetProcAddress(aDLLHandle, 'nk_style_get_color_by_name');
+  nk_style_hide_cursor := GetProcAddress(aDLLHandle, 'nk_style_hide_cursor');
+  nk_style_item_color_rtn := GetProcAddress(aDLLHandle, 'nk_style_item_color');
+  nk_style_item_hide := GetProcAddress(aDLLHandle, 'nk_style_item_hide');
+  nk_style_item_image_rtn := GetProcAddress(aDLLHandle, 'nk_style_item_image');
+  nk_style_item_nine_slice_rtn := GetProcAddress(aDLLHandle, 'nk_style_item_nine_slice');
+  nk_style_load_all_cursors := GetProcAddress(aDLLHandle, 'nk_style_load_all_cursors');
+  nk_style_load_cursor := GetProcAddress(aDLLHandle, 'nk_style_load_cursor');
+  nk_style_pop_color := GetProcAddress(aDLLHandle, 'nk_style_pop_color');
+  nk_style_pop_flags := GetProcAddress(aDLLHandle, 'nk_style_pop_flags');
+  nk_style_pop_float := GetProcAddress(aDLLHandle, 'nk_style_pop_float');
+  nk_style_pop_font := GetProcAddress(aDLLHandle, 'nk_style_pop_font');
+  nk_style_pop_style_item := GetProcAddress(aDLLHandle, 'nk_style_pop_style_item');
+  nk_style_pop_vec2 := GetProcAddress(aDLLHandle, 'nk_style_pop_vec2');
+  nk_style_push_color := GetProcAddress(aDLLHandle, 'nk_style_push_color');
+  nk_style_push_flags := GetProcAddress(aDLLHandle, 'nk_style_push_flags');
+  nk_style_push_float := GetProcAddress(aDLLHandle, 'nk_style_push_float');
+  nk_style_push_font := GetProcAddress(aDLLHandle, 'nk_style_push_font');
+  nk_style_push_style_item := GetProcAddress(aDLLHandle, 'nk_style_push_style_item');
+  nk_style_push_vec2 := GetProcAddress(aDLLHandle, 'nk_style_push_vec2');
+  nk_style_set_cursor := GetProcAddress(aDLLHandle, 'nk_style_set_cursor');
+  nk_style_set_font := GetProcAddress(aDLLHandle, 'nk_style_set_font');
+  nk_style_show_cursor := GetProcAddress(aDLLHandle, 'nk_style_show_cursor');
+  nk_sub9slice_handle := GetProcAddress(aDLLHandle, 'nk_sub9slice_handle');
+  nk_sub9slice_id := GetProcAddress(aDLLHandle, 'nk_sub9slice_id');
+  nk_sub9slice_ptr := GetProcAddress(aDLLHandle, 'nk_sub9slice_ptr');
+  nk_subimage_handle := GetProcAddress(aDLLHandle, 'nk_subimage_handle');
+  nk_subimage_id := GetProcAddress(aDLLHandle, 'nk_subimage_id');
+  nk_subimage_ptr := GetProcAddress(aDLLHandle, 'nk_subimage_ptr');
+  nk_text := GetProcAddress(aDLLHandle, 'nk_text');
+  nk_text_colored := GetProcAddress(aDLLHandle, 'nk_text_colored');
+  nk_text_wrap := GetProcAddress(aDLLHandle, 'nk_text_wrap');
+  nk_text_wrap_colored := GetProcAddress(aDLLHandle, 'nk_text_wrap_colored');
+  nk_textedit_cut := GetProcAddress(aDLLHandle, 'nk_textedit_cut');
+  nk_textedit_delete := GetProcAddress(aDLLHandle, 'nk_textedit_delete');
+  nk_textedit_delete_selection := GetProcAddress(aDLLHandle, 'nk_textedit_delete_selection');
+  nk_textedit_free := GetProcAddress(aDLLHandle, 'nk_textedit_free');
+  nk_textedit_init := GetProcAddress(aDLLHandle, 'nk_textedit_init');
+  nk_textedit_init_default := GetProcAddress(aDLLHandle, 'nk_textedit_init_default');
+  nk_textedit_init_fixed := GetProcAddress(aDLLHandle, 'nk_textedit_init_fixed');
+  nk_textedit_paste := GetProcAddress(aDLLHandle, 'nk_textedit_paste');
+  nk_textedit_redo := GetProcAddress(aDLLHandle, 'nk_textedit_redo');
+  nk_textedit_select_all := GetProcAddress(aDLLHandle, 'nk_textedit_select_all');
+  nk_textedit_text := GetProcAddress(aDLLHandle, 'nk_textedit_text');
+  nk_textedit_undo := GetProcAddress(aDLLHandle, 'nk_textedit_undo');
+  nk_tooltip := GetProcAddress(aDLLHandle, 'nk_tooltip');
+  nk_tooltip_begin := GetProcAddress(aDLLHandle, 'nk_tooltip_begin');
+  nk_tooltip_end := GetProcAddress(aDLLHandle, 'nk_tooltip_end');
+  nk_tooltipf := GetProcAddress(aDLLHandle, 'nk_tooltipf');
+  nk_tooltipfv := GetProcAddress(aDLLHandle, 'nk_tooltipfv');
+  nk_tree_element_image_push_hashed := GetProcAddress(aDLLHandle, 'nk_tree_element_image_push_hashed');
+  nk_tree_element_pop := GetProcAddress(aDLLHandle, 'nk_tree_element_pop');
+  nk_tree_element_push_hashed := GetProcAddress(aDLLHandle, 'nk_tree_element_push_hashed');
+  nk_tree_image_push_hashed := GetProcAddress(aDLLHandle, 'nk_tree_image_push_hashed');
+  nk_tree_pop := GetProcAddress(aDLLHandle, 'nk_tree_pop');
+  nk_tree_push_hashed := GetProcAddress(aDLLHandle, 'nk_tree_push_hashed');
+  nk_tree_state_image_push := GetProcAddress(aDLLHandle, 'nk_tree_state_image_push');
+  nk_tree_state_pop := GetProcAddress(aDLLHandle, 'nk_tree_state_pop');
+  nk_tree_state_push := GetProcAddress(aDLLHandle, 'nk_tree_state_push');
+  nk_triangle_from_direction := GetProcAddress(aDLLHandle, 'nk_triangle_from_direction');
+  nk_utf_at := GetProcAddress(aDLLHandle, 'nk_utf_at');
+  nk_utf_decode := GetProcAddress(aDLLHandle, 'nk_utf_decode');
+  nk_utf_encode := GetProcAddress(aDLLHandle, 'nk_utf_encode');
+  nk_utf_len := GetProcAddress(aDLLHandle, 'nk_utf_len');
+  nk_value_bool := GetProcAddress(aDLLHandle, 'nk_value_bool');
+  nk_value_color_byte := GetProcAddress(aDLLHandle, 'nk_value_color_byte');
+  nk_value_color_float := GetProcAddress(aDLLHandle, 'nk_value_color_float');
+  nk_value_color_hex := GetProcAddress(aDLLHandle, 'nk_value_color_hex');
+  nk_value_float := GetProcAddress(aDLLHandle, 'nk_value_float');
+  nk_value_int := GetProcAddress(aDLLHandle, 'nk_value_int');
+  nk_value_uint := GetProcAddress(aDLLHandle, 'nk_value_uint');
+  nk_vec2_rtn := GetProcAddress(aDLLHandle, 'nk_vec2');
+  nk_vec2i_rtn := GetProcAddress(aDLLHandle, 'nk_vec2i');
+  nk_vec2iv := GetProcAddress(aDLLHandle, 'nk_vec2iv');
+  nk_vec2v := GetProcAddress(aDLLHandle, 'nk_vec2v');
+  nk_widget := GetProcAddress(aDLLHandle, 'nk_widget');
+  nk_widget_bounds := GetProcAddress(aDLLHandle, 'nk_widget_bounds');
+  nk_widget_fitting := GetProcAddress(aDLLHandle, 'nk_widget_fitting');
+  nk_widget_has_mouse_click_down := GetProcAddress(aDLLHandle, 'nk_widget_has_mouse_click_down');
+  nk_widget_height := GetProcAddress(aDLLHandle, 'nk_widget_height');
+  nk_widget_is_hovered := GetProcAddress(aDLLHandle, 'nk_widget_is_hovered');
+  nk_widget_is_mouse_clicked := GetProcAddress(aDLLHandle, 'nk_widget_is_mouse_clicked');
+  nk_widget_position := GetProcAddress(aDLLHandle, 'nk_widget_position');
+  nk_widget_size := GetProcAddress(aDLLHandle, 'nk_widget_size');
+  nk_widget_width := GetProcAddress(aDLLHandle, 'nk_widget_width');
+  nk_window_close := GetProcAddress(aDLLHandle, 'nk_window_close');
+  nk_window_collapse := GetProcAddress(aDLLHandle, 'nk_window_collapse');
+  nk_window_collapse_if := GetProcAddress(aDLLHandle, 'nk_window_collapse_if');
+  nk_window_find := GetProcAddress(aDLLHandle, 'nk_window_find');
+  nk_window_get_bounds := GetProcAddress(aDLLHandle, 'nk_window_get_bounds');
+  nk_window_get_canvas := GetProcAddress(aDLLHandle, 'nk_window_get_canvas');
+  nk_window_get_content_region := GetProcAddress(aDLLHandle, 'nk_window_get_content_region');
+  nk_window_get_content_region_max := GetProcAddress(aDLLHandle, 'nk_window_get_content_region_max');
+  nk_window_get_content_region_min := GetProcAddress(aDLLHandle, 'nk_window_get_content_region_min');
+  nk_window_get_content_region_size := GetProcAddress(aDLLHandle, 'nk_window_get_content_region_size');
+  nk_window_get_height := GetProcAddress(aDLLHandle, 'nk_window_get_height');
+  nk_window_get_panel := GetProcAddress(aDLLHandle, 'nk_window_get_panel');
+  nk_window_get_position := GetProcAddress(aDLLHandle, 'nk_window_get_position');
+  nk_window_get_scroll := GetProcAddress(aDLLHandle, 'nk_window_get_scroll');
+  nk_window_get_size := GetProcAddress(aDLLHandle, 'nk_window_get_size');
+  nk_window_get_width := GetProcAddress(aDLLHandle, 'nk_window_get_width');
+  nk_window_has_focus := GetProcAddress(aDLLHandle, 'nk_window_has_focus');
+  nk_window_is_active := GetProcAddress(aDLLHandle, 'nk_window_is_active');
+  nk_window_is_any_hovered := GetProcAddress(aDLLHandle, 'nk_window_is_any_hovered');
+  nk_window_is_closed := GetProcAddress(aDLLHandle, 'nk_window_is_closed');
+  nk_window_is_collapsed := GetProcAddress(aDLLHandle, 'nk_window_is_collapsed');
+  nk_window_is_hidden := GetProcAddress(aDLLHandle, 'nk_window_is_hidden');
+  nk_window_is_hovered := GetProcAddress(aDLLHandle, 'nk_window_is_hovered');
+  nk_window_set_bounds := GetProcAddress(aDLLHandle, 'nk_window_set_bounds');
+  nk_window_set_focus := GetProcAddress(aDLLHandle, 'nk_window_set_focus');
+  nk_window_set_position := GetProcAddress(aDLLHandle, 'nk_window_set_position');
+  nk_window_set_scroll := GetProcAddress(aDLLHandle, 'nk_window_set_scroll');
+  nk_window_set_size := GetProcAddress(aDLLHandle, 'nk_window_set_size');
+  nk_window_show := GetProcAddress(aDLLHandle, 'nk_window_show');
+  nk_window_show_if := GetProcAddress(aDLLHandle, 'nk_window_show_if');
   ov_bitrate := GetProcAddress(aDLLHandle, 'ov_bitrate');
   ov_bitrate_instant := GetProcAddress(aDLLHandle, 'ov_bitrate_instant');
   ov_clear := GetProcAddress(aDLLHandle, 'ov_clear');

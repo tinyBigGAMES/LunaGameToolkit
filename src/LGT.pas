@@ -964,6 +964,7 @@ type
     function  IsOpen(): Boolean;
     procedure Close();
     function  Ready(): Boolean;
+    function  GetHandle(): PGLFWwindow;
     function  GetVSync(): Boolean;
     procedure SetVSync(const AEnable: Boolean);
     function  GetMaxTextureSize(): Integer;
@@ -1175,6 +1176,96 @@ type
     procedure Reset();
   end;
 
+{ === GUI =================================================================== }
+const
+  GUI_WINDOW_BORDER = 1;
+  GUI_WINDOW_MOVABLE = 2;
+  GUI_WINDOW_SCALABLE = 4;
+  GUI_WINDOW_CLOSABLE = 8;
+  GUI_WINDOW_MINIMIZABLE = 16;
+  GUI_WINDOW_NO_SCROLLBAR = 32;
+  GUI_WINDOW_TITLE = 64;
+  GUI_WINDOW_SCROLL_AUTO_HIDE = 128;
+  GUI_WINDOW_BACKGROUND = 256;
+  GUI_WINDOW_SCALE_LEFT = 512;
+  GUI_WINDOW_NO_INPUT = 1024;
+
+  GUI_TEXT_ALIGN_LEFT = 1;
+  GUI_TEXT_ALIGN_CENTERED = 2;
+  GUI_TEXT_ALIGN_RIGHT = 4;
+  GUI_TEXT_ALIGN_TOP = 8;
+  GUI_TEXT_ALIGN_MIDDLE = 16;
+  GUI_TEXT_ALIGN_BOTTOM = 32;
+
+  GUI_TEXT_LEFT = 17;
+  GUI_TEXT_CENTERED = 18;
+  GUI_TEXT_RIGHT = 20;
+
+  GUI_EDIT_DEFAULT = 0;
+  GUI_EDIT_READ_ONLY = 1;
+  GUI_EDIT_AUTO_SELECT = 2;
+  GUI_EDIT_SIG_ENTER = 4;
+  GUI_EDIT_ALLOW_TAB = 8;
+  GUI_EDIT_NO_CURSOR = 16;
+  GUI_EDIT_SELECTABLE = 32;
+  GUI_EDIT_CLIPBOARD = 64;
+  GUI_EDIT_CTRL_ENTER_NEWLINE = 128;
+  GUI_EDIT_NO_HORIZONTAL_SCROLL = 256;
+  GUI_EDIT_ALWAYS_INSERT_MODE = 512;
+  GUI_EDIT_MULTILINE = 1024;
+  GUI_EDIT_GOTO_END_ON_ACTIVATE = 2048;
+
+  GUI_EDIT_SIMPLE = 512;
+  GUI_EDIT_FIELD = 608;
+  GUI_EDIT_BOX = 1640;
+  GUI_EDIT_EDITOR = 1128;
+
+  GUI_EDIT_ACTIVE = 1;
+  GUI_EDIT_INACTIVE = 2;
+  GUI_EDIT_ACTIVATED = 4;
+  GUI_EDIT_DEACTIVATED = 8;
+  GUI_EDIT_COMMITED = 16;
+
+  GUI_DEFAULT_WINDOW = GUI_WINDOW_TITLE or GUI_WINDOW_BORDER or
+    GUI_WINDOW_MOVABLE or GUI_WINDOW_BACKGROUND or GUI_WINDOW_SCALABLE or
+    GUI_WINDOW_MINIMIZABLE;
+
+type
+  { TlgGUI }
+  TlgGUI = class(TlgObject)
+  protected
+    FCtx: Pnk_context;
+  public
+    // init
+    constructor Create; override;
+    destructor Destroy; override;
+    function  Init(const AWindow: TlgWindow): Boolean;
+
+    // frame
+    procedure NewFrame();
+    procedure Render();
+
+    // window
+    function  BeginWindow(const ATitle: string; const X, Y, AWidth, AHeight: Single; const AFlags: Cardinal): Boolean;
+    procedure EndWindow();
+
+    // layout
+    procedure LayoutRowDynamic(const AHeight: Single; const AColumns: Integer);
+    procedure LayoutRowStatic(const AHeight: Single; const AItemWidth, AColumns: Integer);
+
+    // button
+    function  ButtonLabel(const ATitle: string): Boolean;
+
+    // option
+    function  OptionLabel(const ATitle: string; const AActive: Boolean): Boolean;
+
+    // property
+    procedure PropertyInt(const AName: string; const AValue: PInteger; const AMin, AMax, AStep: Integer; const AIncPerPixel: Single);
+
+    // class methods
+    class function New(const AWindow: TlgWindow): TlgGUI;
+  end;
+
 { =========================================================================== }
 var
   Utils: TlgUtils = nil;
@@ -1186,6 +1277,9 @@ var
 implementation
 
 { =========================================================================== }
+const
+  CDefaultFontResName = '4deb5a2026b646fb9d07983723e66174';
+
 type
   PRGBA = ^TRGBA;
   TRGBA = packed record
@@ -4382,6 +4476,11 @@ begin
   FVSync := AEnable;
 end;
 
+function  TlgWindow.GetHandle(): PGLFWwindow;
+begin
+  Result := FHandle;
+end;
+
 function  TlgWindow.GetMaxTextureSize(): Integer;
 begin
   Result := FMaxTextureSize;
@@ -5729,17 +5828,15 @@ begin
 end;
 
 class function  TlgFont.LoadDefault(const AWindow: TlgWindow; const aSize: Cardinal; const aGlyphs: string=''): TlgFont;
-const
-  CResName = '4deb5a2026b646fb9d07983723e66174';
 var
   LResStream: TResourceStream;
   LStream: TlgStream;
 begin
   Result := nil;
   if not Assigned(AWindow) then Exit;
-  if not Utils.ResourceExists(HInstance, cResName) then Exit;
+  if not Utils.ResourceExists(HInstance, CDefaultFontResName) then Exit;
 
-  LResStream := TResourceStream.Create(HInstance, cResName, RT_RCDATA);
+  LResStream := TResourceStream.Create(HInstance, CDefaultFontResName, RT_RCDATA);
   try
     LStream := TlgMemoryStream.Open(LResStream.Memory, LResStream.Size);
     try
@@ -6201,6 +6298,119 @@ begin
   FScale := 1;
 end;
 
+{ === GUI =================================================================== }
+
+{ --- TlgGUI ---------------------------------------------------------------- }
+// init
+constructor TlgGUI.Create();
+begin
+  inherited;
+  FCtx := nil;
+end;
+
+destructor TlgGUI.Destroy();
+begin
+  if Assigned(FCtx) then
+    nk_glfw3_shutdown();
+  FCtx := nil;
+  inherited;
+end;
+
+function  TlgGUI.Init(const AWindow: TlgWindow): Boolean;
+var
+  LResStream: TResourceStream;
+  LAtlas: Pnk_font_atlas;
+  LFont: Pnk_font;
+begin
+  Result := False;
+  if not Assigned(AWindow) then Exit;
+
+  FCtx := nk_glfw3_init(AWindow.GetHandle(), NK_GLFW3_DEFAULT);
+  if not Assigned(FCtx) then Exit;
+
+  LResStream := TResourceStream.Create(HInstance, CDefaultFontResName, RT_RCDATA);
+  try
+    nk_glfw3_font_stash_begin(@LAtlas);
+    LFont := nk_font_atlas_add_from_memory(LAtlas, LResStream.Memory, LResStream.Size, 16, nil);
+    nk_glfw3_font_stash_end();
+    nk_style_load_all_cursors(FCtx, @LAtlas.cursors);
+    nk_style_set_font(FCtx, @LFont.handle);
+  finally
+    LResStream.Free();
+  end;
+  Result := True;
+end;
+
+// frame
+procedure TlgGUI.NewFrame();
+begin
+  if not Assigned(FCtx) then Exit;
+
+  nk_glfw3_new_frame();
+end;
+
+procedure TlgGUI.Render();
+begin
+  if not Assigned(FCtx) then Exit;
+
+  nk_glfw3_render(NK_ANTI_ALIASING_ON);
+end;
+
+// window
+function  TlgGUI.BeginWindow(const ATitle: string; const X, Y, AWidth, AHeight: Single; const AFlags: Cardinal): Boolean;
+begin
+  Result := False;
+  if not Assigned(FCtx) then Exit;
+
+  Result := Boolean(nk_begin(FCtx, Utils.Marshal.AsUtf8(ATitle).ToPointer, nk_rect_rtn(50, 50, 230, 250), AFlags) = nk_true)
+end;
+
+procedure TlgGUI.EndWindow();
+begin
+  if not Assigned(FCtx) then Exit;
+
+  nk_end(FCtx);
+end;
+
+// layout
+procedure TlgGUI.LayoutRowDynamic(const AHeight: Single; const AColumns: Integer);
+begin
+  nk_layout_row_dynamic(FCtx, AHeight, AColumns);
+end;
+
+procedure TlgGUI.LayoutRowStatic(const AHeight: Single; const AItemWidth, AColumns: Integer);
+begin
+  nk_layout_row_static(FCtx, AHeight, AItemWidth, AColumns);
+end;
+
+// button
+function  TlgGUI.ButtonLabel(const ATitle: string): Boolean;
+begin
+  Result := Boolean(nk_button_label(FCtx, Utils.Marshal.AsUtf8(ATitle).ToPointer) = nk_true);
+end;
+
+// option
+function  TlgGUI.OptionLabel(const ATitle: string; const AActive: Boolean): Boolean;
+begin
+  Result := Boolean(nk_option_label(FCtx, Utils.Marshal.AsUtf8(ATitle).ToPointer, Ord(AActive)) = nk_true);
+end;
+
+// property
+procedure TlgGUI.PropertyInt(const AName: string; const AValue: PInteger; const AMin, AMax, AStep: Integer; const AIncPerPixel: Single);
+begin
+  nk_property_int(FCtx,  Utils.Marshal.AsUtf8(AName).ToPointer, AMin, AValue, AMax, AStep, AIncPerPixel);
+end;
+
+// class methods
+class function TlgGUI.New(const AWindow: TlgWindow): TlgGUI;
+begin
+  Result := TlgGUI.Create();
+  if not Result.Init(AWindow) then
+  begin
+    Result.Free();
+    Result := nil;
+  end;
+end;
 
 {============================================================================ }
 

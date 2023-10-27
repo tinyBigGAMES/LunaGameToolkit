@@ -129,7 +129,7 @@
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>.\libs</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.\libs;.\libs\include</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
     </ClCompile>
     <Link>
@@ -155,6 +155,7 @@
     <ClCompile Include="libs\clog.c" />
     <ClCompile Include="libs\cute_c2.c" />
     <ClCompile Include="libs\minivorbis.c" />
+    <ClCompile Include="libs\Nuklear.c" />
     <ClCompile Include="libs\pl_mpeg.cpp" />
     <ClCompile Include="libs\stb_image.c" />
     <ClCompile Include="libs\stb_image_write.c" />

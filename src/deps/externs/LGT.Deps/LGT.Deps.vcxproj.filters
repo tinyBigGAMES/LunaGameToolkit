@@ -53,5 +53,8 @@
     <ClCompile Include="libs\clog.c">
       <Filter>Deps</Filter>
     </ClCompile>
+    <ClCompile Include="libs\Nuklear.c">
+      <Filter>Deps</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

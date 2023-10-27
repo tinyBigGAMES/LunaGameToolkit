@@ -668,16 +668,111 @@ begin
   LWindow.Free();
 end;
 
+procedure Test09();
+type
+  TOptions = (EASY, HARD);
+var
+  LWindow: TlgWindow;
+  LFont: TlgFont;
+  LHudPos: TlgPoint;
+  LGui: TlgGUI;
+  LOption: TOptions;
+  LProperty: Integer;
+begin
+  // show LGT version info
+  Console.PrintLn(LGT_PROJECT);
+
+  // init window
+  LWindow := TlgWindow.Init('Luna Game Toolkit: GUI');
+
+  // show gamepad info
+  Console.PrintLn('Gamepad: %s', [LWindow.GetGamepadName(GAMEPAD_1)]);
+
+  // init default font
+  LFont := TlgFont.LoadDefault(LWindow, 10);
+
+  // init gui
+  LGui := TlgGUI.New(LWindow);
+
+  // init gui options
+  LOption := EASY;
+  LProperty := 10;
+
+  // enter game loop
+  while not LWindow.ShouldClose() do
+  begin
+    // start frame
+    LWindow.StartFrame();
+
+      // keyboard processing
+      if LWindow.GetKey(KEY_ESCAPE, isWasPressed) then
+        LWindow.SetShouldClose(True);
+
+      // gamepad processing
+      if LWindow.GetGamepadButton(GAMEPAD_1, GAMEPAD_BUTTON_X, isWasReleased) then
+        LWindow.SetShouldClose(True);
+
+      // start new gui frame
+      LGUI.NewFrame();
+
+      // start window 1
+      if LGUI.BeginWindow('Window 1', 50, 50, 150, 150, GUI_DEFAULT_WINDOW) then
+      begin
+        LGUI.LayoutRowStatic(30, 80, 1);
+        if LGUI.ButtonLabel('Button') then Console.PrintLn('Button pressed');
+
+        LGUI.LayoutRowDynamic(30, 2);
+        if LGUI.OptionLabel('easy', LOption = EASY) then LOption := EASY;
+        if LGUI.OptionLabel('hard', LOption = HARD) then LOption := HARD;
+
+        LGUI.LayoutRowDynamic(25, 1);
+        LGUI.PropertyInt('Compression:', @LProperty, 0, 100, 10, 1);
+      end;
+      // end window 1
+      LGUI.EndWindow();
+
+      // start drawing
+      LWindow.StartDrawing();
+
+        // clear window
+        LWindow.Clear(DARKSLATEBROWN);
+
+        // render gui
+        LGUI.Render();
+
+        // display hud
+        LHudPos := Math.Point(3,3);
+        LFont.DrawText(LWindow, LHudPos.x, LHudPos.y, 0, WHITE, haLeft,  '%d fps', [Timer.FrameRate()]);
+        LFont.DrawText(LWindow, LHudPos.x, LHudPos.y, 0, GREEN, haLeft,  'ESC - Quit', []);
+
+      // end drawing
+      LWindow.EndDrawing();
+
+    // end frame
+    LWindow.EndFrame();
+  end;
+
+  // destroy gui
+  LGUI.Free();
+
+  // free font
+  LFont.Free();
+
+  // free window
+  LWindow.Free();
+end;
+
 procedure RunTests();
 begin
   //Test01();
   //Test02();
   //Test03();
-  Test04();
+  //Test04();
   //Test05();
   //Test06();
   //Test07();
-  //Test08;
+  //Test08();
+  Test09();
   Console.Pause();
 end;
 

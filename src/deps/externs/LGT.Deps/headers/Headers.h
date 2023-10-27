@@ -10,3 +10,6 @@
 #include <stb_image_write.h>
 #include <stb_truetype.h>
 #include <clog.h>
+#include <nuklear.h>
+#include <nuklear_glfw_gl2.h>
+#include <inc/glad.h>

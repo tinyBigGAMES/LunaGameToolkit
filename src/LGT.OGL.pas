@@ -2290,6 +2290,9 @@ begin
   Result := False;
   if not Assigned(glfwGetCurrentContext) then Exit;
   Result := gladLoadGL(@loadGLProc);
+
+  // init glad inside LGT.Deps DLL
+  LGT.Deps.gladLoadGL(@loadGLProc);
 end;
 
 initialization
