@@ -692,7 +692,7 @@ begin
   LFont := TlgFont.LoadDefault(LWindow, 10);
 
   // init gui
-  LGui := TlgGUI.New(LWindow);
+  LGui := TlgGUI.Init(LWindow);
 
   // init gui options
   LOption := EASY;

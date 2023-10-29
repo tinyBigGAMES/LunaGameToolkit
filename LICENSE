@@ -36,5 +36,6 @@ Includes the following open-sources libraries:
 * nuklear       - https://github.com/Immediate-Mode-UI/Nuklear
 * OpenAL        - https://github.com/kcat/openal-soft
 * pl_mpeg       - https://github.com/phoboslab/pl_mpeg
+* pocketlang    - https://github.com/ThakeeNathees/pocketlang
 * stb           - https://github.com/nothings/stb
 * zlib/minizip  - https://github.com/madler/zlib/tree/develop/contrib/minizip

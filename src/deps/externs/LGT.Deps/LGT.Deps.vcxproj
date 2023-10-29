@@ -125,11 +125,11 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>NDEBUG;LGTDEPS_EXPORTS;_WINDOWS;_USRDLL;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NDEBUG;LGTDEPS_EXPORTS;_WINDOWS;_USRDLL;_CRT_SECURE_NO_WARNINGS;PK_DLL;PK_COMPILE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>.\libs;.\libs\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.\libs;.\libs\include;.\libs\pocketlang\include</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
     </ClCompile>
     <Link>
@@ -157,6 +157,23 @@
     <ClCompile Include="libs\minivorbis.c" />
     <ClCompile Include="libs\Nuklear.c" />
     <ClCompile Include="libs\pl_mpeg.cpp" />
+    <ClCompile Include="libs\pocketlang\core\compiler.c" />
+    <ClCompile Include="libs\pocketlang\core\core.c" />
+    <ClCompile Include="libs\pocketlang\core\debug.c" />
+    <ClCompile Include="libs\pocketlang\core\public.c" />
+    <ClCompile Include="libs\pocketlang\core\utils.c" />
+    <ClCompile Include="libs\pocketlang\core\value.c" />
+    <ClCompile Include="libs\pocketlang\core\vm.c" />
+    <ClCompile Include="libs\pocketlang\libs\libs.c" />
+    <ClCompile Include="libs\pocketlang\libs\std_dummy.c" />
+    <ClCompile Include="libs\pocketlang\libs\std_io.c" />
+    <ClCompile Include="libs\pocketlang\libs\std_json.c" />
+    <ClCompile Include="libs\pocketlang\libs\std_math.c" />
+    <ClCompile Include="libs\pocketlang\libs\std_os.c" />
+    <ClCompile Include="libs\pocketlang\libs\std_path.c" />
+    <ClCompile Include="libs\pocketlang\libs\std_term.c" />
+    <ClCompile Include="libs\pocketlang\libs\std_time.c" />
+    <ClCompile Include="libs\pocketlang\libs\std_types.c" />
     <ClCompile Include="libs\stb_image.c" />
     <ClCompile Include="libs\stb_image_write.c" />
     <ClCompile Include="libs\stb_truetype.c" />

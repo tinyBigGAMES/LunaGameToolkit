@@ -16,6 +16,15 @@
     <Filter Include="Deps">
       <UniqueIdentifier>{76c35db6-bb8d-4a0c-a5f2-e3dbdcf3fc14}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Deps\pocketlang">
+      <UniqueIdentifier>{59f9eb9f-e6d8-422a-9a33-a92419f3778f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Deps\pocketlang\core">
+      <UniqueIdentifier>{a235c8d2-f9c8-4197-8d9a-d047f269cdf3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Deps\pocketlang\libs">
+      <UniqueIdentifier>{6c9f2c5c-67d4-4aa5-a420-6d45b4bd27a3}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -55,6 +64,57 @@
     </ClCompile>
     <ClCompile Include="libs\Nuklear.c">
       <Filter>Deps</Filter>
+    </ClCompile>
+    <ClCompile Include="libs\pocketlang\core\compiler.c">
+      <Filter>Deps\pocketlang\core</Filter>
+    </ClCompile>
+    <ClCompile Include="libs\pocketlang\core\core.c">
+      <Filter>Deps\pocketlang\core</Filter>
+    </ClCompile>
+    <ClCompile Include="libs\pocketlang\core\debug.c">
+      <Filter>Deps\pocketlang\core</Filter>
+    </ClCompile>
+    <ClCompile Include="libs\pocketlang\core\public.c">
+      <Filter>Deps\pocketlang\core</Filter>
+    </ClCompile>
+    <ClCompile Include="libs\pocketlang\core\utils.c">
+      <Filter>Deps\pocketlang\core</Filter>
+    </ClCompile>
+    <ClCompile Include="libs\pocketlang\core\value.c">
+      <Filter>Deps\pocketlang\core</Filter>
+    </ClCompile>
+    <ClCompile Include="libs\pocketlang\core\vm.c">
+      <Filter>Deps\pocketlang\core</Filter>
+    </ClCompile>
+    <ClCompile Include="libs\pocketlang\libs\libs.c">
+      <Filter>Deps\pocketlang\libs</Filter>
+    </ClCompile>
+    <ClCompile Include="libs\pocketlang\libs\std_dummy.c">
+      <Filter>Deps\pocketlang\libs</Filter>
+    </ClCompile>
+    <ClCompile Include="libs\pocketlang\libs\std_io.c">
+      <Filter>Deps\pocketlang\libs</Filter>
+    </ClCompile>
+    <ClCompile Include="libs\pocketlang\libs\std_json.c">
+      <Filter>Deps\pocketlang\libs</Filter>
+    </ClCompile>
+    <ClCompile Include="libs\pocketlang\libs\std_math.c">
+      <Filter>Deps\pocketlang\libs</Filter>
+    </ClCompile>
+    <ClCompile Include="libs\pocketlang\libs\std_os.c">
+      <Filter>Deps\pocketlang\libs</Filter>
+    </ClCompile>
+    <ClCompile Include="libs\pocketlang\libs\std_path.c">
+      <Filter>Deps\pocketlang\libs</Filter>
+    </ClCompile>
+    <ClCompile Include="libs\pocketlang\libs\std_term.c">
+      <Filter>Deps\pocketlang\libs</Filter>
+    </ClCompile>
+    <ClCompile Include="libs\pocketlang\libs\std_time.c">
+      <Filter>Deps\pocketlang\libs</Filter>
+    </ClCompile>
+    <ClCompile Include="libs\pocketlang\libs\std_types.c">
+      <Filter>Deps\pocketlang\libs</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

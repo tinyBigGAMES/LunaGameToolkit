@@ -1004,6 +1004,9 @@ type
     function  GetGamepadButton(const AGamepad, AButton: Byte; const AState: TlgInputState): Boolean;
     function  GetGamepadAxisValue(const AGamepad, AAxis: Byte): Single;
     function  SaveToFile(const AFilename: string): Boolean;
+    function  GetPixel(const X, Y: Single): TlgColor;
+    procedure SetPixel(const X, Y: Single; const AColor: TlgColor); overload;
+    procedure SetPixel(const X, Y: Single; const ARed, AGreen, ABlue, AAlpha: Byte); overload;
     class function Init(const aTitle: string; const AWidth: Integer=DEFAULT_WIDTH; const AHeight: Integer=DEFAULT_HEIGHT): TlgWindow;
   end;
 
@@ -1026,6 +1029,7 @@ type
     FHFlip: Boolean;
     FVFlip: Boolean;
     FRegion: TlgRect;
+    FLock: PByte;
   public
     constructor Create(); override;
     destructor Destroy(); override;
@@ -1065,6 +1069,11 @@ type
     procedure  Draw();
     procedure  DrawTiled(const AWindow: TlgWindow; const ADeltaX, ADeltaY: Single);
     function   SaveToFile(const AFilename: string): Boolean;
+    function   Lock(): Boolean;
+    procedure  Unlock();
+    function   GetPixel(const X, Y: Single): TlgColor;
+    procedure  SetPixel(const X, Y: Single; const AColor: TlgColor); overload;
+    procedure  SetPixel(const X, Y: Single; const ARed, AGreen, ABlue, AAlpha: Byte); overload;
     class function LoadFromFile(const AFilename: string; const AColorKey: PlgColor=nil): TlgTexture;
     class function LoadFromZipFile(const AZipFile: TlgZipFile; const AFilename: string; const AColorKey: PlgColor=nil): TlgTexture;
   end;
@@ -1239,7 +1248,7 @@ type
     // init
     constructor Create; override;
     destructor Destroy; override;
-    function  Init(const AWindow: TlgWindow): Boolean;
+    function  Setup(const AWindow: TlgWindow): Boolean;
 
     // frame
     procedure NewFrame();
@@ -1263,7 +1272,7 @@ type
     procedure PropertyInt(const AName: string; const AValue: PInteger; const AMin, AMax, AStep: Integer; const AIncPerPixel: Single);
 
     // class methods
-    class function New(const AWindow: TlgWindow): TlgGUI;
+    class function Init(const AWindow: TlgWindow): TlgGUI;
   end;
 
 { =========================================================================== }
@@ -5008,6 +5017,35 @@ begin
   end;
 end;
 
+function  TlgWindow.GetPixel(const X, Y: Single): TlgColor;
+var
+  LPixel: array[0..3] of GLubyte;
+begin
+  glReadPixels(Round(X*FScale.x), Round(Y*FScale.y), 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, @LPixel);
+  Result.Red   := LPixel[0] / $FF;
+  Result.Green := LPixel[1] / $FF;
+  Result.Blue  := LPixel[2] / $FF;
+  Result.Alpha := LPixel[3] / $FF;
+end;
+
+procedure TlgWindow.SetPixel(const X, Y: Single; const AColor: TlgColor);
+begin
+  SetPixel(X, Y, Round(AColor.Red * $FF), Round(AColor.Green * $FF), Round(AColor.Blue * $FF), Round(AColor.Alpha * $FF));
+end;
+
+procedure TlgWindow.SetPixel(const X, Y: Single; const ARed, AGreen, ABlue, AAlpha: Byte);
+var
+  LPixel: array[0..3] of GLubyte;
+begin
+  LPixel[0] := ARed;
+  LPixel[1] := AGreen;
+  LPixel[2] := ABlue;
+  LPixel[3] := AAlpha;
+  glRasterPos2f(X, Y);
+  glDrawPixels(1, 1, GL_RGBA, GL_UNSIGNED_BYTE, @LPixel);
+end;
+
+
 class function TlgWindow.Init(const aTitle: string; const AWidth: Integer; const AHeight: Integer): TlgWindow;
 begin
   Result := TlgWindow.Create();
@@ -5496,6 +5534,77 @@ begin
 
   // Unbind the texture
   glBindTexture(GL_TEXTURE_2D, 0);
+end;
+
+function   TlgTexture.Lock(): Boolean;
+begin
+  Result := False;
+  if Assigned(FLock) then Exit;
+
+  GetMem(FLock, Round(FSize.Width*FSize.Height*4));
+  if not Assigned(FLock) then Exit;
+
+  glBindTexture(GL_TEXTURE_2D, FHandle);
+  glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, FLock);
+  glBindTexture(GL_TEXTURE_2D, 0);
+
+  Result := True;
+end;
+
+procedure  TlgTexture.Unlock();
+begin
+  if not Assigned(FLock) then Exit;
+
+  glBindTexture(GL_TEXTURE_2D, FHandle);
+  glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, Round(FSize.Width), Round(FSize.Height), GL_RGBA, GL_UNSIGNED_BYTE, FLock);
+  glBindTexture(GL_TEXTURE_2D, 0);
+  FreeMem(FLock);
+  FLock := nil;
+end;
+
+function   TlgTexture.GetPixel(const X, Y: Single): TlgColor;
+var
+  FOffset: Integer;
+  LPixel: Cardinal;
+begin
+  Result := BLANK;
+  if not Assigned(FLock) then Exit;
+
+  FOffset := Round((Y * FSize.Width + X) * 4);
+  LPixel := PCardinal(FLock + FOffset)^;
+
+  Result.Alpha := (LPixel shr 24) / $FF;
+  Result.Blue := ((LPixel shr 16) and $FF) / $FF;
+  Result.Green := ((LPixel shr 8) and $FF) / $FF;
+  Result.Red := (LPixel and $FF) / $FF;
+end;
+
+procedure  TlgTexture.SetPixel(const X, Y: Single; const AColor: TlgColor);
+var
+  FOffset: Integer;
+begin
+  if not Assigned(FLock) then Exit;
+
+  FOffset := Round((Y * FSize.Width + X) * 4);
+  PCardinal(FLock + FOffset)^ :=
+    (Round(AColor.Alpha*$FF) shl 24) or
+    (Round(AColor.Blue*$FF) shl 16) or
+    (Round(AColor.Green*$FF) shl 8) or
+    Round(AColor.Red*$FF);
+end;
+
+procedure  TlgTexture.SetPixel(const X, Y: Single; const ARed, AGreen, ABlue, AAlpha: Byte);
+var
+  FOffset: Integer;
+begin
+  if not Assigned(FLock) then Exit;
+
+  FOffset := Round((Y * FSize.Width + X) * 4);
+  PCardinal(FLock + FOffset)^ :=
+    (AAlpha shl 24) or
+    (ABlue shl 16) or
+    (AGreen shl 8) or
+    ARed;
 end;
 
 class function TlgTexture.LoadFromFile(const AFilename: string; const AColorKey: PlgColor): TlgTexture;
@@ -6316,7 +6425,7 @@ begin
   inherited;
 end;
 
-function  TlgGUI.Init(const AWindow: TlgWindow): Boolean;
+function  TlgGUI.Setup(const AWindow: TlgWindow): Boolean;
 var
   LResStream: TResourceStream;
   LAtlas: Pnk_font_atlas;
@@ -6402,10 +6511,10 @@ begin
 end;
 
 // class methods
-class function TlgGUI.New(const AWindow: TlgWindow): TlgGUI;
+class function TlgGUI.Init(const AWindow: TlgWindow): TlgGUI;
 begin
   Result := TlgGUI.Create();
-  if not Result.Init(AWindow) then
+  if not Result.Setup(AWindow) then
   begin
     Result.Free();
     Result := nil;

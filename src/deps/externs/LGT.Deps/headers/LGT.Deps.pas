@@ -538,6 +538,10 @@ const
   NK_COLOR_STACK_SIZE = 32;
   NK_PI = 3.141592654;
   NK_MAX_FLOAT_PRECISION = 2;
+  PK_VERSION_MAJOR = 0;
+  PK_VERSION_MINOR = 1;
+  PK_VERSION_PATCH = 0;
+  PK_VERSION_STRING = '0.1.0';
 
 type
   C2_TYPE = Integer;
@@ -1179,12 +1183,43 @@ const
   NK_GLFW3_INSTALL_CALLBACKS = 1;
 
 type
+  PkVarType = Integer;
+  PPkVarType = ^PkVarType;
+
+const
+  PK_OBJECT = 0;
+  PK_NULL = 1;
+  PK_BOOL = 2;
+  PK_NUMBER = 3;
+  PK_STRING = 4;
+  PK_LIST = 5;
+  PK_MAP = 6;
+  PK_RANGE = 7;
+  PK_MODULE = 8;
+  PK_CLOSURE = 9;
+  PK_METHOD_BIND = 10;
+  PK_FIBER = 11;
+  PK_CLASS = 12;
+  PK_INSTANCE = 13;
+
+type
+  PkResult = Integer;
+  PPkResult = ^PkResult;
+
+const
+  PK_RESULT_SUCCESS = 0;
+  PK_RESULT_UNEXPECTED_EOF = 1;
+  PK_RESULT_COMPILE_ERROR = 2;
+  PK_RESULT_RUNTIME_ERROR = 3;
+
+type
   PPUTF8Char = ^PUTF8Char;
   PPInteger = ^PInteger;
   PPSingle = ^PSingle;
   PPPSingle = ^PPSingle;
   PUInt8 = ^UInt8;
   PUInt32 = ^UInt32;
+  PInt32 = ^Int32;
   Palloc_chain = Pointer;
   PPalloc_chain = ^Palloc_chain;
   Pnk_style_slide = Pointer;
@@ -1344,6 +1379,7 @@ type
   Pnk_page = ^nk_page;
   Pnk_pool = ^nk_pool;
   Pnk_context = ^nk_context;
+  PPkConfiguration = ^PkConfiguration;
 
   GLFWglproc = procedure(); cdecl;
 
@@ -3109,6 +3145,48 @@ type
   GLADapiproc = procedure(); cdecl;
 
   GLADloadfunc = function(const name: PUTF8Char): GLADapiproc; cdecl;
+  PPKVM = Pointer;
+  PPPKVM = ^PPKVM;
+  PPkHandle = Pointer;
+  PPPkHandle = ^PPkHandle;
+
+  pkNativeFn = procedure(vm: PPKVM); cdecl;
+
+  pkReallocFn = function(memory: Pointer; new_size: NativeUInt; user_data: Pointer): Pointer; cdecl;
+
+  pkWriteFn = procedure(vm: PPKVM; const text: PUTF8Char); cdecl;
+
+  pkReadFn = function(vm: PPKVM): PUTF8Char; cdecl;
+
+  pkSignalFn = procedure(p1: Pointer); cdecl;
+
+  pkLoadScriptFn = function(vm: PPKVM; const path: PUTF8Char): PUTF8Char; cdecl;
+
+  pkLoadDL = function(vm: PPKVM; const path: PUTF8Char): Pointer; cdecl;
+
+  pkImportDL = function(vm: PPKVM; handle: Pointer): PPkHandle; cdecl;
+
+  pkUnloadDL = procedure(vm: PPKVM; handle: Pointer); cdecl;
+
+  pkResolvePathFn = function(vm: PPKVM; const from: PUTF8Char; const path: PUTF8Char): PUTF8Char; cdecl;
+
+  pkNewInstanceFn = function(vm: PPKVM): Pointer; cdecl;
+
+  pkDeleteInstanceFn = procedure(vm: PPKVM; p2: Pointer); cdecl;
+
+  PkConfiguration = record
+    realloc_fn: pkReallocFn;
+    stderr_write: pkWriteFn;
+    stdout_write: pkWriteFn;
+    stdin_read: pkReadFn;
+    resolve_path_fn: pkResolvePathFn;
+    load_script_fn: pkLoadScriptFn;
+    load_dl_fn: pkLoadDL;
+    import_dl_fn: pkImportDL;
+    unload_dl_fn: pkUnloadDL;
+    use_ansi_escape: Boolean;
+    user_data: Pointer;
+  end;
 
 const
   PLM_DEMUX_PACKET_PRIVATE: Integer = $BD;
@@ -4171,6 +4249,66 @@ var
   nk_glfw3_char_callback: procedure(win: PGLFWwindow; codepoint: Cardinal); cdecl;
   nk_gflw3_scroll_callback: procedure(win: PGLFWwindow; xoff: Double; yoff: Double); cdecl;
   gladLoadGL: function(load: GLADloadfunc): Integer; cdecl;
+  pkNewConfiguration: function(): PkConfiguration; cdecl;
+  pkNewVM: function(config: PPkConfiguration): PPKVM; cdecl;
+  pkFreeVM: procedure(vm: PPKVM); cdecl;
+  pkSetUserData: procedure(vm: PPKVM; user_data: Pointer); cdecl;
+  pkGetUserData: function(const vm: PPKVM): Pointer; cdecl;
+  pkRegisterBuiltinFn: procedure(vm: PPKVM; const name: PUTF8Char; fn: pkNativeFn; arity: Integer; const docstring: PUTF8Char); cdecl;
+  pkAddSearchPath: procedure(vm: PPKVM; const path: PUTF8Char); cdecl;
+  pkRealloc: function(vm: PPKVM; ptr: Pointer; size: NativeUInt): Pointer; cdecl;
+  pkReleaseHandle: procedure(vm: PPKVM; handle: PPkHandle); cdecl;
+  pkNewModule: function(vm: PPKVM; const name: PUTF8Char): PPkHandle; cdecl;
+  pkRegisterModule: procedure(vm: PPKVM; module: PPkHandle); cdecl;
+  pkModuleAddFunction: procedure(vm: PPKVM; module: PPkHandle; const name: PUTF8Char; fptr: pkNativeFn; arity: Integer; const docstring: PUTF8Char); cdecl;
+  pkNewClass: function(vm: PPKVM; const name: PUTF8Char; base_class: PPkHandle; module: PPkHandle; new_fn: pkNewInstanceFn; delete_fn: pkDeleteInstanceFn; const docstring: PUTF8Char): PPkHandle; cdecl;
+  pkClassAddMethod: procedure(vm: PPKVM; cls: PPkHandle; const name: PUTF8Char; fptr: pkNativeFn; arity: Integer; const docstring: PUTF8Char); cdecl;
+  pkModuleAddSource: procedure(vm: PPKVM; module: PPkHandle; const source: PUTF8Char); cdecl;
+  pkRunString: function(vm: PPKVM; const source: PUTF8Char): PkResult; cdecl;
+  pkRunFile: function(vm: PPKVM; const path: PUTF8Char): PkResult; cdecl;
+  pkRunREPL: function(vm: PPKVM): PkResult; cdecl;
+  pkSetRuntimeError: procedure(vm: PPKVM; const &message: PUTF8Char); cdecl;
+  pkSetRuntimeErrorFmt: procedure(vm: PPKVM; const fmt: PUTF8Char) varargs; cdecl;
+  pkGetSelf: function(const vm: PPKVM): Pointer; cdecl;
+  pkGetArgc: function(const vm: PPKVM): Integer; cdecl;
+  pkCheckArgcRange: function(vm: PPKVM; argc: Integer; min: Integer; max: Integer): Boolean; cdecl;
+  pkValidateSlotBool: function(vm: PPKVM; slot: Integer; value: PBoolean): Boolean; cdecl;
+  pkValidateSlotNumber: function(vm: PPKVM; slot: Integer; value: PDouble): Boolean; cdecl;
+  pkValidateSlotInteger: function(vm: PPKVM; slot: Integer; value: PInt32): Boolean; cdecl;
+  pkValidateSlotString: function(vm: PPKVM; slot: Integer; value: PPUTF8Char; length: PUInt32): Boolean; cdecl;
+  pkValidateSlotType: function(vm: PPKVM; slot: Integer; &type: PkVarType): Boolean; cdecl;
+  pkValidateSlotInstanceOf: function(vm: PPKVM; slot: Integer; cls: Integer): Boolean; cdecl;
+  pkIsSlotInstanceOf: function(vm: PPKVM; inst: Integer; cls: Integer; val: PBoolean): Boolean; cdecl;
+  pkReserveSlots: procedure(vm: PPKVM; count: Integer); cdecl;
+  pkGetSlotsCount: function(vm: PPKVM): Integer; cdecl;
+  pkGetSlotType: function(vm: PPKVM; index: Integer): PkVarType; cdecl;
+  pkGetSlotBool: function(vm: PPKVM; index: Integer): Boolean; cdecl;
+  pkGetSlotNumber: function(vm: PPKVM; index: Integer): Double; cdecl;
+  pkGetSlotString: function(vm: PPKVM; index: Integer; length: PUInt32): PUTF8Char; cdecl;
+  pkGetSlotHandle: function(vm: PPKVM; index: Integer): PPkHandle; cdecl;
+  pkGetSlotNativeInstance: function(vm: PPKVM; index: Integer): Pointer; cdecl;
+  pkSetSlotNull: procedure(vm: PPKVM; index: Integer); cdecl;
+  pkSetSlotBool: procedure(vm: PPKVM; index: Integer; value: Boolean); cdecl;
+  pkSetSlotNumber: procedure(vm: PPKVM; index: Integer; value: Double); cdecl;
+  pkSetSlotString: procedure(vm: PPKVM; index: Integer; const value: PUTF8Char); cdecl;
+  pkSetSlotStringLength: procedure(vm: PPKVM; index: Integer; const value: PUTF8Char; length: UInt32); cdecl;
+  pkSetSlotStringFmt: procedure(vm: PPKVM; index: Integer; const fmt: PUTF8Char) varargs; cdecl;
+  pkSetSlotHandle: procedure(vm: PPKVM; index: Integer; handle: PPkHandle); cdecl;
+  pkGetSlotHash: function(vm: PPKVM; index: Integer): UInt32; cdecl;
+  pkPlaceSelf: procedure(vm: PPKVM; index: Integer); cdecl;
+  pkGetClass: procedure(vm: PPKVM; instance: Integer; index: Integer); cdecl;
+  pkNewInstance: function(vm: PPKVM; cls: Integer; index: Integer; argc: Integer; argv: Integer): Boolean; cdecl;
+  pkNewRange: procedure(vm: PPKVM; index: Integer; first: Double; last: Double); cdecl;
+  pkNewList: procedure(vm: PPKVM; index: Integer); cdecl;
+  pkNewMap: procedure(vm: PPKVM; index: Integer); cdecl;
+  pkListInsert: function(vm: PPKVM; list: Integer; index: Int32; value: Integer): Boolean; cdecl;
+  pkListPop: function(vm: PPKVM; list: Integer; index: Int32; popped: Integer): Boolean; cdecl;
+  pkListLength: function(vm: PPKVM; list: Integer): UInt32; cdecl;
+  pkCallFunction: function(vm: PPKVM; fn: Integer; argc: Integer; argv: Integer; ret: Integer): Boolean; cdecl;
+  pkCallMethod: function(vm: PPKVM; instance: Integer; const method: PUTF8Char; argc: Integer; argv: Integer; ret: Integer): Boolean; cdecl;
+  pkGetAttribute: function(vm: PPKVM; instance: Integer; const name: PUTF8Char; index: Integer): Boolean; cdecl;
+  pkSetAttribute: function(vm: PPKVM; instance: Integer; const name: PUTF8Char; value: Integer): Boolean; cdecl;
+  pkImportModule: function(vm: PPKVM; const path: PUTF8Char; index: Integer): Boolean; cdecl;
 
 procedure GetExports(const aDLLHandle: THandle);
 
@@ -5010,6 +5148,66 @@ begin
   ov_time_seek_page_lap := GetProcAddress(aDLLHandle, 'ov_time_seek_page_lap');
   ov_time_tell := GetProcAddress(aDLLHandle, 'ov_time_tell');
   ov_time_total := GetProcAddress(aDLLHandle, 'ov_time_total');
+  pkAddSearchPath := GetProcAddress(aDLLHandle, 'pkAddSearchPath');
+  pkCallFunction := GetProcAddress(aDLLHandle, 'pkCallFunction');
+  pkCallMethod := GetProcAddress(aDLLHandle, 'pkCallMethod');
+  pkCheckArgcRange := GetProcAddress(aDLLHandle, 'pkCheckArgcRange');
+  pkClassAddMethod := GetProcAddress(aDLLHandle, 'pkClassAddMethod');
+  pkFreeVM := GetProcAddress(aDLLHandle, 'pkFreeVM');
+  pkGetArgc := GetProcAddress(aDLLHandle, 'pkGetArgc');
+  pkGetAttribute := GetProcAddress(aDLLHandle, 'pkGetAttribute');
+  pkGetClass := GetProcAddress(aDLLHandle, 'pkGetClass');
+  pkGetSelf := GetProcAddress(aDLLHandle, 'pkGetSelf');
+  pkGetSlotBool := GetProcAddress(aDLLHandle, 'pkGetSlotBool');
+  pkGetSlotHandle := GetProcAddress(aDLLHandle, 'pkGetSlotHandle');
+  pkGetSlotHash := GetProcAddress(aDLLHandle, 'pkGetSlotHash');
+  pkGetSlotNativeInstance := GetProcAddress(aDLLHandle, 'pkGetSlotNativeInstance');
+  pkGetSlotNumber := GetProcAddress(aDLLHandle, 'pkGetSlotNumber');
+  pkGetSlotsCount := GetProcAddress(aDLLHandle, 'pkGetSlotsCount');
+  pkGetSlotString := GetProcAddress(aDLLHandle, 'pkGetSlotString');
+  pkGetSlotType := GetProcAddress(aDLLHandle, 'pkGetSlotType');
+  pkGetUserData := GetProcAddress(aDLLHandle, 'pkGetUserData');
+  pkImportModule := GetProcAddress(aDLLHandle, 'pkImportModule');
+  pkIsSlotInstanceOf := GetProcAddress(aDLLHandle, 'pkIsSlotInstanceOf');
+  pkListInsert := GetProcAddress(aDLLHandle, 'pkListInsert');
+  pkListLength := GetProcAddress(aDLLHandle, 'pkListLength');
+  pkListPop := GetProcAddress(aDLLHandle, 'pkListPop');
+  pkModuleAddFunction := GetProcAddress(aDLLHandle, 'pkModuleAddFunction');
+  pkModuleAddSource := GetProcAddress(aDLLHandle, 'pkModuleAddSource');
+  pkNewClass := GetProcAddress(aDLLHandle, 'pkNewClass');
+  pkNewConfiguration := GetProcAddress(aDLLHandle, 'pkNewConfiguration');
+  pkNewInstance := GetProcAddress(aDLLHandle, 'pkNewInstance');
+  pkNewList := GetProcAddress(aDLLHandle, 'pkNewList');
+  pkNewMap := GetProcAddress(aDLLHandle, 'pkNewMap');
+  pkNewModule := GetProcAddress(aDLLHandle, 'pkNewModule');
+  pkNewRange := GetProcAddress(aDLLHandle, 'pkNewRange');
+  pkNewVM := GetProcAddress(aDLLHandle, 'pkNewVM');
+  pkPlaceSelf := GetProcAddress(aDLLHandle, 'pkPlaceSelf');
+  pkRealloc := GetProcAddress(aDLLHandle, 'pkRealloc');
+  pkRegisterBuiltinFn := GetProcAddress(aDLLHandle, 'pkRegisterBuiltinFn');
+  pkRegisterModule := GetProcAddress(aDLLHandle, 'pkRegisterModule');
+  pkReleaseHandle := GetProcAddress(aDLLHandle, 'pkReleaseHandle');
+  pkReserveSlots := GetProcAddress(aDLLHandle, 'pkReserveSlots');
+  pkRunFile := GetProcAddress(aDLLHandle, 'pkRunFile');
+  pkRunREPL := GetProcAddress(aDLLHandle, 'pkRunREPL');
+  pkRunString := GetProcAddress(aDLLHandle, 'pkRunString');
+  pkSetAttribute := GetProcAddress(aDLLHandle, 'pkSetAttribute');
+  pkSetRuntimeError := GetProcAddress(aDLLHandle, 'pkSetRuntimeError');
+  pkSetRuntimeErrorFmt := GetProcAddress(aDLLHandle, 'pkSetRuntimeErrorFmt');
+  pkSetSlotBool := GetProcAddress(aDLLHandle, 'pkSetSlotBool');
+  pkSetSlotHandle := GetProcAddress(aDLLHandle, 'pkSetSlotHandle');
+  pkSetSlotNull := GetProcAddress(aDLLHandle, 'pkSetSlotNull');
+  pkSetSlotNumber := GetProcAddress(aDLLHandle, 'pkSetSlotNumber');
+  pkSetSlotString := GetProcAddress(aDLLHandle, 'pkSetSlotString');
+  pkSetSlotStringFmt := GetProcAddress(aDLLHandle, 'pkSetSlotStringFmt');
+  pkSetSlotStringLength := GetProcAddress(aDLLHandle, 'pkSetSlotStringLength');
+  pkSetUserData := GetProcAddress(aDLLHandle, 'pkSetUserData');
+  pkValidateSlotBool := GetProcAddress(aDLLHandle, 'pkValidateSlotBool');
+  pkValidateSlotInstanceOf := GetProcAddress(aDLLHandle, 'pkValidateSlotInstanceOf');
+  pkValidateSlotInteger := GetProcAddress(aDLLHandle, 'pkValidateSlotInteger');
+  pkValidateSlotNumber := GetProcAddress(aDLLHandle, 'pkValidateSlotNumber');
+  pkValidateSlotString := GetProcAddress(aDLLHandle, 'pkValidateSlotString');
+  pkValidateSlotType := GetProcAddress(aDLLHandle, 'pkValidateSlotType');
   plm_audio_create_with_buffer := GetProcAddress(aDLLHandle, 'plm_audio_create_with_buffer');
   plm_audio_decode := GetProcAddress(aDLLHandle, 'plm_audio_decode');
   plm_audio_destroy := GetProcAddress(aDLLHandle, 'plm_audio_destroy');

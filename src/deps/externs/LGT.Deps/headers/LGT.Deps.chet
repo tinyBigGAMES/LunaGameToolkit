@@ -58,7 +58,7 @@ Prefix=
 
 [ParseOptions]
 IgnoreParseErrors=0
-CmdLineArgs=-IC:\Dev\Delphi\Projects\LGT\repo\main\src\deps\externs\LGT.Deps\libs\include,-IC:\Dev\Delphi\Projects\LGT\repo\main\src\deps\externs\LGT.Deps\libs,-DGLFW_EXPOSE_NATIVE_WIN32,-DNK_INCLUDE_FIXED_TYPES,-DNK_INCLUDE_STANDARD_IO,-DNK_INCLUDE_STANDARD_VARARGS,-DNK_INCLUDE_DEFAULT_ALLOCATOR,-DNK_INCLUDE_VERTEX_BUFFER_OUTPUT,-DNK_INCLUDE_FONT_BAKING,-DNK_INCLUDE_DEFAULT_FONT,-DNK_KEYSTATE_BASED_INPUT
+CmdLineArgs=-IC:\Dev\Delphi\Projects\LGT\repo\main\src\deps\externs\LGT.Deps\libs\include,-IC:\Dev\Delphi\Projects\LGT\repo\main\src\deps\externs\LGT.Deps\libs,-DGLFW_EXPOSE_NATIVE_WIN32,-DNK_INCLUDE_FIXED_TYPES,-DNK_INCLUDE_STANDARD_IO,-DNK_INCLUDE_STANDARD_VARARGS,-DNK_INCLUDE_DEFAULT_ALLOCATOR,-DNK_INCLUDE_VERTEX_BUFFER_OUTPUT,-DNK_INCLUDE_FONT_BAKING,-DNK_INCLUDE_DEFAULT_FONT,-DNK_KEYSTATE_BASED_INPUT,-IC:\Dev\Delphi\Projects\LGT\repo\main\src\deps\externs\LGT.Deps\libs\pocketlang\include
 
 [ConvertOptions]
 CallConv=Cdecl
