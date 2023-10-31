@@ -56,14 +56,14 @@ const
 
 procedure Test01;
 begin
-  Console.PrintLn(LGT_PROJECT+LF);
+  Terminal.PrintLn(LGT_PROJECT+LF);
 
-  Console.PrintLn('Building %s...', [CZipFilename]);
+  Terminal.PrintLn('Building %s...', [CZipFilename]);
 
   if TlgZipStream.Build(CZipFilename, 'res', nil, nil) then
-    Console.PrintLn(LF+LF+'Success!', [])
+    Terminal.PrintLn(LF+LF+'Success!', [])
   else
-    Console.PrintLn(LF+LF+'Failed!', []);
+    Terminal.PrintLn(LF+LF+'Failed!', []);
 end;
 
 {------------------------------------------------------------------------------
@@ -74,13 +74,13 @@ procedure Test02();
 var
   LAudio: TlgAudio;
 begin
-  Console.PrintLn(LGT_PROJECT+LF);
+  Terminal.PrintLn(LGT_PROJECT+LF);
 
   LAudio := TlgAudio.Create();
   try
     if LAudio.Open() then
     begin
-      Console.PrintLn('Audio device: %s', [LAudio.GetDeviceName()]);
+      Terminal.PrintLn('Audio device: %s', [LAudio.GetDeviceName()]);
       LAudio.Close();
     end;
   finally
@@ -130,7 +130,7 @@ var
   end;
 
 begin
-  Console.PrintLn(LGT_PROJECT+LF);
+  Terminal.PrintLn(LGT_PROJECT+LF);
 
   LZipFile := TlgZipFile.Create();
   LZipFile.Open(CZipFilename);
@@ -154,24 +154,24 @@ begin
     LSound[I] := TlgSound.LoadFromZipFile(LAudio, LZipFile, Format('res/sfx/samp%d.ogg',[I-1]), slMemory);
   end;
 
-  Console.PrintLn('Press 1-6 to play sound, ESC to quit...');
+  Terminal.PrintLn('Press 1-6 to play sound, ESC to quit...');
 
   while true do
   begin
     Timer.Start();
 
-    if Console.KeyWasPressed(Ord('1')) then Play(1);
-    if Console.KeyWasPressed(Ord('2')) then Play(2);
-    if Console.KeyWasPressed(Ord('3')) then Play(3);
-    if Console.KeyWasPressed(Ord('4')) then Play(4);
-    if Console.KeyWasPressed(Ord('5')) then Play(5);
-    if Console.KeyWasPressed(Ord('6')) then Play(6);
+    if Terminal.KeyWasPressed(Ord('1')) then Play(1);
+    if Terminal.KeyWasPressed(Ord('2')) then Play(2);
+    if Terminal.KeyWasPressed(Ord('3')) then Play(3);
+    if Terminal.KeyWasPressed(Ord('4')) then Play(4);
+    if Terminal.KeyWasPressed(Ord('5')) then Play(5);
+    if Terminal.KeyWasPressed(Ord('6')) then Play(6);
 
-    if Console.KeyWasPressed(VK_ESCAPE) then Break;
+    if Terminal.KeyWasPressed(VK_ESCAPE) then Break;
 
     Timer.Stop();
 
-    Console.SetTitle('LGT (%d fps)', [Timer.FrameRate()]);
+    Terminal.SetTitle('LGT (%d fps)', [Timer.FrameRate()]);
   end;
 
   for I := 0 to 2 do
@@ -201,12 +201,11 @@ var
   LAngle: Single;
   LTexture: TlgTexture;
   LVideo: TlgVideo;
-  LStream: TlgStream;
   LAudio: TlgAudio;
   LFont: TlgFont;
   LPos: TlgPoint;
 begin
-  Console.PrintLn(LGT_PROJECT);
+  Terminal.PrintLn(LGT_PROJECT);
 
   LAudio := TlgAudio.Create();
   LAudio.Open();
@@ -218,7 +217,7 @@ begin
 
   LWindow.Open('Luna Game Toolkit: Video');
 
-  Console.PrintLn('Gamepad: %s', [LWindow.GetGamepadName(GAMEPAD_1)]);
+  Terminal.PrintLn('Gamepad: %s', [LWindow.GetGamepadName(GAMEPAD_1)]);
 
   LFont := TlgFont.LoadDefault(LWindow, 10);
 
@@ -228,9 +227,7 @@ begin
   LTexture.SetRegion(246, 64, 228, 75);
   LTexture.SetAngle(45);
 
-  LStream := LZipFile.OpenFile('res/videos/LGT.mpg');
-  LVideo := TlgVideo.Create();
-  LVideo.Load(LStream);
+  LVideo := TlgVideo.LoadFromZipFile(LZipFile, 'res/videos/LGT.mpg');
   LVideo.SetPos(0, 0);
   LVideo.SetScale(0.5);
   LVideo.SetLooping(True);
@@ -299,7 +296,7 @@ var
   LFont: TlgFont;
   LPos: TlgPoint;
 begin
-  Console.PrintLn(LGT_PROJECT);
+  Terminal.PrintLn(LGT_PROJECT);
 
   LTexPos[0] := Math.Point(0,0);
   LTexPos[1] := Math.Point(0,0);
@@ -315,7 +312,7 @@ begin
 
   LWindow := TlgWindow.Init('Luna Game Toolkit: Parallax Tiled Texture');
 
-  Console.PrintLn('Gamepad: %s', [LWindow.GetGamepadName(GAMEPAD_1)]);
+  Terminal.PrintLn('Gamepad: %s', [LWindow.GetGamepadName(GAMEPAD_1)]);
 
   LTexture[0] := TlgTexture.LoadFromZipFile(LZipFile, 'res/backgrounds/space.png', nil);
   LTexture[1] := TlgTexture.LoadFromZipFile(LZipFile, 'res/backgrounds/spacelayer1.png', @BLACK);
@@ -390,12 +387,12 @@ var
   LFont: array[0..3] of TlgFont;
   LPos: TlgPoint;
 begin
-  Console.PrintLn(LGT_PROJECT);
+  Terminal.PrintLn(LGT_PROJECT);
 
   LZipFile := TlgZipFile.Init(CZipFilename);
   LWindow := TlgWindow.Init('Luna Game Toolkit: Unicode Truetype Fonts', TlgWindow.DEFAULT_WIDTH, TlgWindow.DEFAULT_HEIGHT);
 
-  Console.PrintLn('Gamepad: %s', [LWindow.GetGamepadName(GAMEPAD_1)]);
+  Terminal.PrintLn('Gamepad: %s', [LWindow.GetGamepadName(GAMEPAD_1)]);
 
   LFont[0] := TlgFont.LoadDefault(LWindow, 10);
   LFont[1] := TlgFont.LoadFromZipFile(LWindow, LZipFile, 'res/fonts/unifont.ttf', 16, '你好こんにちは안녕하세요');
@@ -485,12 +482,12 @@ var
   end;
 
 begin
-  Console.PrintLn(LGT_PROJECT);
+  Terminal.PrintLn(LGT_PROJECT);
 
   LZipFile := TlgZipFile.Init(CZipFilename);
   LWindow := TlgWindow.Init('Luna Game Toolkit: 2D Camera', TlgWindow.DEFAULT_WIDTH, TlgWindow.DEFAULT_HEIGHT);
 
-  Console.PrintLn('Gamepad: %s', [LWindow.GetGamepadName(GAMEPAD_1)]);
+  Terminal.PrintLn('Gamepad: %s', [LWindow.GetGamepadName(GAMEPAD_1)]);
 
   LFont := TlgFont.LoadDefault(LWindow, 10);
 
@@ -614,13 +611,13 @@ var
   LHudPos: TlgPoint;
 begin
   // show LGT version info
-  Console.PrintLn(LGT_PROJECT);
+  Terminal.PrintLn(LGT_PROJECT);
 
   // init window
   LWindow := TlgWindow.Init('Luna Game Toolkit: Minimal Example', 960, 540);
 
   // show gamepad info
-  Console.PrintLn('Gamepad: %s', [LWindow.GetGamepadName(GAMEPAD_1)]);
+  Terminal.PrintLn('Gamepad: %s', [LWindow.GetGamepadName(GAMEPAD_1)]);
 
   // init default font
   LFont := TlgFont.LoadDefault(LWindow, 10);
@@ -680,13 +677,13 @@ var
   LProperty: Integer;
 begin
   // show LGT version info
-  Console.PrintLn(LGT_PROJECT);
+  Terminal.PrintLn(LGT_PROJECT);
 
   // init window
   LWindow := TlgWindow.Init('Luna Game Toolkit: GUI');
 
   // show gamepad info
-  Console.PrintLn('Gamepad: %s', [LWindow.GetGamepadName(GAMEPAD_1)]);
+  Terminal.PrintLn('Gamepad: %s', [LWindow.GetGamepadName(GAMEPAD_1)]);
 
   // init default font
   LFont := TlgFont.LoadDefault(LWindow, 10);
@@ -719,7 +716,7 @@ begin
       if LGUI.BeginWindow('Window 1', 50, 50, 150, 150, GUI_DEFAULT_WINDOW) then
       begin
         LGUI.LayoutRowStatic(30, 80, 1);
-        if LGUI.ButtonLabel('Button') then Console.PrintLn('Button pressed');
+        if LGUI.ButtonLabel('Button') then Terminal.PrintLn('Button pressed');
 
         LGUI.LayoutRowDynamic(30, 2);
         if LGUI.OptionLabel('easy', LOption = EASY) then LOption := EASY;
@@ -762,6 +759,107 @@ begin
   LWindow.Free();
 end;
 
+procedure Test10();
+var
+  LWindow: TlgWindow;
+  LFont: TlgFont;
+  LHudPos: TlgPoint;
+  LPolygon: TlgPolygon;
+  LAngle: Single;
+  LScale: Single;
+begin
+  // show LGT version info
+  Terminal.PrintLn(LGT_PROJECT);
+
+  // init window
+  LWindow := TlgWindow.Init('Luna Game Toolkit: Polygon');
+
+  // show gamepad info
+  Terminal.PrintLn('Gamepad: %s', [LWindow.GetGamepadName(GAMEPAD_1)]);
+
+  // init default font
+  LFont := TlgFont.LoadDefault(LWindow, 10);
+
+  // init polygon
+  LPolygon := TlgPolygon.Create();
+  LPolygon.AddLocalPoint(-1, -1, True);
+  LPolygon.AddLocalPoint(1, -1, True);
+  LPolygon.AddLocalPoint(1, 1, True);
+  LPolygon.AddLocalPoint(-1, 1, True);
+  LPolygon.AddLocalPoint(-1, -1, True);
+
+  LAngle := 0.0;
+  LScale := 150.0;
+
+  // enter game loop
+  while not LWindow.ShouldClose() do
+  begin
+    // start frame
+    LWindow.StartFrame();
+
+      // keyboard processing
+      if LWindow.GetKey(KEY_ESCAPE, isWasPressed) then
+        LWindow.SetShouldClose(True);
+
+      if LWindow.GetKey(KEY_UP, isPressed) then
+        begin
+          LScale := LScale + 1.0;
+          Math.ClipValueFloat(LScale, 10, 150, False);
+        end
+      else
+      if LWindow.GetKey(KEY_DOWN, isPressed) then
+        begin
+          LScale := LScale - 1.0;
+          Math.ClipValueFloat(LScale, 10, 150, False);
+        end;
+
+      // mouse processing
+      if LWindow.GetMouseButton(MOUSE_BUTTON_LEFT, isWasPressed) then
+        LWindow.SetShouldClose(True);
+
+      // gamepad processing
+      if LWindow.GetGamepadButton(GAMEPAD_1, GAMEPAD_BUTTON_X, isWasReleased) then
+        LWindow.SetShouldClose(True);
+
+      // update angle
+      LAngle := LAngle + 0.6;
+      Math.ClipValueFloat(LAngle, 0, 360, True);
+
+      // start drawing
+      LWindow.StartDrawing();
+
+        // clear window
+        LWindow.Clear(DARKSLATEBROWN);
+
+        // render polygon
+        LPolygon.Render(LWindow, LWindow.CENTER_WIDTH, LWindow.CENTER_HEIGHT, LScale, LAngle, 2, YELLOW, nil, False, False);
+
+        // display hud
+        LHudPos := Math.Point(3,3);
+        LFont.DrawText(LWindow, LHudPos.x, LHudPos.y, 0, WHITE, haLeft,  '%d fps', [Timer.FrameRate()]);
+        LFont.DrawText(LWindow, LHudPos.x, LHudPos.y, 0, GREEN, haLeft,  'ESC  - Quit', []);
+        LFont.DrawText(LWindow, LHudPos.x, LHudPos.y, 0, GREEN, haLeft,  'Up   - Scale up', []);
+        LFont.DrawText(LWindow, LHudPos.x, LHudPos.y, 0, GREEN, haLeft,  'Down - Scale down', []);
+
+      // end drawing
+      LWindow.EndDrawing();
+
+    // end frame
+    LWindow.EndFrame();
+  end;
+
+  // free polygon
+  LPolygon.Free();
+
+  // free font
+  LFont.Free();
+
+  // free window
+  LWindow.Free();
+end;
+
+
+
 procedure RunTests();
 begin
   //Test01();
@@ -772,8 +870,10 @@ begin
   //Test06();
   //Test07();
   //Test08();
-  Test09();
-  Console.Pause();
+  //Test09();
+  Test10();
+  //Test11();
+  Terminal.Pause();
 end;
 
 end.

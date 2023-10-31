@@ -178,7 +178,7 @@ type
 { === MATH ================================================================== }
 type
   { TlgPos }
-  PlgPos = ^TlgPoint;
+  PlgPoint = ^TlgPoint;
   TlgPoint = record
     x,y: Single;
   end;
@@ -321,18 +321,18 @@ type
     procedure Clear;
   end;
 
-{ === CONSOLE =============================================================== }
+{ === TERMINAL ============================================================== }
 type
-  { TlgConsole }
-  TlgConsole = class
+  { TlgTerminal }
+  TlgTerminal = class
   protected class var
     FKeyState: array [0..0, 0..255] of Boolean;
   protected
     class constructor Create;
     class destructor Destroy;
   public
-    class function  HasOutput(): Boolean;
-    class function  WasRunFrom(): Boolean;
+    class function  HasConsoleOutput(): Boolean;
+    class function  WasRunFromConsole(): Boolean;
     class function  IsStartedFromDelphiIDE(): Boolean;
     class procedure SetTitle(const AMsg: string; const AArgs: array of const);
     class procedure Print(const AMsg: string; const AArgs: array of const); overload;
@@ -1121,7 +1121,6 @@ type
     NUM_BUFFERS = 2;
     SAMEPLE_SIZE = 2304;
     AUDIO_CHANES = 2;
-    //RGBBUFFER_SIZE = PLM_BUFFER_DEFAULT_SIZE;
     RGBBUFFER_SIZE = 1024*8;
   protected
     FSource: ALuint;
@@ -1160,6 +1159,8 @@ type
     procedure Update();
     function  GetStatus(): TlgVideoStatus;
     procedure Draw();
+    class function LoadFromFile(const AFilename: string): TlgVideo;
+    class function LoadFromZipFile(const AZipFile: TlgZipFile; const AFilename: string): TlgVideo;
   end;
 
 { === CAMERA ================================================================ }
@@ -1275,11 +1276,111 @@ type
     class function Init(const AWindow: TlgWindow): TlgGUI;
   end;
 
+{ === POLYGON =============================================================== }
+type
+  { TlgPolygon }
+  TlgPolygon = class(TlgObject)
+  protected type
+    TSegment = record
+      Point: TlgPoint;
+      Visible: Boolean;
+    end;
+  protected
+    FSegment: array of TSegment;
+    FWorldPoint: array of TlgPoint;
+    FItemCount: Integer;
+  public
+    constructor Create; override;
+    destructor Destroy; override;
+    procedure Save(const AFilename: string);
+    procedure Load(const AStream: TlgStream; const AFilename: string);
+    procedure CopyFrom(APolygon: TlgPolygon);
+    procedure Clear();
+    procedure AddLocalPoint(AX, AY: Single; AVisible: Boolean);
+    function  Transform(AX, AY, AScale, AAngle: Single; AOrigin: PlgPoint; AHFlip, AVFlip: Boolean): Boolean;
+    procedure Render(const AWindow: TlgWindow; const AX, AY, AScale, AAngle: Single; AThickness: Integer; AColor: TlgColor; AOrigin: PlgPoint; AHFlip, AVFlip: Boolean);
+    procedure SetSegmentVisible(AIndex: Integer; AVisible: Boolean);
+    function  IsSegmentVisible(AIndex: Integer): Boolean;
+    function  PointCount(): Integer;
+    function  WorldPoint(AIndex: Integer): PlgPoint;
+    function  LocalPoint(AIndex: Integer): PlgPoint;
+  end;
+
+{ === GAME ================================================================== }
+type
+  { TlgGame }
+  TlgGame = class(TlgObject)
+  public type
+    // hud
+    PHud = ^THud;
+    THud = record
+      Pos: TlgPoint;
+      Linespace: Cardinal;
+    end;
+
+    // settings
+    PSettings = ^TSettings;
+    TSettings = record
+      // window
+      WindowWidth: Cardinal;
+      WindowHeight: Cardinal;
+      WindowTitle: string;
+      WindowClearColor: TlgColor;
+
+      // default font
+      DefaultFontSize: Cardinal;
+      DefaultFontGlyphs: string;
+
+      // zipfile
+      ZipFilePassword: string;
+      ZipFilename: string;
+
+      // hud
+      HudPos: TlgPoint;
+      HudLinespace: Cardinal;
+    end;
+  protected
+    FZipFile: TlgZipFile;
+    FWindow: TlgWindow;
+    FDefaultFont: TlgFont;
+    FSettings: TSettings;
+    FHud: THud;
+  public
+    property Window: TlgWindow read FWindow;
+    property DefaultFont: TlgFont read FDefaultFont;
+    property ZipFile: TlgZipFile read FZipFile;
+    constructor Create(); override;
+    destructor Destroy(); override;
+    procedure OnDefineSettings(var ASettings: TSettings); virtual;
+    function  OnInitSettings(): Boolean; virtual;
+    procedure OnQuitSettings(); virtual;
+    function  OnStartup(): Boolean; virtual;
+    procedure OnShutdown(); virtual;
+    procedure OnUpdate(); virtual;
+    procedure OnRender(); virtual;
+    procedure OnRenderHud(); virtual;
+    function  Settings: PSettings;
+    function  Hud: PHud;
+    procedure HudReset();
+    procedure HudPrint(const AColor: TlgColor; const AMsg: string; const AArgs: array of const);
+    procedure Run(); virtual;
+  end;
+
+  { TlgGameClass }
+  TlgGameClass = class of TlgGame;
+
+var
+  { Game }
+  Game: TlgGame = nil;
+
+{ lgRunGame }
+procedure lgRunGame(const AGame: TlgGameClass);
+
 { =========================================================================== }
 var
   Utils: TlgUtils = nil;
   Math: TlgMath = nil;
-  Console: TlgConsole = nil;
+  Terminal: TlgTerminal = nil;
   Timer: TlgDeterministicTimer = nil;
   TaskList: TlgTaskList = nil;
 
@@ -2920,16 +3021,16 @@ begin
   end;
 end;
 
-{ === CONSOLE =============================================================== }
-class constructor TlgConsole.Create();
+{ === TERMINAL ============================================================== }
+class constructor TlgTerminal.Create();
 begin
 end;
 
-class destructor TlgConsole.Destroy();
+class destructor TlgTerminal.Destroy();
 begin
 end;
 
-class function  TlgConsole.HasOutput(): Boolean;
+class function  TlgTerminal.HasConsoleOutput(): Boolean;
 var
   LStdOut: THandle;
   LMode: DWORD;
@@ -2939,7 +3040,7 @@ begin
             GetConsoleMode(LStdOut, LMode);
 end;
 
-class function  TlgConsole.WasRunFrom(): Boolean;
+class function  TlgTerminal.WasRunFromConsole(): Boolean;
 var
   LStartupInfo: TStartupInfo;
 begin
@@ -2948,13 +3049,13 @@ begin
   Result := ((LStartupInfo.dwFlags and STARTF_USESHOWWINDOW) = 0);
 end;
 
-class function  TlgConsole.IsStartedFromDelphiIDE(): Boolean;
+class function  TlgTerminal.IsStartedFromDelphiIDE(): Boolean;
 begin
   // Check if the IDE environment variable is present
   Result := (GetEnvironmentVariable('BDS') <> '');
 end;
 
-class procedure TlgConsole.SetTitle(const AMsg: string; const AArgs: array of const);
+class procedure TlgTerminal.SetTitle(const AMsg: string; const AArgs: array of const);
 var
   LTitle: string;
 begin
@@ -2962,39 +3063,39 @@ begin
   WinApi.Windows.SetConsoleTitle(PChar(LTitle));
 end;
 
-class procedure TlgConsole.Print(const AMsg: string; const AArgs: array of const);
+class procedure TlgTerminal.Print(const AMsg: string; const AArgs: array of const);
 begin
-  if not HasOutput then Exit;
+  if not HasConsoleOutput then Exit;
   Write(Format(aMsg, aArgs));
 end;
 
-class procedure TlgConsole.Print(const AMsg: string);
+class procedure TlgTerminal.Print(const AMsg: string);
 begin
   Print(AMsg, []);
 end;
 
-class procedure TlgConsole.PrintLn(const AMsg: string; const AArgs: array of const);
+class procedure TlgTerminal.PrintLn(const AMsg: string; const AArgs: array of const);
 begin
-  if not HasOutput then Exit;
+  if not HasConsoleOutput then Exit;
   WriteLn(Format(aMsg, aArgs));
 end;
 
-class procedure TlgConsole.PrintLn(const AMsg: string);
+class procedure TlgTerminal.PrintLn(const AMsg: string);
 begin
   PrintLn(AMsg, []);
 end;
 
-class procedure TlgConsole.Pause(const AMsg: string; const AArgs: array of const);
+class procedure TlgTerminal.Pause(const AMsg: string; const AArgs: array of const);
 var
   LDoPause: Boolean;
 begin
-  if not HasOutput then Exit;
+  if not HasConsoleOutput then Exit;
 
   ClearKeyStates();
   ClearKeyboardBuffer();
 
   LDoPause := True;
-  if WasRunFrom then LDoPause := False;
+  if WasRunFromConsole then LDoPause := False;
   if IsStartedFromDelphiIDE then LDoPause := True;
   if not LDoPause then Exit;
 
@@ -3007,12 +3108,12 @@ begin
   WriteLn;
 end;
 
-class procedure TlgConsole.Pause(const AMsg: string='');
+class procedure TlgTerminal.Pause(const AMsg: string='');
 begin
   Pause(AMsg, []);
 end;
 
-class procedure TlgConsole.ClearKeyboardBuffer();
+class procedure TlgTerminal.ClearKeyboardBuffer();
 var
   LInputRecord: TInputRecord;
   LEventsRead: DWORD;
@@ -3027,7 +3128,7 @@ begin
   end;
 end;
 
-class procedure TlgConsole.WaitForAnyKey();
+class procedure TlgTerminal.WaitForAnyKey();
 var
   LInputRec: TInputRecord;
   LNumRead: Cardinal;
@@ -3045,7 +3146,7 @@ begin
   SetConsoleMode(LStdIn, LOldMode);
 end;
 
-class function  TlgConsole.AnyKeyPressed(): Boolean;
+class function  TlgTerminal.AnyKeyPressed(): Boolean;
 var
   LNumEvents: DWORD;
   LBuffer: TInputRecord;
@@ -3080,18 +3181,18 @@ begin
   end;
 end;
 
-class procedure TlgConsole.ClearKeyStates();
+class procedure TlgTerminal.ClearKeyStates();
 begin
   FillChar(FKeyState, SizeOf(FKeyState), 0);
   ClearKeyboardBuffer;
 end;
 
-class function  TlgConsole.IsKeyPressed(AKey: Byte): Boolean;
+class function  TlgTerminal.IsKeyPressed(AKey: Byte): Boolean;
 begin
   Result := (GetAsyncKeyState(AKey) and $8000) <> 0;
 end;
 
-class function  TlgConsole.KeyWasPressed(AKey: Byte): Boolean;
+class function  TlgTerminal.KeyWasPressed(AKey: Byte): Boolean;
 begin
   Result := False;
   if IsKeyPressed(AKey) and (not FKeyState[0, AKey]) then
@@ -3106,7 +3207,7 @@ begin
   end;
 end;
 
-class function  TlgConsole.KeyWasReleased(AKey: Byte): Boolean;
+class function  TlgTerminal.KeyWasReleased(AKey: Byte): Boolean;
 begin
   Result := False;
   if IsKeyPressed(AKey) and (not FKeyState[0, AKey]) then
@@ -3586,8 +3687,8 @@ end;
 
 procedure TlgZipStream_BuildProgress(const ASender: Pointer; const AFilename: string; const AProgress: Integer; const ANewFile: Boolean);
 begin
-  if aNewFile then Console.PrintLn('');
-  Console.Print(#13+'Adding %s(%d%s)...', [ExtractFileName(string(aFilename)), aProgress, '%']);
+  if aNewFile then Terminal.PrintLn('');
+  Terminal.Print(#13+'Adding %s(%d%s)...', [ExtractFileName(string(aFilename)), aProgress, '%']);
 end;
 
 class function TlgZipStream.Build(const AZipFilename, ADirectoryName: string; const ASender: Pointer; const AHandler: TlgZipFileStreamBuildProgress; const APassword: string): Boolean;
@@ -4364,6 +4465,24 @@ end;
 { === WINDOW ================================================================ }
 
 { --- TlgWindow ------------------------------------------------------------- }
+procedure  TlgWindow_OnSize(AWindow: PGLFWwindow; AWidth: Integer; AHeight: Integer); cdecl;
+var
+  LWindow: TlgWindow;
+begin
+  LWindow := glfwGetWindowUserPointer(AWindow);
+  LWindow.FScaledSize.Width := AWidth;
+  LWindow.FScaledSize.Height := AHeight;
+end;
+
+procedure TlgWindow_OnContentScale(AWindow: PGLFWwindow; AXScale: Single; AYScale: Single); cdecl;
+var
+  LWindow: TlgWindow;
+begin
+  LWindow := glfwGetWindowUserPointer(AWindow);
+  LWindow.FScale.x := AXScale;
+  LWindow.FScale.y := AXScale;
+end;
+
 constructor TlgWindow.Create();
 begin
   inherited;
@@ -4393,6 +4512,9 @@ begin
 
   FHandle := glfwCreateWindow(AWidth, AHeight, Utils.Marshal.AsUtf8(ATitle).ToPointer, nil, nil);
   if not Assigned(FHandle) then Exit;
+  glfwSetWindowUserPointer(FHandle, Self);
+  glfwSetWindowSizeCallback(FHandle, TlgWindow_OnSize);
+  glfwSetWindowContentScaleCallback(FHandle,TlgWindow_OnContentScale);
   Utils.SetDefaultIcon(FHandle);
   VideoMode := glfwGetVideoMode(glfwGetPrimaryMonitor);
   glfwGetWindowSize(FHandle, @LWidth, @LHeight);
@@ -5671,7 +5793,6 @@ var
   LGlyphChars: string;
   LCodePoints: array of Integer;
   LBitmap: array of Byte;
-  LPixels: array of TRGBA;
   LPackContext: stbtt_pack_context;
   LPackRange: stbtt_pack_range;
   I: Integer;
@@ -5746,7 +5867,6 @@ begin
       FAtlas.SetBlend(tbAlpha);
       FAtlas.SetColor(WHITE);
 
-      LPixels := nil;
       LBitmap := nil;
 
       LScale := stbtt_ScaleForMappingEmToPixels(@LFontInfo, LSize);
@@ -6252,6 +6372,49 @@ begin
   FTexture.Draw();
 end;
 
+class function TlgVideo.LoadFromFile(const AFilename: string): TlgVideo;
+var
+  LStream: TlgStream;
+begin
+  Result := nil;
+  if AFilename.IsEmpty then Exit;
+
+  LStream := TlgFileStream.Open(AFilename, smRead);
+  if not Assigned(LStream) then Exit;
+
+  Result := TlgVideo.Create();
+  if not Result.Load(LStream) then
+  begin
+    Result.Free();
+    LStream.Free();
+    Result := nil;
+    Exit;
+  end;
+end;
+
+class function TlgVideo.LoadFromZipFile(const AZipFile: TlgZipFile; const AFilename: string): TlgVideo;
+var
+  LStream: TlgStream;
+begin
+  Result := nil;
+  if not Assigned(AZipFile) then Exit;
+  if not AZipFile.IsOpen then Exit;
+  if AFilename.IsEmpty then Exit;
+
+  LStream := AZipFile.OpenFile(AFilename);
+  if not Assigned(LStream) then Exit;
+
+  Result := TlgVideo.Create();
+  if not Result.Load(LStream) then
+  begin
+    Result.Free();
+    LStream.Free();
+    Result := nil;
+    Exit;
+  end;
+end;
+
+
 { === CAMERA ================================================================ }
 { --- TlgCamera ------------------------------------------------------------- }
 procedure TlgCamera.SetRotation(const AValue: Single);
@@ -6521,6 +6684,392 @@ begin
   end;
 end;
 
+{ === POLYGON =============================================================== }
+constructor TlgPolygon.Create();
+begin
+  inherited;
+end;
+
+destructor TlgPolygon.Destroy();
+begin
+  Clear();
+  inherited;
+end;
+
+procedure TlgPolygon.Save(const AFilename: string);
+var
+  LSize: Integer;
+  LStream: TlgStream;
+begin
+  LStream := TlgFileStream.Open(AFilename, smWrite);
+  try
+    // FItemCount
+    LStream.Write(@FItemCount, SizeOf(FItemCount));
+
+    // FItem
+    LSize := SizeOf(FSegment[0]) * FItemCount;
+    LStream.Write(@FSegment[0], LSize);
+
+    // FWorldPoint
+    LSize := SizeOf(FWorldPoint[0]) * FItemCount;
+    LStream.Write(@FWorldPoint[0], LSize);
+
+  finally
+    LStream.Free();
+  end;
+end;
+
+procedure TlgPolygon.Load(const AStream: TlgStream; const AFilename: string);
+var
+  LSize: Integer;
+begin
+  if Assigned(AStream) then Exit;
+
+  Clear();
+
+  // FItemCount
+  AStream.Read(@FItemCount, SizeOf(FItemCount));
+
+  // FItem
+  SetLength(FSegment, FItemCount);
+  LSize := SizeOf(FSegment[0]) * FItemCount;
+  AStream.Read(@FSegment[0], LSize);
+
+  // FWorldPoint
+  SetLength(FWorldPoint, FItemCount);
+  LSize := SizeOf(FWorldPoint[0]) * FItemCount;
+  AStream.Read(@FWorldPoint[0], LSize);
+end;
+
+procedure TlgPolygon.CopyFrom(aPolygon: TlgPolygon);
+var
+  I: Integer;
+begin
+  Clear;
+  for I := 0 to FItemCount-1 do
+  begin
+    with FSegment[I] do
+    begin
+      AddLocalPoint(Round(Point.X), Round(Point.Y), Visible);
+    end;
+  end;
+end;
+
+procedure TlgPolygon.Clear();
+begin
+  FSegment := nil;
+  FWorldPoint := nil;
+  FItemCount := 0;
+end;
+
+procedure TlgPolygon.AddLocalPoint(AX, AY: Single; aVisible: Boolean);
+begin
+  Inc(FItemCount);
+  SetLength(FSegment, FItemCount);
+  SetLength(FWorldPoint, FItemCount);
+  FSegment[FItemCount-1].Point.X := aX;
+  FSegment[FItemCount-1].Point.Y := aY;
+  FSegment[FItemCount-1].Visible := aVisible;
+  FWorldPoint[FItemCount-1].X := 0;
+  FWorldPoint[FItemCount-1].Y := 0;
+end;
+
+function  TlgPolygon.Transform(AX, AY, AScale, AAngle: Single; AOrigin: PlgPoint; AHFlip, AVFlip: Boolean): Boolean;
+var
+  I: Integer;
+  P: TlgPoint;
+begin
+  Result := False;
+
+  if FItemCount < 2 then  Exit;
+
+  for I := 0 to FItemCount-1 do
+  begin
+    // get local coord
+    P.X := FSegment[I].Point.X;
+    P.Y := FSegment[I].Point.Y;
+
+    // move point to origin
+    if aOrigin <> nil then
+    begin
+      P.X := P.X - aOrigin.X;
+      P.Y := P.Y - aOrigin.Y;
+    end;
+
+    if aVFlip then
+      P.Y := -P.Y;
+
+    if aHFlip then
+      P.X := -P.X;
+
+    // scale
+    P.X := P.X * aScale;
+    P.Y := P.Y * aScale;
+
+    // rotate
+    Math.AngleRotatePos(aAngle, P.X, P.Y);
+
+    // convert to world
+    P.X := P.X + aX;
+    P.Y := P.Y + aY;
+
+    // set world point
+    FWorldPoint[I].X := P.X;
+    FWorldPoint[I].Y := P.Y;
+  end;
+
+  Result := True;
+end;
+
+procedure TlgPolygon.Render(const AWindow: TlgWindow; const AX, AY, AScale, AAngle: Single; AThickness: Integer; AColor: TlgColor; AOrigin: PlgPoint; AHFlip, AVFlip: Boolean);
+var
+  I: Integer;
+  X0,Y0,X1,Y1: Single;
+begin
+  if not Transform(aX, aY, aScale, aAngle, aOrigin, aHFlip,  aVFlip) then Exit;
+
+  // draw line segments
+  for I := 0 to FItemCount-2 do
+  begin
+    if FSegment[I].Visible then
+    begin
+      X0 := FWorldPoint[I].X;
+      Y0 := FWorldPoint[I].Y;
+      X1 := FWorldPoint[I+1].X;
+      Y1 := FWorldPoint[I+1].Y;
+      AWindow.DrawLine(X0, Y0, X1, Y1, AColor, AThickness);
+    end;
+  end;
+end;
+
+procedure TlgPolygon.SetSegmentVisible(AIndex: Integer; aVisible: Boolean);
+begin
+  FSegment[aIndex].Visible := True;
+end;
+
+function  TlgPolygon.IsSegmentVisible(AIndex: Integer): Boolean;
+begin
+  Result := FSegment[aIndex].Visible;
+end;
+
+function  TlgPolygon.PointCount(): Integer;
+begin
+  Result := FItemCount;
+end;
+
+function  TlgPolygon.WorldPoint(AIndex: Integer): PlgPoint;
+begin
+  Result := @FWorldPoint[aIndex];
+end;
+
+function  TlgPolygon.LocalPoint(AIndex: Integer): PlgPoint;
+begin
+  Result := @FSegment[aIndex].Point;
+end;
+
+
+{ === GAME ================================================================== }
+{ --- TlgGame --------------------------------------------------------------- }
+constructor TlgGame.Create();
+begin
+  inherited;
+end;
+
+destructor TlgGame.Destroy();
+begin
+  inherited;
+end;
+
+procedure TlgGame.OnDefineSettings(var ASettings: TSettings);
+begin
+  // window
+  ASettings.WindowWidth := TlgWindow.DEFAULT_WIDTH;
+  ASettings.WindowHeight := TlgWindow.DEFAULT_HEIGHT;
+  ASettings.WindowTitle := 'Your Game';
+  ASettings.WindowClearColor := DARKSLATEBROWN;
+
+  // default font
+  ASettings.DefaultFontSize := 10;
+  ASettings.DefaultFontGlyphs := '';
+
+  // zipfile
+  ASettings.ZipFilePassword := TlgZipStream.DEFAULT_PASSWORD;
+  ASettings.ZipFilename := 'Data.zip';
+
+  // hud
+  ASettings.HudPos := Math.Point(3, 3);
+  ASettings.HudLinespace := 0;
+end;
+
+function  TlgGame.OnInitSettings(): Boolean;
+begin
+  Result := False;
+
+  // window
+  FWindow := TlgWindow.Init(FSettings.WindowTitle, FSettings.WindowWidth, FSettings.WindowHeight);
+  if not Assigned(FWindow) then Exit;
+
+  // default font
+  FDefaultFont := TlgFont.LoadDefault(FWindow, FSettings.DefaultFontSize, FSettings.DefaultFontGlyphs);
+  if not Assigned(FDefaultFont) then Exit;
+
+  // zipfile
+  FZipFile := TlgZipFile.Init(FSettings.ZipFilename, FSettings.ZipFilePassword);
+  if not Assigned(FZipFile) then Exit;
+
+  // hud
+  FHud.Pos := FSettings.HudPos;
+  FHud.Linespace := FSettings.HudLinespace;
+
+  Result := True;
+end;
+
+procedure TlgGame.OnQuitSettings();
+begin
+  // zipFile
+  if Assigned(FZipFile) then
+  begin
+    FZipFile.Free();
+    FZipFile := nil;
+  end;
+
+  // default font
+  if Assigned(FDefaultFont) then
+  begin
+    FDefaultFont.Free();
+    FDefaultFont := nil;
+  end;
+
+  // window
+  if Assigned(FWindow) then
+  begin
+    FWindow.Free();
+    FWindow := nil;
+  end;
+end;
+
+function  TlgGame.OnStartup(): Boolean;
+begin
+  Result := True;
+end;
+
+procedure TlgGame.OnShutdown();
+begin
+end;
+
+procedure TlgGame.OnUpdate();
+begin
+  // quit on escape
+  if FWindow.GetKey(KEY_ESCAPE, isWasPressed) then
+    FWindow.SetShouldClose(True)
+end;
+
+procedure TlgGame.OnRender();
+begin
+end;
+
+procedure TlgGame.OnRenderHud();
+begin
+  // reset hud
+  HudReset();
+
+  // default display hud info
+  HudPrint(WHITE, '%d fps', [Timer.FrameRate()]);
+  HudPrint(GREEN, 'ESC - Quit', []);
+end;
+
+function  TlgGame.Settings: PSettings;
+begin
+  Result := @FSettings;
+end;
+
+function  TlgGame.Hud: PHud;
+begin
+  Result := @FHud;
+end;
+
+procedure TlgGame.HudReset();
+begin
+  FHud.Pos := FSettings.HudPos;
+end;
+
+procedure TlgGame.HudPrint(const AColor: TlgColor; const AMsg: string; const AArgs: array of const);
+begin
+  FDefaultFont.DrawText(FWindow, FHud.Pos.x, FHud.Pos.y, FHud.Linespace, AColor, haLeft, AMsg, AArgs);
+end;
+
+procedure TlgGame.Run();
+begin
+  // define settings
+  OnDefineSettings(FSettings);
+
+  try
+    // init settings
+    if not OnInitSettings() then Exit;
+    try
+      // check if window is open
+      if not FWindow.IsOpen then Exit;
+
+      // process startup
+      if not OnStartup() then Exit;
+
+      // enter game loop
+      while not FWindow.ShouldClose() do
+      begin
+        // start frame
+        FWindow.StartFrame();
+
+        // process updates
+        OnUpdate();
+
+          // start drawing
+          FWindow.StartDrawing();
+
+            // clear window
+            FWindow.Clear(FSettings.WindowClearColor);
+
+            // render
+            OnRender();
+
+            // render hud
+            OnRenderHud();
+
+          // end drawing
+          FWindow.EndDrawing();
+
+        // end frame
+        FWindow.EndFrame();
+      end;
+
+    finally
+      // process shutdown
+      OnShutdown();
+    end;
+
+  finally
+    // process quit setting
+    OnQuitSettings();
+  end;
+end;
+
+{ lgRunGame }
+procedure lgRunGame(const AGame: TlgGameClass);
+var
+  LGame: TlgGame;
+begin
+  LGame := Game;
+  try
+    Game := AGame.Create;
+    try
+      Game.Run();
+    finally
+      Game.Free();
+    end;
+  finally
+    Game := LGame;
+  end;
+end;
+
 {============================================================================ }
 
 {$R LGT.Deps.res}
@@ -6600,7 +7149,7 @@ begin
   Utils := TlgUtils.Create();
 
   // init console
-  Console := TlgConsole.Create();
+  Terminal := TlgTerminal.Create();
 
   // load deps dll
   LoadDepsDLL();
@@ -6627,7 +7176,7 @@ begin
   UnloadDepsDLL();
 
   // release console
-  Console.Free();
+  Terminal.Free();
 
   // release utils
   Utils.Free();
