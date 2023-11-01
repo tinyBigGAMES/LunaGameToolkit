@@ -858,6 +858,136 @@ begin
   LWindow.Free();
 end;
 
+procedure Test11();
+var
+  LWindow: TlgWindow;
+  LFont: TlgFont;
+  LHudPos: TlgPoint;
+  LStarfield: TlgStarfield;
+begin
+  // show LGT version info
+  Terminal.PrintLn(LGT_PROJECT);
+
+  // init window
+  LWindow := TlgWindow.Init('Luna Game Toolkit: Starfield');
+
+  // show gamepad info
+  Terminal.PrintLn('Gamepad: %s', [LWindow.GetGamepadName(GAMEPAD_1)]);
+
+  // init default font
+  LFont := TlgFont.LoadDefault(LWindow, 10);
+
+  // init starfield
+  LStarfield := TlgStarfield.New(LWindow);
+
+  // enter game loop
+  while not LWindow.ShouldClose() do
+  begin
+    // start frame
+    LWindow.StartFrame();
+
+      // keyboard processing
+      if LWindow.GetKey(KEY_ESCAPE, isWasPressed) then
+        LWindow.SetShouldClose(True);
+
+      if LWindow.GetKey(KEY_1, isWasPressed) then
+      begin
+        LStarfield.SetXSpeed(6);
+        LStarfield.SetYSpeed(0);
+        LStarfield.SetZSpeed(-5);
+        LStarfield.SetVirtualPos(0, 0);
+      end;
+
+      if LWindow.GetKey(KEY_2, isWasPressed) then
+      begin
+        LStarfield.SetXSpeed(0);
+        LStarfield.SetYSpeed(-6);
+        LStarfield.SetZSpeed(-6);
+        LStarfield.SetVirtualPos(0, 0);
+      end;
+
+      if LWindow.GetKey(KEY_3, isWasPressed) then
+      begin
+        LStarfield.SetXSpeed(-6);
+        LStarfield.SetYSpeed(0);
+        LStarfield.SetZSpeed(-6);
+        LStarfield.SetVirtualPos(0, 0);
+      end;
+
+      if LWindow.GetKey(KEY_4, isWasPressed) then
+      begin
+        LStarfield.SetXSpeed(0);
+        LStarfield.SetYSpeed(6);
+        LStarfield.SetZSpeed(-6);
+        LStarfield.SetVirtualPos(0, 0);
+      end;
+
+      if LWindow.GetKey(KEY_5, isWasPressed) then
+      begin
+        LStarfield.SetXSpeed(0);
+        LStarfield.SetYSpeed(0);
+        LStarfield.SetZSpeed(6);
+        LStarfield.SetVirtualPos(0, 0);
+      end;
+
+      if LWindow.GetKey(KEY_6, isWasPressed) then
+      begin
+        LStarfield.Init(LWindow, 250, -1000, -1000, 10, 1000, 1000, 1000, 160);
+        LStarfield.SetZSpeed(0);
+        LStarfield.SetYSpeed(6);
+      end;
+
+      if LWindow.GEtKey(KEY_7, isWasPressed) then
+      begin
+        LStarfield.Init(LWindow, 250, -1000, -1000, 10, 1000, 1000, 1000, 80);
+        LStarfield.SetXSpeed(0);
+        LStarfield.SetYSpeed(0);
+        LStarfield.SetZSpeed(-3);
+        LStarfield.SetVirtualPos(0, 0);
+      end;
+
+      // mouse processing
+      if LWindow.GetMouseButton(MOUSE_BUTTON_LEFT, isWasPressed) then
+        LWindow.SetShouldClose(True);
+
+      // gamepad processing
+      if LWindow.GetGamepadButton(GAMEPAD_1, GAMEPAD_BUTTON_X, isWasReleased) then
+        LWindow.SetShouldClose(True);
+
+      // update starfield
+      LStarfield.Update();
+
+      // start drawing
+      LWindow.StartDrawing();
+
+        // clear window
+        LWindow.Clear(BLACK);
+
+        // render starfield
+        LStarfield.Render(LWindow);
+
+        // display hud
+        LHudPos := Math.Point(3,3);
+        LFont.DrawText(LWindow, LHudPos.x, LHudPos.y, 0, WHITE, haLeft,  '%d fps', [Timer.FrameRate()]);
+        LFont.DrawText(LWindow, LHudPos.x, LHudPos.y, 0, GREEN, haLeft,  'ESC - Quit', []);
+        LFont.DrawText(LWindow, LHudPos.x, LHudPos.y, 0, GREEN, haLeft,  '1-7 - Change starfield', []);
+
+      // end drawing
+      LWindow.EndDrawing();
+
+    // end frame
+    LWindow.EndFrame();
+  end;
+
+  // free starfield
+  LStarfield.Free();
+
+  // free font
+  LFont.Free();
+
+  // free window
+  LWindow.Free();
+end;
 
 
 procedure RunTests();
@@ -871,8 +1001,8 @@ begin
   //Test07();
   //Test08();
   //Test09();
-  Test10();
-  //Test11();
+  //Test10();
+  Test11();
   Terminal.Pause();
 end;
 

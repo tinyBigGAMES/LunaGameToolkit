@@ -30,10 +30,12 @@ if you wish to learn more about the Delphi language visit <a href="https://learn
 - **Font** (true type, glyphs are cached for efficiency)
 - **Math** (point, vector, rect and other useful routines for 2D graphics)
 - **Stream** (memory, file and zip, all resources can be loaded from any valid stream source)
-- **Buffer** (virtual memory buffer, ringbuffer)
+- **Buffer** (virtual memory buffer, ring-buffer)
 - **Timer** (deterministic, stop, start)
 - **Lists** (double linked list, background task list)
-- **Console** (routines to printing to and interacting with the app console)
+- **Terminal** (routines to printing to and interacting with the app console)
+- **Polygon** (local/world coordinates, scale, rotate, control segment visibility)
+- **Starfield** (general purpose, 3D starfield)
 
 ### Minimum Requirements 
 - Should work on Windows 10+ (64 bits)

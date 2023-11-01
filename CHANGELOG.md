@@ -1,7 +1,10 @@
 ### >>> CHANGELOG <<<
 
 ### Version 0.2.0:
+- Added TlgStarfield class and example
+- Fixed Math.RandomRange(..): Double to return correct range of values
 - Added TlgPolygon class and example
+- Update TlgWindow to manage window size/dpi change on multimon
 - Added TlgVideo.LoadFromFile/LoadFromZipFile
 - Added TlgGame class, lgRunGame routine
 - Renamed TlgConsole to TlgTerminal

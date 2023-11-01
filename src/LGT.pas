@@ -1306,6 +1306,45 @@ type
     function  LocalPoint(AIndex: Integer): PlgPoint;
   end;
 
+{ === STARTFIELD ============================================================ }
+type
+  { TlgStarfield }
+  TlgStarfield = class(TlgObject)
+  protected type
+    TStar = record
+      X, Y, Z: Single;
+      Speed: Single;
+    end;
+    TPoint = record
+      X,Y,Z: Single;
+    end;
+  protected
+    FCenter: TPoint;
+    FMin: TPoint;
+    FMax: TPoint;
+    FViewScaleRatio: Single;
+    FViewScale: Single;
+    FStarCount: Cardinal;
+    FStar: array of TStar;
+    FSpeed: TPoint;
+    FVirtualPos: TlgPoint;
+    procedure TransformDrawPoint(const X, Y, Z: Single; const AWindow: TlgWindow);
+    procedure Done();
+  public
+    constructor Create(); override;
+    destructor Destroy(); override;
+  public
+    procedure Init(const AWindow: TlgWindow; const aStarCount: Cardinal; const AMinX, AMinY, AMinZ, AMaxX, AMaxY, AMaxZ, AViewScale: Single);
+    procedure SetVirtualPos(const X, Y: Single);
+    procedure GetVirtualPos(var X: Single; var Y: Single);
+    procedure SetXSpeed(const ASpeed: Single);
+    procedure SetYSpeed(const ASpeed: Single);
+    procedure SetZSpeed(const ASpeed: Single);
+    procedure Update();
+    procedure Render(const AWindow: TlgWindow);
+    class function New(const AWindow: TlgWindow): TlgStarfield;
+  end;
+
 { === GAME ================================================================== }
 type
   { TlgGame }
@@ -2103,16 +2142,16 @@ end;
 
 class function  TlgMath.RandomRange(const AFrom, ATo: Integer): Integer;
 begin
-  Result := AFrom + Random(ATo - AFrom + 1);
+  //Result := AFrom + Random(ATo - AFrom + 1);
+  Result := System.Math.RandomRange(AFrom, ATo + 1);
 end;
 
 class function  TlgMath.RandomRange(const AFrom, ATo: Double): Double;
 var
   LNum: Single;
 begin
-  LNum := RandomRange(0, MaxInt-1) / MaxInt-1;
-  Result := aFrom + (LNum * (aTo - aFrom));
-  writeln(result:3:2);
+  LNum := RandomRange(0, MaxInt-1) / MaxInt;
+  Result := AFrom + (LNum * (ATo - AFrom));
 end;
 
 class function  TlgMath.RandomBool(): Boolean;
@@ -4675,6 +4714,8 @@ begin
   AViewport.Y := 0;
   AViewport.Width := Self.FSize.Width;
   AViewport.Height := Self.FSize.Height;
+  //AViewport.Width := Self.FScaledSize.Width;
+  //AViewport.Height := Self.FScaledSize.Height;
 end;
 
 procedure TlgWindow.GetViewport(X, Y, AWidth, AHeight: PSingle);
@@ -6867,6 +6908,218 @@ begin
   Result := @FSegment[aIndex].Point;
 end;
 
+{ === STARTFIELD ============================================================ }
+{ --- TlgStarfield ---------------------------------------------------------- }
+procedure TlgStarfield.TransformDrawPoint(const X, Y, Z: Single; const AWindow: TlgWindow);
+var
+  LX, LY: Single;
+  LSW, LSH: Single;
+  LOOZ: Single;
+  LCV: Byte;
+  LColor: TlgColor;
+  LViewport: TlgRect;
+  LScale: TlgPoint;
+
+  function IsVisible(vx, vy, vw, vh: Single): Boolean;
+  begin
+    Result := False;
+    if ((vx - vw) < 0) then
+      Exit;
+    if (vx > (LViewport.Width - 1)) then
+      Exit;
+    if ((vy - vh) < 0) then
+      Exit;
+    if (vy > (LViewport.Height - 1)) then
+      Exit;
+    Result := True;
+  end;
+
+begin
+  AWindow.GetViewport(LViewport);
+  AWindow.GetScale(LScale);
+  FViewScaleRatio := LViewport.Width / LViewport.Height;
+  FCenter.X := (LViewport.Width / 2) + LViewport.X;
+  FCenter.Y := (LViewport.Height / 2) + LViewport.Y;
+
+  LOOZ := ((1.0 / Z) * FViewScale);
+  LX := (FCenter.X - LViewport.X) - (X * LOOZ) * FViewScaleRatio;
+  LY := (FCenter.Y - LViewport.Y) + (Y * LOOZ) * FViewScaleRatio;
+  LSW := (1.0 * LOOZ);
+  if LSW < 1 then LSW := 1;
+  LSH := (1.0 * LOOZ);
+  if LSH < 1 then LSH := 1;
+  LSW := LSW * LScale.x;
+  LSH := LSH * LScale.y;
+  if not IsVisible(LX, LY, LSW, LSH) then
+    Exit;
+  LCV := round(255.0 - (((1.0 / FMax.Z) / (1.0 / Z)) * 255.0));
+
+  //LColor.Make(LCV, LCV, LCV, LCV);
+  LColor.Red   := LCV / $FF;
+  LColor.Green := LCV / $FF;
+  LColor.Blue  := LCV / $FF;
+  LColor.Alpha := LCV / $FF;
+
+  LX := LX - FVirtualPos.X;
+  LY := LY - FVirtualPos.Y;
+
+  //GV.Display.DrawFilledRectangle(LX, LY, LSW, LSH, LColor);
+  AWindow.DrawFilledRect(LX, LY, LSW, LSH, LColor, 0);
+end;
+
+procedure TlgStarfield.Done();
+begin
+  FStar := nil;
+end;
+
+constructor TlgStarfield.Create();
+begin
+  inherited;
+end;
+
+destructor TlgStarfield.Destroy();
+begin
+  Done;
+
+  inherited;
+end;
+procedure TlgStarfield.Init(const AWindow: TlgWindow; const aStarCount: Cardinal; const AMinX, AMinY, AMinZ, AMaxX, AMaxY, AMaxZ, AViewScale: Single);
+var
+  I: Integer;
+  LViewport: TlgRect;
+begin
+  Done;
+
+  FStarCount := aStarCount;
+  SetLength(FStar, FStarCount);
+
+  AWindow.GetViewport(LViewport);
+
+  FViewScale := aViewScale;
+  FViewScaleRatio := LViewport.Width / LViewport.Height;
+  FCenter.X := (LViewport.Width / 2) + LViewport.X;
+  FCenter.Y := (LViewport.Height / 2) + LViewport.Y;
+  FCenter.Z := 0;
+
+  FMin.X := aMinX;
+  FMin.Y := aMinY;
+  FMin.Z := aMinZ;
+  FMax.X := aMaxX;
+  FMax.Y := aMaxY;
+  FMax.Z := aMaxZ;
+
+  for I := 0 to FStarCount - 1 do
+  begin
+    FStar[I].X := Math.RandomRange(FMin.X, FMax.X);
+    FStar[I].Y := Math.RandomRange(FMin.Y, FMax.Y);
+    FStar[I].Z := Math.RandomRange(FMin.Z, FMax.Z);
+  end;
+
+  SetXSpeed(0.0);
+  SetYSpeed(0.0);
+  SetZSpeed(-3);
+  SetVirtualPos(0, 0);
+end;
+
+procedure TlgStarfield.SetVirtualPos(const X, Y: Single);
+begin
+  FVirtualPos.X := X;
+  FVirtualPos.Y := Y;
+end;
+
+procedure TlgStarfield.GetVirtualPos(var X: Single; var Y: Single);
+begin
+  X := FVirtualPos.X;
+  Y := FVirtualPos.Y;
+end;
+
+procedure TlgStarfield.SetXSpeed(const ASpeed: Single);
+begin
+  FSpeed.X := aSpeed;
+end;
+
+procedure TlgStarfield.SetYSpeed(const ASpeed: Single);
+begin
+  FSpeed.Y := aSpeed;
+end;
+
+procedure TlgStarfield.SetZSpeed(const ASpeed: Single);
+begin
+  FSpeed.Z := aSpeed;
+end;
+
+procedure TlgStarfield.Update();
+var
+  I: Integer;
+
+  procedure SetRandomPos(aIndex: Integer);
+  begin
+    FStar[aIndex].X := Math.RandomRange(FMin.X, FMax.X);
+    FStar[aIndex].Y := Math.RandomRange(FMin.Y, FMax.Y);
+    FStar[aIndex].Z := Math.RandomRange(FMin.Z, FMax.Z);
+  end;
+
+begin
+
+  for I := 0 to FStarCount - 1 do
+  begin
+    FStar[I].X := FStar[I].X + FSpeed.X;
+    FStar[I].Y := FStar[I].Y + FSpeed.Y;
+    FStar[I].Z := FStar[I].Z + FSpeed.Z;
+
+    if FStar[I].X < FMin.X then
+    begin
+      SetRandomPos(I);
+      FStar[I].X := FMax.X;
+    end;
+
+    if FStar[I].X > FMax.X then
+    begin
+      SetRandomPos(I);
+      FStar[I].X := FMin.X;
+    end;
+
+    if FStar[I].Y < FMin.Y then
+    begin
+      SetRandomPos(I);
+      FStar[I].Y := FMax.Y;
+    end;
+
+    if FStar[I].Y > FMax.Y then
+    begin
+      SetRandomPos(I);
+      FStar[I].Y := FMin.Y;
+    end;
+
+    if FStar[I].Z < FMin.Z then
+    begin
+      SetRandomPos(I);
+      FStar[I].Z := FMax.Z;
+    end;
+
+    if FStar[I].Z > FMax.Z then
+    begin
+      SetRandomPos(I);
+      FStar[I].Z := FMin.Z;
+    end;
+  end;
+end;
+
+procedure TlgStarfield.Render(const AWindow: TlgWindow);
+var
+  I: Integer;
+begin
+  for I := 0 to FStarCount - 1 do
+  begin
+    TransformDrawPoint(FStar[I].X, FStar[I].Y, FStar[I].Z, AWindow);
+  end;
+end;
+
+class function TlgStarfield.New(const AWindow: TlgWindow): TlgStarfield;
+begin
+  Result := TlgStarfield.Create();
+  Result.Init(AWindow, 250, -1000, -1000, 10, 1000, 1000, 1000, 120);
+end;
 
 { === GAME ================================================================== }
 { --- TlgGame --------------------------------------------------------------- }
