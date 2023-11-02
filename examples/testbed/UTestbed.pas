@@ -989,6 +989,109 @@ begin
   LWindow.Free();
 end;
 
+procedure Test12();
+var
+  LWindow: TlgWindow;
+  LFont: TlgFont;
+  LHudPos: TlgPoint;
+  LTexture: array[0..1] of TlgTexture;
+  LZipFile: TlgZipFile;
+  LMousePos: TlgPoint;
+  LCollide: Boolean;
+  LAngle: Single;
+begin
+  // open zip file
+  LZipFile := TlgZipFile.Init(CZipFilename);
+
+  // show LGT version info
+  Terminal.PrintLn(LGT_PROJECT);
+
+  // init window
+  LWindow := TlgWindow.Init('Luna Game Toolkit: Collision', 960, 540);
+
+  // show gamepad info
+  Terminal.PrintLn('Gamepad: %s', [LWindow.GetGamepadName(GAMEPAD_1)]);
+
+  // init default font
+  LFont := TlgFont.LoadDefault(LWindow, 10);
+
+  // init textures
+  LTexture[0] := TlgTexture.LoadFromZipFile(LZipFile, 'res/sprites/boss.png');
+  LTexture[0].SetRegion(0, 0, 128, 128);
+  LTexture[0].SetPos(LWindow.CENTER_WIDTH, LWindow.CENTER_HEIGHT);
+
+  LTexture[1] := TlgTexture.LoadFromZipFile(LZipFile, 'res/sprites/ship.png');
+  LTexture[1].SetRegion(0, 0, 64, 64);
+  LTexture[1].SetPos(LWindow.CENTER_WIDTH, LWindow.CENTER_HEIGHT);
+
+  // enter game loop
+  while not LWindow.ShouldClose() do
+  begin
+    // start frame
+    LWindow.StartFrame();
+
+      // keyboard processing
+      if LWindow.GetKey(KEY_ESCAPE, isWasPressed) then
+        LWindow.SetShouldClose(True);
+
+      // mouse processing
+      if LWindow.GetMouseButton(MOUSE_BUTTON_LEFT, isWasPressed) then
+        LWindow.SetShouldClose(True);
+
+      // gamepad processing
+      if LWindow.GetGamepadButton(GAMEPAD_1, GAMEPAD_BUTTON_X, isWasReleased) then
+        LWindow.SetShouldClose(True);
+
+      LMousePos := LWindow.GetMousePos();
+      LTexture[1].SetPos(LMousePos);
+      //LCollide := LTexture[1].CollideOBB(LTexture[0]);
+      LCollide := LTexture[1].CollideAABB(LTexture[0]);
+      LAngle := LAngle + 0.5;
+      Math.ClipValueFloat(LAngle, 0, 360, True);
+      LTexture[1].SetAngle(LAngle);
+
+      // start drawing
+      LWindow.StartDrawing();
+
+        // clear window
+        LWindow.Clear(DARKSLATEBROWN);
+
+        LTexture[0].Draw();
+        LTexture[1].Draw();
+
+        if LCollide then
+        begin
+          LWindow.DrawFilledRect(LWindow.CENTER_WIDTH, LWindow.CENTER_HEIGHT, 50, 10, RED, 0);
+        end;
+
+
+        // display hud
+        LHudPos := Math.Point(3,3);
+        LFont.DrawText(LWindow, LHudPos.x, LHudPos.y, 0, WHITE, haLeft,  '%d fps', [Timer.FrameRate()]);
+        LFont.DrawText(LWindow, LHudPos.x, LHudPos.y, 0, GREEN, haLeft,  'ESC - Quit', []);
+
+        LFont.DrawText(LWindow, LWindow.CENTER_WIDTH, 100, YELLOW, haCenter, 'move blue ship over green', []);
+
+      // end drawing
+      LWindow.EndDrawing();
+
+    // end frame
+    LWindow.EndFrame();
+  end;
+
+  // free textures
+  LTexture[1].Free();
+  LTexture[0].Free();
+
+  // free font
+  LFont.Free();
+
+  // free window
+  LWindow.Free();
+
+  // close ZipFile
+  LZipFile.Free();
+end;
 
 procedure RunTests();
 begin
@@ -1002,7 +1105,8 @@ begin
   //Test08();
   //Test09();
   //Test10();
-  Test11();
+  //Test11();
+  Test12();
   Terminal.Pause();
 end;
 

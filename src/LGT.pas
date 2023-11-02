@@ -237,6 +237,13 @@ type
     eaOutQuint, eaInOutQuint, eaInSine, eaOutSine, eaInOutSine, eaInExpo,
     eaOutExpo, eaInOutExpo, eaInCircle, eaOutCircle, eaInOutCircle);
 
+  { TlgOBB }
+  TlgOBB = record
+    Center: TlgPoint;
+    Extents: TlgPoint;
+    Rotation: Single;
+  end;
+
   { TlgMath }
   TlgMath = class
   protected class var
@@ -283,6 +290,7 @@ type
     class function  RadiusOverlap(const ARadius1, X1, Y1, ARadius2, X2, Y2, AShrinkFactor: Single): Boolean;
     class function  EaseValue(ACurrentTime: Double; const AStartValue, AChangeInValue, ADuration: Double; AEase: TlgEase): Double;
     class function  EasePosition(const AStartPos, AEndPos, ACurrentPos: Double; AEase: TlgEase): Double;
+    class function  OBBIntersect(const AObbA, AObbB: TlgOBB): Boolean;
   end;
 
 { === BUFFER ================================================================ }
@@ -1074,6 +1082,8 @@ type
     function   GetPixel(const X, Y: Single): TlgColor;
     procedure  SetPixel(const X, Y: Single; const AColor: TlgColor); overload;
     procedure  SetPixel(const X, Y: Single; const ARed, AGreen, ABlue, AAlpha: Byte); overload;
+    function   CollideAABB(const ATexture: TlgTexture): Boolean;
+    function   CollideOBB(const ATexture: TlgTexture): Boolean;
     class function LoadFromFile(const AFilename: string; const AColorKey: PlgColor=nil): TlgTexture;
     class function LoadFromZipFile(const AZipFile: TlgZipFile; const AFilename: string; const AColorKey: PlgColor=nil): TlgTexture;
   end;
@@ -2841,6 +2851,66 @@ begin
   Result := EaseValue(LT, LB, LC, LD, AEase);
   if Result > 100 then
     Result := 100;
+end;
+
+class function  TlgMath.OBBIntersect(const AObbA, AObbB: TlgOBB): Boolean;
+var
+  LAxes: array[0..3] of TlgPoint;
+  I: Integer;
+  LProjA, LProjB: TlgPoint;
+
+  function Dot(const A, B: TlgPoint): Single;
+  begin
+    Result := A.x * B.x + A.y * B.y;
+  end;
+
+  function Rotate(const V: TlgPoint; AAngle: Single): TlgPoint;
+  var
+    s, c: Single;
+  begin
+    s := Math.AngleSin(Round(AAngle));
+    c := Math.AngleCos(Round(AAngle));
+    Result.x := V.x * c - V.y * s;
+    Result.y := V.x * s + V.y * c;
+  end;
+
+  function Project(const AObb: TlgOBB; const AAxis: TlgPoint): TlgPoint;
+  var
+    LCorners: array[0..3] of TlgPoint;
+    I: Integer;
+    LDot: Single;
+  begin
+    LCorners[0] := Rotate(Math.Point(AObb.Extents.x, AObb.Extents.y), AObb.Rotation);
+    LCorners[1] := Rotate(Math.Point(-AObb.Extents.x, AObb.Extents.y), AObb.Rotation);
+    LCorners[2] := Rotate(Math.Point(AObb.Extents.x, -AObb.Extents.y), AObb.Rotation);
+    LCorners[3] := Rotate(Math.Point(-AObb.Extents.x, -AObb.Extents.y), AObb.Rotation);
+
+    Result.x := Dot(AAxis, Math.Point(AObb.Center.x + LCorners[0].x, AObb.Center.y + LCorners[0].y));
+    Result.y := Result.x;
+
+    for I := 1 to 3 do
+    begin
+      LDot := Dot(AAxis, Math.Point(AObb.Center.x + LCorners[I].x, AObb.Center.y + LCorners[I].y));
+      if LDot < Result.x then Result.x := LDot;
+      if LDot > Result.y then Result.y := LDot;
+    end;
+  end;
+
+
+begin
+  LAxes[0] := Rotate(Math.Point(1, 0), AObbA.Rotation);
+  LAxes[1] := Rotate(Math.Point(0, 1), AObbA.Rotation);
+  LAxes[2] := Rotate(Math.Point(1, 0), AObbB.Rotation);
+  LAxes[3] := Rotate(Math.Point(0, 1), AObbB.Rotation);
+
+  for I := 0 to 3 do
+  begin
+    LProjA := Project(AObbA, LAxes[I]);
+    LProjB := Project(AObbB, LAxes[I]);
+    if (LProjA.y < LProjB.x) or (LProjB.y < LProjA.x) then Exit(False);
+  end;
+
+  Result := True;
 end;
 
 { === BUFFER ================================================================ }
@@ -5770,6 +5840,47 @@ begin
     ARed;
 end;
 
+function   TlgTexture.CollideAABB(const ATexture: TlgTexture): Boolean;
+var
+  boxA, boxB: c2AABB;
+
+  function _c2v(x, y: Single): c2v;
+  begin
+    result.x := x;
+    result.y := y;
+  end;
+
+begin
+  // Set up AABB for this texture
+  boxA.min := _c2V(FPos.X - (FAnchor.X * FRegion.Width * FScale), FPos.Y - (FAnchor.Y * FRegion.Height * FScale));
+  boxA.max := _c2V((FPos.X - (FAnchor.X * FRegion.Width * FScale)) + FRegion.Width * FScale, (FPos.Y - (FAnchor.Y * FRegion.Height * FScale)) + FRegion.Height * FScale);
+
+  // Set up AABB for the other texture
+  boxB.min := _c2V(ATexture.FPos.X - (ATexture.FAnchor.X * ATexture.FRegion.Width * ATexture.FScale), ATexture.FPos.Y - (ATexture.FAnchor.Y * ATexture.FRegion.Height * ATexture.FScale));
+  boxB.max := _c2V((ATexture.FPos.X - (ATexture.FAnchor.X * ATexture.FRegion.Width * ATexture.FScale)) + ATexture.FRegion.Width * ATexture.FScale, (ATexture.FPos.Y - (ATexture.FAnchor.Y * ATexture.FRegion.Height * ATexture.FScale)) + ATexture.FRegion.Height * ATexture.FScale);
+
+  // Check for collision and return result
+  Result := Boolean(c2AABBtoAABB(boxA, boxB));
+end;
+
+function TlgTexture.CollideOBB(const ATexture: TlgTexture): Boolean;
+var
+  obbA, obbB: TlgOBB;
+begin
+  // Set up OBB for this texture
+  obbA.Center := Math.Point(FPos.X, FPos.Y);
+  obbA.Extents := Math.Point(FRegion.Width * FScale / 2, FRegion.Height * FScale / 2);
+  obbA.Rotation := FAngle;
+
+  // Set up OBB for the other texture
+  obbB.Center := Math.Point(ATexture.FPos.X, ATexture.FPos.Y);
+  obbB.Extents := Math.Point(ATexture.FRegion.Width * ATexture.FScale / 2, ATexture.FRegion.Height * ATexture.FScale / 2);
+  obbB.Rotation := ATexture.FAngle;
+
+  // Check for collision and return result
+  Result := Math.OBBIntersect(obbA, obbB);
+end;
+
 class function TlgTexture.LoadFromFile(const AFilename: string; const AColorKey: PlgColor): TlgTexture;
 var
   LStream: TlgStream;
@@ -6489,95 +6600,6 @@ procedure TlgCamera.Rotate(const ARotation: Single);
 begin
   FRotation := FRotation + ARotation;
 end;
-
-(*
-procedure TCamera2D.Use(const AWindow: TlgWindow);
-var
-  LSize: TlgSize;
-begin
-  AWindow.GetSize(LSize);
-  glTranslatef(LSize.Width/2, LSize.Height/2, 0);
-  glRotatef(rotation, 0, 0, 1);
-  glScalef(scale, scale, 1);
-  glTranslatef(-x, -y, 0);
-
-//  AWindow.GetSize(LSize);
-//  glTranslatef((LSize.Width / 2) + x, (LSize.Height / 2) + y, 0);
-//  glRotatef(rotation, 0, 0, 1);
-//  glTranslatef(-(LSize.Width / 2) - x, -(LSize.Height / 2) - y, 0);
-//  glScalef(scale, scale, 1);
-
-end;
-
-*)
-
-(*
-procedure TlgCamera.Use(const AWindow: TlgWindow);
-var
-  LViewport: TlgRect;
-  LX, LY: Single;
-begin
-  if not Assigned(AWindow) then
-  begin
-    glPopMatrix();
-    Exit;
-  end;
-
-  if Assigned(AWindow) then
-  begin
-    glPushMatrix();
-  end;
-  AWindow.GetViewport(LViewport);
-
-  LX := FX + LViewport.X;
-  LY := FY + LViewport.Y;
-
-//  glTranslatef((LViewport.Width / 2)  + LX, (LViewport.Height / 2)  + LY, 0);
-//  glRotatef(rotation, 0, 0, 1);
-//  glTranslatef(-(LViewport.Width / 2) - LX, -(LViewport.Height / 2) - LY, 0);
-//  glScalef(FScale, FScale, 1);
-
-  glTranslatef((LViewport.Width/2), (LViewport.Height/2), 0);
-  glRotatef(rotation, 0, 0, 1);
-  glScalef(scale, scale, 1);
-  glTranslatef(-x, -y, 0);
-
-end;
-
-procedure TCamera.WorldToScreen(const aWorld: TTransform; var aScreen: TTransform);
-var
-  LCenter: TVector;
-  LScreen: TTransform;
-begin
-  LScreen := aWorld;
-  LScreen.Angle := FAngle;
-  LScreen.Zoom := FZoom;
-
-  LScreen.X := LScreen.X - FPos.X;
-  LScreen.Y := LScreen.Y - FPos.Y;
-
-  AngleRotatePos(LScreen.Angle, LScreen.X, LScreen.Y);
-
-  LCenter.X := (FBounds.Width  / 2) + FBounds.X;
-  LCenter.Y := (FBounds.Height / 2) + FBounds.Y;
-
-  LScreen.X := (LCenter.X - FBounds.X) - LScreen.X * LScreen.Zoom;
-  LScreen.Y := (LCenter.Y - FBounds.Y) + LScreen.Y * LScreen.Zoom;
-
-  LScreen.X := LScreen.X + FBounds.X;
-  LScreen.Y := LScreen.Y + FBounds.Y;
-
-  LScreen.Width := LScreen.Width * LScreen.Zoom;
-  LScreen.Height := LScreen.Height * LScreen.Zoom;
-
-  LScreen.Visible := IsVisible(LScreen);
-
-  LScreen.Angle := -Angle;
-
-  aScreen := LScreen;
-end;
-
-*)
 
 procedure TlgCamera.Use(const AWindow: TlgWindow);
 var

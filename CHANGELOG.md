@@ -1,6 +1,7 @@
 ### >>> CHANGELOG <<<
 
 ### Version 0.2.0:
+- Added TlgTexture.CollideAABB/CollideOBB collision detection and example
 - Added TlgStarfield class and example
 - Fixed Math.RandomRange(..): Double to return correct range of values
 - Added TlgPolygon class and example
