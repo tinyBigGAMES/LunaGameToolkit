@@ -1,0 +1,96 @@
+
+{$REGION ' Lua Macros ' }
+function lua_isfunction(aState: Pointer; n: Integer): Boolean; inline;
+begin
+  Result := Boolean(lua_type(aState, n) = LUA_TFUNCTION);
+end;
+
+function lua_isvariable(aState: Pointer; n: Integer): Boolean; inline;
+var
+  aType: Integer;
+begin
+  aType := lua_type(aState, n);
+
+  if (aType = LUA_TBOOLEAN) or (aType = LUA_TLIGHTUSERDATA) or (aType = LUA_TNUMBER) or (aType = LUA_TSTRING) then
+    Result := True
+  else
+    Result := False;
+end;
+
+procedure lua_newtable(aState: Pointer); inline;
+begin
+  lua_createtable(aState, 0, 0);
+end;
+
+procedure lua_pop(aState: Pointer; n: Integer); inline;
+begin
+  lua_settop(aState, -n - 1);
+end;
+
+procedure lua_getglobal(aState: Pointer; aName: PAnsiChar); inline;
+begin
+  lua_getfield(aState, LUA_GLOBALSINDEX, aName);
+end;
+
+procedure lua_setglobal(aState: Pointer; aName: PAnsiChar); inline;
+begin
+  lua_setfield(aState, LUA_GLOBALSINDEX, aName);
+end;
+
+procedure lua_pushcfunction(aState: Pointer; aFunc: lua_CFunction); inline;
+begin
+  lua_pushcclosure(aState, aFunc, 0);
+end;
+
+procedure lua_register(aState: Pointer; aName: PAnsiChar; aFunc: lua_CFunction); inline;
+begin
+  lua_pushcfunction(aState, aFunc);
+  lua_setglobal(aState, aName);
+end;
+
+function lua_isnil(aState: Pointer; n: Integer): Boolean; inline;
+begin
+  Result := Boolean(lua_type(aState, n) = LUA_TNIL);
+end;
+
+function lua_tostring(aState: Pointer; idx: Integer): string; inline;
+begin
+  Result := string(lua_tolstring(aState, idx, nil));
+end;
+
+function luaL_dofile(aState: Pointer; aFilename: PAnsiChar): Integer; inline;
+Var
+  Res: Integer;
+begin
+  Res := luaL_loadfile(aState, aFilename);
+  if Res = 0 then
+    Res := lua_pcall(aState, 0, 0, 0);
+  Result := Res;
+end;
+
+function luaL_dostring(aState: Pointer; aStr: PAnsiChar): Integer; inline;
+Var
+  Res: Integer;
+begin
+  Res := luaL_loadstring(aState, aStr);
+  if Res = 0 then
+    Res := lua_pcall(aState, 0, 0, 0);
+  Result := Res;
+end;
+
+function luaL_dobuffer(aState: Pointer; aBuffer: Pointer; aSize: NativeUInt;
+  aName: PAnsiChar): Integer; inline;
+var
+  Res: Integer;
+begin
+  Res := luaL_loadbuffer(aState, aBuffer, aSize, aName);
+  if Res = 0 then
+    Res := lua_pcall(aState, 0, 0, 0);
+  Result := Res;
+end;
+
+function lua_upvalueindex(i: Integer): Integer; inline;
+begin
+  Result := LUA_GLOBALSINDEX - i;
+end;
+{$ENDREGION}

@@ -139,7 +139,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableUAC>false</EnableUAC>
       <AdditionalLibraryDirectories>.\libs</AdditionalLibraryDirectories>
-      <AdditionalDependencies>winmm.lib;glfw3.lib;OpenAL32.lib;zlibstatic.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>winmm.lib;glfw3.lib;OpenAL32.lib;zlibstatic.lib;lua51.lib;luajit.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <ModuleDefinitionFile>exports.def</ModuleDefinitionFile>
     </Link>
     <PostBuildEvent>
@@ -157,23 +157,6 @@
     <ClCompile Include="libs\minivorbis.c" />
     <ClCompile Include="libs\Nuklear.c" />
     <ClCompile Include="libs\pl_mpeg.cpp" />
-    <ClCompile Include="libs\pocketlang\core\compiler.c" />
-    <ClCompile Include="libs\pocketlang\core\core.c" />
-    <ClCompile Include="libs\pocketlang\core\debug.c" />
-    <ClCompile Include="libs\pocketlang\core\public.c" />
-    <ClCompile Include="libs\pocketlang\core\utils.c" />
-    <ClCompile Include="libs\pocketlang\core\value.c" />
-    <ClCompile Include="libs\pocketlang\core\vm.c" />
-    <ClCompile Include="libs\pocketlang\libs\libs.c" />
-    <ClCompile Include="libs\pocketlang\libs\std_dummy.c" />
-    <ClCompile Include="libs\pocketlang\libs\std_io.c" />
-    <ClCompile Include="libs\pocketlang\libs\std_json.c" />
-    <ClCompile Include="libs\pocketlang\libs\std_math.c" />
-    <ClCompile Include="libs\pocketlang\libs\std_os.c" />
-    <ClCompile Include="libs\pocketlang\libs\std_path.c" />
-    <ClCompile Include="libs\pocketlang\libs\std_term.c" />
-    <ClCompile Include="libs\pocketlang\libs\std_time.c" />
-    <ClCompile Include="libs\pocketlang\libs\std_types.c" />
     <ClCompile Include="libs\stb_image.c" />
     <ClCompile Include="libs\stb_image_write.c" />
     <ClCompile Include="libs\stb_truetype.c" />

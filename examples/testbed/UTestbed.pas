@@ -1007,7 +1007,7 @@ begin
   Terminal.PrintLn(LGT_PROJECT);
 
   // init window
-  LWindow := TlgWindow.Init('Luna Game Toolkit: Collision', 960, 540);
+  LWindow := TlgWindow.Init('Luna Game Toolkit: Texture Collision', 960, 540);
 
   // show gamepad info
   Terminal.PrintLn('Gamepad: %s', [LWindow.GetGamepadName(GAMEPAD_1)]);
@@ -1093,6 +1093,19 @@ begin
   LZipFile.Free();
 end;
 
+procedure Test13();
+var
+  LLua: TlgLua;
+begin
+  LLua := TlgLua.Create();
+  try
+    LLua.LoadString('print(LGT.Version )');
+  finally
+    LLua.Free();
+  end;
+end;
+
+
 procedure RunTests();
 begin
   //Test01();
@@ -1106,7 +1119,8 @@ begin
   //Test09();
   //Test10();
   //Test11();
-  Test12();
+  //Test12();
+  Test13();
   Terminal.Pause();
 end;
 

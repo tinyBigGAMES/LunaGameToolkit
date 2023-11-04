@@ -1,6 +1,7 @@
 ### >>> CHANGELOG <<<
 
 ### Version 0.2.0:
+- Replaced pocketlang with LuaJIT integration 
 - Added TlgTexture.CollideAABB/CollideOBB collision detection and example
 - Added TlgStarfield class and example
 - Fixed Math.RandomRange(..): Double to return correct range of values

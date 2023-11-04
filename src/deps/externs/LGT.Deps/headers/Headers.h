@@ -13,4 +13,7 @@
 #include <nuklear.h>
 #include <nuklear_glfw_gl2.h>
 #include <inc/glad.h>
-#include <pocketlang.h>
+#include <lua.h>
+#include <lualib.h>
+#include <lauxlib.h>
+#include <luajit.h>
