@@ -1095,16 +1095,205 @@ end;
 
 procedure Test13();
 var
-  LLua: TlgLua;
+  LWindow: TlgWindow;
+  LFont: TlgFont;
+  LHudPos: TlgPoint;
+  LTimer: TlgTimer;
+  LCount: Integer;
 begin
-  LLua := TlgLua.Create();
-  try
-    LLua.LoadString('print(LGT.Version )');
-  finally
-    LLua.Free();
+  // show LGT version info
+  Terminal.PrintLn(LGT_PROJECT);
+
+  // init window
+  LWindow := TlgWindow.Init('Luna Game Toolkit: Timer');
+
+  // show gamepad info
+  Terminal.PrintLn('Gamepad: %s', [LWindow.GetGamepadName(GAMEPAD_1)]);
+
+  // init default font
+  LFont := TlgFont.LoadDefault(LWindow, 10);
+
+  // init timer
+  LTimer.InitFPS(8);
+  LCount := 0;
+
+  // enter game loop
+  while not LWindow.ShouldClose() do
+  begin
+    // start frame
+    LWindow.StartFrame();
+
+      // keyboard processing
+      if LWindow.GetKey(KEY_ESCAPE, isWasPressed) then
+        LWindow.SetShouldClose(True);
+
+      // mouse processing
+      if LWindow.GetMouseButton(MOUSE_BUTTON_LEFT, isWasPressed) then
+        LWindow.SetShouldClose(True);
+
+      // gamepad processing
+      if LWindow.GetGamepadButton(GAMEPAD_1, GAMEPAD_BUTTON_X, isWasReleased) then
+        LWindow.SetShouldClose(True);
+
+      // start drawing
+      LWindow.StartDrawing();
+
+        // clear window
+        LWindow.Clear(DARKSLATEBROWN);
+
+        // process timing
+        if LTimer.Check() then
+        begin
+          Inc(LCount);
+          LCount := Math.ClipValueInt(LCount, 0, 3, True);
+        end;
+
+        // display color animated block
+        case LCount of
+          0: LWindow.DrawFilledRect(LWindow.CENTER_WIDTH, LWindow.CENTER_HEIGHT, 50, 50, DARKSEAGREEN, 0);
+          1: LWindow.DrawFilledRect(LWindow.CENTER_WIDTH, LWindow.CENTER_HEIGHT, 50, 50, FORESTGREEN, 0);
+          2: LWindow.DrawFilledRect(LWindow.CENTER_WIDTH, LWindow.CENTER_HEIGHT, 50, 50, GREEN, 0);
+          3: LWindow.DrawFilledRect(LWindow.CENTER_WIDTH, LWindow.CENTER_HEIGHT, 50, 50, DARKGREEN, 0);
+        end;
+
+        // display hud
+        LHudPos := Math.Point(3,3);
+        LFont.DrawText(LWindow, LHudPos.x, LHudPos.y, 0, WHITE, haLeft,  '%d fps', [Timer.FrameRate()]);
+        LFont.DrawText(LWindow, LHudPos.x, LHudPos.y, 0, GREEN, haLeft,  'ESC - Quit', []);
+
+      // end drawing
+      LWindow.EndDrawing();
+
+    // end frame
+    LWindow.EndFrame();
   end;
+
+  // free font
+  LFont.Free();
+
+  // free window
+  LWindow.Free();
 end;
 
+
+procedure Test14();
+var
+  LWindow: TlgWindow;
+  LFont: TlgFont;
+  LHudPos: TlgPoint;
+  LSprite: TlgSprite;
+  LZipFile: TlgZipFile;
+  LBoss: TlgEntity;
+  LPlayer: TlgEntity;
+  LMousePos: TlgPoint;
+  LCollide: Boolean;
+begin
+  // init zipfile
+  LZipFile := TlgZipFile.Init(CZipFilename);
+
+  // show LGT version info
+  Terminal.PrintLn(LGT_PROJECT);
+
+  // init window
+  LWindow := TlgWindow.Init('Luna Game Toolkit: Sprite & Entity', 960, 540);
+
+  // show gamepad info
+  Terminal.PrintLn('Gamepad: %s', [LWindow.GetGamepadName(GAMEPAD_1)]);
+
+  // init default font
+  LFont := TlgFont.LoadDefault(LWindow, 10);
+
+  // init sprite
+  LSprite := TlgSprite.Create();
+
+  // init boss sprite
+  LSprite.LoadPageFromZipFile(LZipFile, 'res/sprites/boss.png', nil); // page #0
+  LSprite.AddGroup(); // group #0
+  LSprite.AddImageFromGrid(0, 0, 0, 0, 128, 128);
+  LSprite.AddImageFromGrid(0, 0, 1, 0, 128, 128);
+  LSprite.AddImageFromGrid(0, 0, 0, 1, 128, 128);
+
+  // init ship sprite
+  LSprite.LoadPageFromZipFile(LZipFile, 'res/sprites/ship.png', nil); // page #1
+  LSprite.AddGroup(); // group #1
+  LSprite.AddImageFromGrid(1, 1, 1, 0, 64, 64);
+  LSprite.AddImageFromGrid(1, 1, 2, 0, 64, 64);
+  LSprite.AddImageFromGrid(1, 1, 3, 0, 64, 64);
+
+  // init boss entity
+  LBoss := TlgEntity.New(LSprite, 0);
+  LBoss.SetPosAbs(LWindow.CENTER_WIDTH, LWindow.CENTER_HEIGHT);
+  LBoss.SetFrameSpeed(24);
+
+  // init player entity
+  LPlayer := TlgEntity.New(LSprite, 1);
+  LPlayer.SetPosAbs(0, 0);
+  LPlayer.SetFrameSpeed(24);
+
+  // enter game loop
+  while not LWindow.ShouldClose() do
+  begin
+    // start frame
+    LWindow.StartFrame();
+
+      // keyboard processing
+      if LWindow.GetKey(KEY_ESCAPE, isWasPressed) then
+        LWindow.SetShouldClose(True);
+
+      // mouse processing
+      LMousePos := LWindow.GetMousePos();
+
+      // update boss
+      LBoss.NextFrame();
+
+      // update player
+      LPlayer.NextFrame();
+      LPlayer.ThrustToPos(40, 40, LMousePos.x, LMousePos.y, 128, 32, 1, 0.001);
+      LCollide := LPlayer.Overlap(LBoss, eoOBB);
+
+      // start drawing
+      LWindow.StartDrawing();
+
+        // clear window
+        LWindow.Clear(DARKSLATEBROWN);
+
+        // render boss
+        LBoss.Render();
+        if LCollide then
+          LWindow.DrawFilledRect(LWindow.CENTER_WIDTH, LWindow.CENTER_HEIGHT-64, 64, 10, RED, 0);
+
+        // render player
+        LPlayer.Render();
+
+        // display hud
+        LHudPos := Math.Point(3,3);
+        LFont.DrawText(LWindow, LHudPos.x, LHudPos.y, 0, WHITE, haLeft,  '%d fps', [Timer.FrameRate()]);
+        LFont.DrawText(LWindow, LHudPos.x, LHudPos.y, 0, GREEN, haLeft,  'ESC - Quit', []);
+        LFont.DrawText(LWindow, LWindow.CENTER_WIDTH, 150, YELLOW, haCenter, 'move blue ship over green ship', []);
+
+      // end drawing
+      LWindow.EndDrawing();
+
+    // end frame
+    LWindow.EndFrame();
+  end;
+
+  // free entities
+  LPlayer.Free();
+  LBoss.Free();
+
+  // free sprite
+  LSprite.Free();
+
+  // free font
+  LFont.Free();
+
+  // free window
+  LWindow.Free();
+
+  // free zipfile
+  LZipFile.Free();
+end;
 
 procedure RunTests();
 begin
@@ -1120,7 +1309,8 @@ begin
   //Test10();
   //Test11();
   //Test12();
-  Test13();
+  //Test13();
+  Test14();
   Terminal.Pause();
 end;
 

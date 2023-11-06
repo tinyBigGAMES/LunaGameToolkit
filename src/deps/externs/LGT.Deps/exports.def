@@ -151,7 +151,6 @@ luaJIT_setmode
 luaJIT_profile_start
 luaJIT_profile_stop
 luaJIT_profile_dumpstack
-luaJIT_version_2_1_1697887905
 
 ;=== clog ===
 clog_init_path

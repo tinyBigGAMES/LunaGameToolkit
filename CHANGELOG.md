@@ -1,6 +1,9 @@
 ### >>> CHANGELOG <<<
 
 ### Version 0.2.0:
+- Added TlgSprite, TlgEntity classes and example
+- Add TlgTimer record and example
+- Fix TlgMath.ClipValueInt/ClipValueFloat/ClipValueDouble not return the proper range when usnig Wrap mode
 - Replaced pocketlang with LuaJIT integration 
 - Added TlgTexture.CollideAABB/CollideOBB collision detection and example
 - Added TlgStarfield class and example

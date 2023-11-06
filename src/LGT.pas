@@ -391,6 +391,20 @@ type
     class function  FrameRate(): Cardinal;
   end;
 
+  { TlgTimer }
+  TlgTimer = record
+  private
+    FLastTime: Double;
+    FInterval: Double;
+    FSpeed: Double;
+  public
+    procedure InitMS(const AValue: Double);
+    procedure InitFPS(const AValue: Double);
+    function Check(): Boolean;
+    procedure Reset();
+    function  Speed(): Double;
+  end;
+
 { === STREAM ================================================================ }
 type
   TlgStreamMode = (smRead, smWrite);
@@ -1599,7 +1613,7 @@ type
   protected
     FSprite: TlgSprite;
     FGroup: Integer;
-    FFrame: Single;
+    FFrame: Integer;
     FFrameSpeed: Single;
     FPos: TlgVec;
     FDir: TlgVec;
@@ -1619,53 +1633,54 @@ type
     FPivot: TlgPoint;
     FAnchor: TlgPoint;
     FBlend: TlgTextureBlend;
+    FFrameTimer: TlgTimer;
   public
     constructor Create(); override;
     destructor Destroy(); override;
-    procedure Init(const ASprite: TlgSprite; aGroup: Integer);
+    function  Init(const ASprite: TlgSprite; const AGroup: Integer): Boolean;
     function  GetPivot(): TlgPoint;
     procedure SetPivot(const APoint: TlgPoint); overload;
     procedure SetPivot(const X, Y: Single); overload;
     function  GetAnchor(): TlgPoint;
     procedure SetAnchor(const APoint: TlgPoint); overload;
     procedure SetAnchor(const X, Y: Single); overload;
-    procedure SetFrameRange(aFirst: Integer; aLast: Integer);
+    procedure SetFrameRange(const aFirst, aLast: Integer);
     function  NextFrame(): Boolean;
     function  PrevFrame(): Boolean;
     function  GetFrame(): Integer;
-    procedure SetFrame(AFrame: Integer);
+    procedure SetFrame(const AFrame: Integer);
     function  GetFrameSpeed(): Single;
-    procedure SetFrameSpeed(AFrameSpeed: Single);
+    procedure SetFrameSpeed(const AFrameSpeed: Single);
     function  GetFirstFrame(): Integer;
     function  GetLastFrame(): Integer;
-    procedure SetPosAbs(X: Single; Y: Single);
-    procedure SetPosRel(X: Single; Y: Single);
+    procedure SetPosAbs(const X, Y: Single);
+    procedure SetPosRel(const X, Y: Single);
     function  GetPos(): TlgVec;
     function  GetDir(): TlgVec;
-    procedure SetScaleAbs(AScale: Single);
-    procedure SetScaleRel(AScale: Single);
+    procedure SetScaleAbs(const AScale: Single);
+    procedure SetScaleRel(const AScale: Single);
     function  GetAngle(): Single;
     function  GetAngleOffset(): Single;
-    procedure SetAngleOffset(AAngle: Single);
-    procedure RotateAbs(AAngle: Single);
-    procedure RotateRel(AAngle: Single);
-    function  RotateToAngle(AAngle: Single; ASpeed: Single): Boolean;
-    function  RotateToPos(X: Single; Y: Single; ASpeed: Single): Boolean;
-    function  RotateToPosAt(aSrcX: Single; aSrcY: Single; ADestX: Single; ADestY: Single; ASpeed: Single): Boolean;
-    procedure Thrust(ASpeed: Single);
-    procedure ThrustAngle(AAngle: Single; ASpeed: Single);
-    function  ThrustToPos(aThrustSpeed: Single; ARotSpeed: Single; ADestX: Single; ADestY: Single; ASlowdownDist: Single; AStopDist: Single; AStopSpeed: Single; AStopSpeedEpsilon: Single): Boolean;
-    function  IsVisible(AVirtualX: Single; aVirtualY: Single): Boolean;
-    function  IsFullyVisible(AVirtualX: Single; aVirtualY: Single): Boolean;
-    function  Overlap(X: Single; Y: Single; aRadius: Single; aShrinkFactor: Single): Boolean; overload;
-    function  Overlap(AEntity: TlgEntity; const AType: TEntityOverlap=eoAABB): Boolean; overload;
+    procedure SetAngleOffset(const AAngle: Single);
+    procedure RotateAbs(const AAngle: Single);
+    procedure RotateRel(const AAngle: Single);
+    function  RotateToAngle(const AAngle, ASpeed: Single): Boolean;
+    function  RotateToPos(const X, Y, ASpeed: Single): Boolean;
+    function  RotateToPosAt(const aSrcX, aSrcY, ADestX, ADestY, ASpeed: Single): Boolean;
+    procedure Thrust(const ASpeed: Single);
+    procedure ThrustAngle(const AAngle, ASpeed: Single);
+    function  ThrustToPos(const aThrustSpeed, ARotSpeed, ADestX, ADestY, ASlowdownDist, AStopDist, AStopSpeed, AStopSpeedEpsilon: Single): Boolean;
+    function  IsVisible(const AWindow: TlgWindow): Boolean;
+    function  IsFullyVisible(const AWindow: TlgWindow): Boolean;
+    function  Overlap(const X, Y, aRadius, aShrinkFactor: Single): Boolean; overload;
+    function  Overlap(const AEntity: TlgEntity; const AType: TEntityOverlap=eoAABB): Boolean; overload;
     procedure Render();
-    procedure RenderAt(X: Single; Y: Single);
+    procedure RenderAt(const X, Y: Single);
     function  GetSprite(): TlgSprite;
     function  GetGroup(): Integer;
     function  GetScale(): Single;
     function  GetColor(): TlgColor;
-    procedure SetColor(AColor: TlgColor);
+    procedure SetColor(const AColor: TlgColor);
     function  GetBlend(): TlgTextureBlend;
     procedure SetBlend(const AValue: TlgTextureBlend);
     function  GetHFlip(): Boolean;
@@ -1673,11 +1688,11 @@ type
     function  GetVFlip: Boolean;
     procedure SetVFlip(const AFlip: Boolean);
     function  GetLoopFrame(): Boolean;
-    procedure SetLoopFrame(aLoop: Boolean);
+    procedure SetLoopFrame(const aLoop: Boolean);
     function  GetWidth(): Single;
     function  GetHeight(): Single;
     function  GetRadius(): Single;
-    class function New(const ASprite: TlgSprite; aGroup: Integer): TlgEntity;
+    class function New(const ASprite: TlgSprite; const aGroup: Integer): TlgEntity;
   end;
 
 { === GAME ================================================================== }
@@ -2466,18 +2481,23 @@ begin
 end;
 
 class function  TlgMath.AngleSin(const AAngle: Cardinal): Single;
+var
+  LAngle: Cardinal;
 begin
-  Result := FSinTable[EnsureRange(aAngle, 0, 360)];
+  LAngle := Cardinal(EnsureRange(AAngle, 0, 360));
+  Result := FSinTable[LAngle];
 end;
 
 class function  TlgMath.AngleCos(const AAngle: Cardinal): Single;
+var
+  LAngle: Cardinal;
 begin
-  Result := FCosTable[EnsureRange(aAngle, 0, 360)];
+  LAngle := Cardinal(EnsureRange(AAngle, 0, 360));
+  Result := FCosTable[LAngle];
 end;
 
 class function  TlgMath.RandomRange(const AFrom, ATo: Integer): Integer;
 begin
-  //Result := AFrom + Random(ATo - AFrom + 1);
   Result := System.Math.RandomRange(AFrom, ATo + 1);
 end;
 
@@ -2510,8 +2530,7 @@ class function  TlgMath.AngleDifference(const ASrcAngle, ADestAngle: Single): Si
 var
   LC: Single;
 begin
-  LC := ADestAngle - ASrcAngle -
-    (floor((ADestAngle - ASrcAngle) / 360.0) * 360.0);
+  LC := ADestAngle - ASrcAngle - (floor((ADestAngle - ASrcAngle) / 360.0) * 360.0);
 
   if LC >= (360.0 / 2) then
   begin
@@ -2544,13 +2563,13 @@ begin
     begin
       if (AValue > AMax) then
       begin
-        AValue := AMin + Abs(AValue - AMax);
+        AValue := (AMin + Abs(AValue - AMax))-1;
         if AValue > AMax then
           AValue := AMax;
       end
       else if (AValue < AMin) then
       begin
-        AValue := AMax - Abs(AValue - AMin);
+        AValue := (AMax - Abs(AValue - AMin))+1;
         if AValue < AMin then
           AValue := AMin;
       end
@@ -2573,13 +2592,13 @@ begin
     begin
       if (AValue > AMax) then
       begin
-        AValue := AMin + Abs(AValue - AMax);
+        AValue := (AMin + Abs(AValue - AMax))-1;
         if AValue > AMax then
           AValue := AMax;
       end
       else if (AValue < AMin) then
       begin
-        AValue := AMax - Abs(AValue - AMin);
+        AValue := (AMax - Abs(AValue - AMin))+1;
         if AValue < AMin then
           AValue := AMin;
       end
@@ -2602,13 +2621,13 @@ begin
     begin
       if (AValue > AMax) then
       begin
-        AValue := AMin + Abs(AValue - AMax);
+        AValue := (AMin + Abs(AValue - AMax))-1;
         if AValue > AMax then
           AValue := AMax;
       end
       else if (AValue < AMin) then
       begin
-        AValue := AMax - Abs(AValue - AMin);
+        AValue := (AMax - Abs(AValue - AMin))+1;
         if AValue < AMin then
           AValue := AMin;
       end
@@ -3731,6 +3750,40 @@ begin
   Result := FFramerate;
 end;
 
+{ --- TlgTimer -------------------------------------------------------------- }
+procedure TlgTimer.InitMS(const AValue: Double);
+begin
+  FInterval := AValue / 1000.0; // convert milliseconds to seconds
+  FLastTime := glfwGetTime;
+  FSpeed := AValue;
+end;
+
+procedure TlgTimer.InitFPS(const AValue: Double);
+begin
+  if AValue > 0 then
+    FInterval := 1.0 / AValue
+  else
+    FInterval := 0; // Prevent division by zero if FPS is not positive
+  FLastTime := glfwGetTime;
+  FSpeed := AValue;
+end;
+
+function TlgTimer.Check(): Boolean;
+begin
+  Result := (glfwGetTime - FLastTime) >= FInterval;
+  if Result then
+    FLastTime := glfwGetTime; // Auto-reset on check
+end;
+
+procedure TlgTimer.Reset();
+begin
+  FLastTime := glfwGetTime;
+end;
+
+function  TlgTimer.Speed(): Double;
+begin
+  Result := FSpeed;
+end;
 
 { === STREAM ================================================================ }
 
@@ -9801,6 +9854,7 @@ function TlgSprite.GetImageWidth(const ANum, AGroup: Integer): Single;
 begin
   Result := -1;
   if not InRange(AGroup, 0, FGroupCount-1) then Exit;
+  if not InRange(ANum, 0, FGroups[AGroup].Count-1) then Exit;
   Result := FGroups[AGroup].Image[ANum].Rect.Width;
 end;
 
@@ -9832,88 +9886,170 @@ end;
 { --- TlgEntity ------------------------------------------------------------- }
 constructor TlgEntity.Create();
 begin
+  inherited;
 end;
 
 destructor TlgEntity.Destroy();
 begin
+  inherited;
 end;
 
-procedure TlgEntity.Init(const ASprite: TlgSprite; aGroup: Integer);
+function TlgEntity.Init(const ASprite: TlgSprite; const AGroup: Integer): Boolean;
 begin
+  Result := False;
+  if not Assigned(ASprite) then Exit;
+  if not InRange(AGroup, 0, ASprite.GetGroupCount()-1) then Exit;
+
+  FSprite := aSprite;
+  FGroup := AGroup;
+  SetFrameRange(0, ASprite.GetImageCount(FGroup)-1);
+  SetFrameSpeed(5);
+  SetScaleAbs(1.0);
+  RotateAbs(0);
+  SetAngleOffset(0);
+  SetColor(WHITE);
+  SetHFlip(False);
+  SetVFlip(False);
+  SetLoopFrame(True);
+  SetPosAbs(0, 0);
+  SetBlend(tbAlpha);
+  SetPivot(0.5, 0.5);
+  SetAnchor(0.5, 0.5);
+
+  Result := True;
 end;
 
 function  TlgEntity.GetPivot(): TlgPoint;
 begin
+  Result := FPivot;
 end;
 
 procedure TlgEntity.SetPivot(const APoint: TlgPoint);
 begin
+  FPivot := APoint;
 end;
 
 procedure TlgEntity.SetPivot(const X, Y: Single);
 begin
+  FPivot.x := X;
+  FPivot.y := Y;
 end;
 
 function  TlgEntity.GetAnchor(): TlgPoint;
 begin
+  Result := FAnchor;
 end;
 
 procedure TlgEntity.SetAnchor(const APoint: TlgPoint);
 begin
+  FAnchor := APoint;
 end;
 
 procedure TlgEntity.SetAnchor(const X, Y: Single);
 begin
+  FAnchor.x := X;
+  FAnchor.y := Y;
 end;
 
-procedure TlgEntity.SetFrameRange(aFirst: Integer; aLast: Integer);
+procedure TlgEntity.SetFrameRange(const aFirst, aLast: Integer);
 begin
+  FFirstFrame := aFirst;
+  FLastFrame  := aLast;
 end;
 
 function  TlgEntity.NextFrame(): Boolean;
 begin
   Result := False;
+  if FFrameTimer.Check() then
+  begin
+    Inc(FFrame);
+    if FFrame > FLastFrame then
+    begin
+      if FLoopFrame then
+        FFrame := FFirstFrame
+      else
+        FFrame := FLastFrame;
+      Result := True;
+    end;
+  end;
+  SetFrame(FFrame);
 end;
 
 function  TlgEntity.PrevFrame(): Boolean;
 begin
   Result := False;
+  if FFrameTimer.Check() then
+  begin
+    Dec(FFrame);
+    if FFrame < FFirstFrame then
+    begin
+      if FLoopFrame then
+        FFrame := FLastFrame
+      else
+        FFrame := FFirstFrame;
+      Result := True;
+    end;
+  end;
+
+  SetFrame(FFrame);
 end;
 
 function  TlgEntity.GetFrame(): Integer;
 begin
-  Result := -1;
+  Result := FFrame;
 end;
 
-procedure TlgEntity.SetFrame(AFrame: Integer);
+procedure TlgEntity.SetFrame(const AFrame: Integer);
+var
+  LW, LH, LR: Single;
 begin
+  FFrame := aFrame;
+  EnsureRange(FFrame, 0, FSprite.GetImageCount(FGroup)-1);
+
+  LW := FSprite.GetImageWidth(FFrame, FGroup);
+  LH := FSprite.GetImageHeight(FFrame, FGroup);
+
+  LR := (LW + LH) / 2;
+
+  FWidth  := LW * FScale;
+  FHeight := LH * FScale;
+  FRadius := LR * FScale;
 end;
 
 function  TlgEntity.GetFrameSpeed(): Single;
 begin
-  Result := -1;
+  Result := FFrameTimer.Speed();
 end;
 
-procedure TlgEntity.SetFrameSpeed(AFrameSpeed: Single);
+procedure TlgEntity.SetFrameSpeed(const AFrameSpeed: Single);
 begin
+  FFrameTimer.InitFPS(AFrameSpeed);
 end;
 
 function  TlgEntity.GetFirstFrame(): Integer;
 begin
-  Result := -1;
+  Result := FFirstFrame;
 end;
 
 function  TlgEntity.GetLastFrame(): Integer;
 begin
-  Result := -1;
+  Result := FLastFrame;
 end;
 
-procedure TlgEntity.SetPosAbs(X: Single; Y: Single);
+procedure TlgEntity.SetPosAbs(const X, Y: Single);
 begin
+  FPos.X := X;
+  FPos.Y := Y;
+  FDir.X := 0;
+  FDir.Y := 0;
 end;
 
-procedure TlgEntity.SetPosRel(X: Single; Y: Single);
+procedure TlgEntity.SetPosRel(const X, Y: Single);
 begin
+  FPos.X := FPos.X + X;
+  FPos.Y := FPos.Y + Y;
+  FDir.X := X;
+  FDir.Y := Y;
 end;
 
 function  TlgEntity.GetPos(): TlgVec;
@@ -9926,171 +10062,431 @@ begin
   Result := Math.Vec(0,0);
 end;
 
-procedure TlgEntity.SetScaleAbs(AScale: Single);
+procedure TlgEntity.SetScaleAbs(const AScale: Single);
 begin
+  FScale := AScale;
+  SetFrame(FFrame);
 end;
 
-procedure TlgEntity.SetScaleRel(AScale: Single);
+procedure TlgEntity.SetScaleRel(const AScale: Single);
 begin
+  FScale := FScale + AScale;
+  SetFrame(FFrame);
 end;
 
 function  TlgEntity.GetAngle(): Single;
 begin
-  Result := -1;
+  Result := FAngle;
 end;
 
 function  TlgEntity.GetAngleOffset(): Single;
 begin
-  Result := -1;
+  Result := FAngleOffset;
 end;
 
-procedure TlgEntity.SetAngleOffset(AAngle: Single);
+procedure TlgEntity.SetAngleOffset(const AAngle: Single);
 begin
+  FAngleOffset := FAngleOffset + AAngle;
+  Math.ClipValueFloat(FAngleOffset, 0, 360, True);
 end;
 
-procedure TlgEntity.RotateAbs(AAngle: Single);
+procedure TlgEntity.RotateAbs(const AAngle: Single);
 begin
+  FAngle := AAngle;
+  Math.ClipValueFloat(FAngle, 0, 360, True);
 end;
 
-procedure TlgEntity.RotateRel(AAngle: Single);
+procedure TlgEntity.RotateRel(const AAngle: Single);
 begin
+  FAngle := FAngle + AAngle;
+  Math.ClipValueFloat(FAngle, 0, 360, True);
 end;
 
-function  TlgEntity.RotateToAngle(AAngle: Single; ASpeed: Single): Boolean;
-begin
-  Result := False;
-end;
-
-function  TlgEntity.RotateToPos(X: Single; Y: Single; ASpeed: Single): Boolean;
-begin
-  Result := False;
-end;
-
-function  TlgEntity.RotateToPosAt(aSrcX: Single; aSrcY: Single; ADestX: Single; ADestY: Single; ASpeed: Single): Boolean;
-begin
-  Result := False;
-end;
-
-procedure TlgEntity.Thrust(ASpeed: Single);
-begin
-end;
-
-procedure TlgEntity.ThrustAngle(AAngle: Single; ASpeed: Single);
-begin
-end;
-
-function  TlgEntity.ThrustToPos(aThrustSpeed: Single; ARotSpeed: Single; ADestX: Single; ADestY: Single; ASlowdownDist: Single; AStopDist: Single; AStopSpeed: Single; AStopSpeedEpsilon: Single): Boolean;
+function  TlgEntity.RotateToAngle(const AAngle, ASpeed: Single): Boolean;
+var
+  Step: Single;
+  Len : Single;
+  S   : Single;
 begin
   Result := False;
+  Step := Math.AngleDifference(FAngle, AAngle);
+  Len  := Sqrt(Step*Step);
+  if Len = 0 then
+    Exit;
+  S    := (Step / Len) * aSpeed;
+  FAngle := FAngle + S;
+  if Math.SameValueExt(Step, 0, S) then
+  begin
+    RotateAbs(aAngle);
+    Result := True;
+  end;
 end;
 
-function  TlgEntity.IsVisible(AVirtualX: Single; aVirtualY: Single): Boolean;
+function  TlgEntity.RotateToPos(const X, Y, ASpeed: Single): Boolean;
+var
+  LAngle: Single;
+  LStep: Single;
+  LLen: Single;
+  LS: Single;
+  LTmpPos: TlgVec;
 begin
   Result := False;
+  LTmpPos.X  := X;
+  LTmpPos.Y  := Y;
+
+  LAngle := -FPos.Angle(LTmpPos);
+  LStep := Math.AngleDifference(FAngle, LAngle);
+  LLen  := Sqrt(LStep*LStep);
+  if LLen = 0 then
+    Exit;
+  LS := (LStep / LLen) * aSpeed;
+
+  if not Math.SameValueExt(LStep, LS, aSpeed) then
+    RotateRel(LS)
+  else begin
+    RotateRel(LStep);
+    Result := True;
+  end;
 end;
 
-function  TlgEntity.IsFullyVisible(AVirtualX: Single; aVirtualY: Single): Boolean;
+function  TlgEntity.RotateToPosAt(const aSrcX, aSrcY, ADestX, ADestY, ASpeed: Single): Boolean;
+var
+  LAngle: Single;
+  LStep : Single;
+  LLen  : Single;
+  LS    : Single;
+  LSPos,LDPos : TlgVec;
 begin
   Result := False;
+  LSPos.X := aSrcX;
+  LSPos.Y := aSrcY;
+  LDPos.X  := aDestX;
+  LDPos.Y  := aDestY;
+
+  LAngle := LSPos.Angle(LDPos);
+  LStep := Math.AngleDifference(FAngle, LAngle);
+  LLen  := Sqrt(LStep*LStep);
+  if LLen = 0 then
+    Exit;
+  LS := (LStep / LLen) * aSpeed;
+  if not Math.SameValueExt(LStep, LS, aSpeed) then
+    RotateRel(LS)
+  else begin
+    RotateRel(LStep);
+    Result := True;
+  end;
 end;
 
-function  TlgEntity.Overlap(X: Single; Y: Single; aRadius: Single; aShrinkFactor: Single): Boolean;
+procedure TlgEntity.Thrust(const ASpeed: Single);
+var
+  LS: Single;
+  LA: Integer;
 begin
-  Result := False;
+  LA := Round(FAngle + 90.0);
+  LA := Math.ClipValueInt(LA, 0, 360, True);
+
+  LS := -aSpeed;
+
+  FDir.x := Math.AngleCos(LA) * LS;
+  FDir.y := Math.AngleSin(LA) * LS;
+
+  FPos.x := FPos.x + FDir.x;
+  FPos.y := FPos.y + FDir.y;
 end;
 
-function  TlgEntity.Overlap(AEntity: TlgEntity; const AType: TEntityOverlap=eoAABB): Boolean;
+procedure TlgEntity.ThrustAngle(const AAngle, ASpeed: Single);
+var
+  LS: Single;
+  LA: Integer;
+begin
+  LA := Round(AAngle);
+
+  Math.ClipValueInt(LA, 0, 360, True);
+
+  LS := -aSpeed;
+
+  FDir.x := Math.AngleCos(LA) * LS;
+  FDir.y := Math.AngleSin(LA) * LS;
+
+  FPos.x := FPos.x + FDir.x;
+  FPos.y := FPos.y + FDir.y;
+end;
+
+function  TlgEntity.ThrustToPos(const aThrustSpeed, ARotSpeed, ADestX, ADestY, ASlowdownDist, AStopDist, AStopSpeed, AStopSpeedEpsilon: Single): Boolean;
+var
+  LDist : Single;
+  LStep : Single;
+  LSpeed: Single;
+  LDestPos: TlgVec;
+  LStopDist: Single;
 begin
   Result := False;
+
+  if aSlowdownDist <= 0 then Exit;
+  LStopDist := AStopDist;
+  if LStopDist < 0 then LStopDist := 0;
+
+  LDestPos.X := aDestX;
+  LDestPos.Y := aDestY;
+  LDist := FPos.Distance(LDestPos);
+
+  LDist := LDist - LStopDist;
+
+  if LDist > aSlowdownDist then
+    begin
+      LSpeed := aThrustSpeed;
+    end
+  else
+    begin
+      LStep := (LDist/aSlowdownDist);
+      LSpeed := (aThrustSpeed * LStep);
+      if LSpeed <= aStopSpeed then
+      begin
+        LSpeed := 0;
+        Result := True;
+      end;
+    end;
+
+  if RotateToPos(aDestX, aDestY, aRotSpeed) then
+  begin
+    Thrust(LSpeed);
+  end;
+end;
+
+function  TlgEntity.IsVisible(const AWindow: TlgWindow): Boolean;
+var
+  LHW,LHH: Single;
+  LVPX,LVPY,LVPW,LVPH: Integer;
+  LX,LY: Single;
+begin
+  Result := False;
+
+  LHW := FWidth / 2;
+  LHH := FHeight / 2;
+
+  AWindow.GetViewport(@LVPX, @LVPY, @LVPW, @LVPH);
+
+  Dec(LVPW); Dec(LVPH);
+
+  LX := FPos.X;
+  LY := FPos.Y;
+
+  if LX > (LVPW + LHW) then Exit;
+  if LX < -LHW    then Exit;
+  if LY > (LVPH + LHH) then Exit;
+  if LY < -LHH    then Exit;
+
+  Result := True;
+end;
+
+function  TlgEntity.IsFullyVisible(const AWindow: TlgWindow): Boolean;
+var
+  LHW,LHH: Single;
+  LVPX,LVPY,LVPW,LVPH: Integer;
+  LX,LY: Single;
+begin
+  Result := False;
+
+  LHW := FWidth / 2;
+  LHH := FHeight / 2;
+
+  AWindow.GetViewport(@LVPX, @LVPY, @LVPW, @LVPH);
+
+  Dec(LVPW); Dec(LVPH);
+
+  LX := FPos.X;
+  LY := FPos.Y;
+
+  if LX > (LVPW - LHW) then Exit;
+  if LX <  LHW       then Exit;
+  if LY > (LVPH - LHH) then Exit;
+  if LY <  LHH       then Exit;
+
+  Result := True;
+end;
+
+function  TlgEntity.Overlap(const X, Y, aRadius, aShrinkFactor: Single): Boolean;
+var
+  LDist: Single;
+  LR1,LR2: Single;
+  LV0,LV1: TlgVec;
+begin
+  LR1  := FRadius * aShrinkFactor;
+  LR2  := aRadius * aShrinkFactor;
+
+  LV0.X := FPos.X;
+  LV0.Y := FPos.Y;
+
+  LV1.x := X;
+  LV1.y := Y;
+
+  LDist := LV0.Distance(LV1);
+
+  if (LDist < LR1) or (LDist < LR2) then
+    Result := True
+  else
+   Result := False;
+end;
+
+function  TlgEntity.Overlap(const AEntity: TlgEntity; const AType: TEntityOverlap=eoAABB): Boolean;
+var
+  LTextureA, LTextureB: TlgTexture;
+begin
+  Result := False;
+
+  LTextureA := FSprite.GetImageTexture(FFrame, FGroup);
+  LTextureB := AEntity.FSprite.GetImageTexture(AEntity.FFrame, AEntity.FGroup);
+
+  LTextureA.SetPivot(FPivot);
+  LTextureA.SetAnchor(FAnchor);
+  LTextureA.SetPos(FPos.x, FPos.y);
+  LTextureA.SetScale(FScale);
+  LTextureA.SetAngle(FAngle);
+  LTextureA.SetHFlip(FHFlip);
+  LTextureA.SetVFlip(FVFlip);
+  LTextureA.SetRegion(FSprite.GetImageRegion(FFrame, FGroup));
+
+  LTextureB.SetPivot(AEntity.FPivot);
+  LTextureB.SetAnchor(AEntity.FAnchor);
+  LTextureB.SetPos(AEntity.FPos.x, AEntity.FPos.y);
+  LTextureB.SetScale(AEntity.FScale);
+  LTextureB.SetAngle(AEntity.FAngle);
+  LTextureB.SetHFlip(AEntity.FHFlip);
+  LTextureB.SetVFlip(AEntity.FVFlip);
+  LTextureB.SetRegion(AEntity.FSprite.GetImageRegion(FFrame, FGroup));
+
+  case AType of
+    eoAABB: Result := LTextureA.CollideAABB(LTextureB);
+    eoOBB : Result := LTextureA.CollideOBB(LTextureB);
+  end;
+
 end;
 
 procedure TlgEntity.Render();
+var
+  LTexture: TlgTexture;
 begin
+  LTexture := FSprite.GetImageTexture(FFrame, FGroup);
+  LTexture.SetPivot(FPivot);
+  LTexture.SetAnchor(FAnchor);
+  LTexture.SetPos(FPos.x, FPos.y);
+  LTexture.SetScale(FScale);
+  LTexture.SetAngle(FAngle);
+  LTexture.SetHFlip(FHFlip);
+  LTexture.SetVFlip(FVFlip);
+  LTexture.SetRegion(FSprite.GetImageRegion(FFrame, FGroup));
+  LTexture.SetBlend(FBlend);
+  LTexture.SetColor(FColor);
+  LTexture.Draw();
 end;
 
-procedure TlgEntity.RenderAt(X: Single; Y: Single);
+procedure TlgEntity.RenderAt(const X, Y: Single);
+var
+  LTexture: TlgTexture;
 begin
+  LTexture := FSprite.GetImageTexture(FFrame, FGroup);
+  LTexture.SetPivot(FPivot);
+  LTexture.SetAnchor(FAnchor);
+  LTexture.SetPos(X, Y);
+  LTexture.SetScale(FScale);
+  LTexture.SetAngle(FAngle);
+  LTexture.SetHFlip(FHFlip);
+  LTexture.SetVFlip(FVFlip);
+  LTexture.SetRegion(FSprite.GetImageRegion(FFrame, FGroup));
+  LTexture.SetBlend(FBlend);
+  LTexture.SetColor(FColor);
+  LTexture.Draw();
 end;
 
 function  TlgEntity.GetSprite(): TlgSprite;
 begin
-  Result := nil;
+  Result := FSprite;
 end;
 
 function  TlgEntity.GetGroup(): Integer;
 begin
-  Result := -1;
+  Result := FGroup;
 end;
 
 function  TlgEntity.GetScale(): Single;
 begin
-  Result := -1;
+  Result := FScale;
 end;
 
 function  TlgEntity.GetColor(): TlgColor;
 begin
-  Result := BLANK;
+  Result := FColor;
 end;
 
-procedure TlgEntity.SetColor(AColor: TlgColor);
+procedure TlgEntity.SetColor(const AColor: TlgColor);
 begin
+  FColor := AColor;
 end;
 
 function  TlgEntity.GetBlend(): TlgTextureBlend;
 begin
-  Result := tbNone;
+  Result := FBlend;
 end;
 
 procedure TlgEntity.SetBlend(const AValue: TlgTextureBlend);
 begin
+  FBlend := AValue;
 end;
 
 function  TlgEntity.GetHFlip(): Boolean;
 begin
-  Result := False;
+  Result := FHFlip;
 end;
 
 procedure TlgEntity.SetHFlip(const AFlip: Boolean);
 begin
+  FHFlip := AFlip;
 end;
 
 function  TlgEntity.GetVFlip(): Boolean;
 begin
-  Result := False;
+  Result := FVFlip;
 end;
 
 procedure TlgEntity.SetVFlip(const AFlip: Boolean);
 begin
+  FVFlip := AFlip;
 end;
 
 function  TlgEntity.GetLoopFrame(): Boolean;
 begin
-  Result := False;
+  Result := FLoopFrame;
 end;
 
-procedure TlgEntity.SetLoopFrame(aLoop: Boolean);
+procedure TlgEntity.SetLoopFrame(const aLoop: Boolean);
 begin
+  FLoopFrame := ALoop;
 end;
 
 function  TlgEntity.GetWidth(): Single;
 begin
-  Result := -1;
+  Result := FWidth;
 end;
 
 function  TlgEntity.GetHeight(): Single;
 begin
-  Result := -1;
+  Result := FHeight;
 end;
 
 function  TlgEntity.GetRadius(): Single;
 begin
-  Result := -1;
+  Result := FRadius;
 end;
 
-class function TlgEntity.New(const ASprite: TlgSprite; aGroup: Integer): TlgEntity;
+class function TlgEntity.New(const ASprite: TlgSprite; const aGroup: Integer): TlgEntity;
 begin
   Result := TlgEntity.Create();
-  Result.Init(ASprite, AGroup);
+  if not Result.Init(ASprite, AGroup) then
+  begin
+    Result.Free();
+    Result := nil;
+    Exit;
+  end;
 end;
 
 { === GAME ================================================================== }

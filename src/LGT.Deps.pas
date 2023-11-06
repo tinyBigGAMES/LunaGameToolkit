@@ -622,7 +622,7 @@ const
   LUA_ERRFILE = (LUA_ERRERR+1);
   LUA_NOREF = (-2);
   LUA_REFNIL = (-1);
-  LUAJIT_VERSION = 'LuaJIT 2.1.1697887905';
+  LUAJIT_VERSION = 'LuaJIT 2.1.1699198486';
   LUAJIT_VERSION_NUM = 20199;
   LUAJIT_COPYRIGHT = 'Copyright (C) 2005-2023 Mike Pall';
   LUAJIT_URL = 'https://luajit.org/';
@@ -4466,7 +4466,7 @@ lua_pushlstring: procedure(L: Plua_State; const s: PUTF8Char; len: NativeUInt); 
   luaJIT_profile_start: procedure(L: Plua_State; const mode: PUTF8Char; cb: luaJIT_profile_callback; data: Pointer); cdecl;
   luaJIT_profile_stop: procedure(L: Plua_State); cdecl;
   luaJIT_profile_dumpstack: function(L: Plua_State; const fmt: PUTF8Char; depth: Integer; len: PNativeUInt): PUTF8Char; cdecl;
-  luaJIT_version_2_1_1697887905: procedure(); cdecl;
+  luaJIT_version_2_1_1699198486: procedure(); cdecl;
 
 {$REGION ' Lua Macros ' }
 function lua_isfunction(aState: Pointer; n: Integer): Boolean; inline;
@@ -4939,7 +4939,7 @@ begin
   luaJIT_profile_start := GetProcAddress(aDLLHandle, 'luaJIT_profile_start');
   luaJIT_profile_stop := GetProcAddress(aDLLHandle, 'luaJIT_profile_stop');
   luaJIT_setmode := GetProcAddress(aDLLHandle, 'luaJIT_setmode');
-  luaJIT_version_2_1_1697887905 := GetProcAddress(aDLLHandle, 'luaJIT_version_2_1_1697887905');
+  luaJIT_version_2_1_1699198486 := GetProcAddress(aDLLHandle, 'luaJIT_version_2_1_1699198486');
   luaL_addlstring := GetProcAddress(aDLLHandle, 'luaL_addlstring');
   luaL_addstring := GetProcAddress(aDLLHandle, 'luaL_addstring');
   luaL_addvalue := GetProcAddress(aDLLHandle, 'luaL_addvalue');
