@@ -1195,7 +1195,7 @@ begin
   Terminal.PrintLn(LGT_PROJECT);
 
   // init window
-  LWindow := TlgWindow.Init('Luna Game Toolkit: Sprite & Entity', 960, 540);
+  LWindow := TlgWindow.Init('Luna Game Toolkit: Sprite & Entity');
 
   // show gamepad info
   Terminal.PrintLn('Gamepad: %s', [LWindow.GetGamepadName(GAMEPAD_1)]);
@@ -1295,8 +1295,197 @@ begin
   LZipFile.Free();
 end;
 
+{------------------------------------------------------------------------------
+ This example illustrates how use Actor & ActorList classes
+----------------------------------------------------------------------------- }
+type
+  { TMyActor }
+  TMyActor = class(TlgActor)
+  protected
+    FPos: TlgPoint;
+    FRange: TlgExtent;
+    FSpeed: TlgPoint;
+    FColor: TlgColor;
+    FSize: Integer;
+    FWindow: TlgWindow;
+  public
+    property Window: TlgWindow read FWindow write FWindow;
+    constructor Create; override;
+    destructor Destroy; override;
+    procedure OnUpdate(); override;
+    procedure OnRender; override;
+  end;
+
+{ TMyActor }
+constructor TMyActor.Create;
+var
+  LR,LG,LB: Byte;
+begin
+  inherited;
+
+  FPos := Math.Point(Math.RandomRange(0, FWindow.DEFAULT_WIDTH-1),Math.RandomRange(0, FWindow.DEFAULT_HEIGHT-1));
+
+  FSize := Math.RandomRange(25, 100);
+
+  FRange.MinX := (FSize/2);
+  FRange.MinY := (FSize/2);
+
+
+  FRange.MaxX := (TlgWindow.DEFAULT_WIDTH-1) - (FSize/2);
+  FRange.MaxY := (TlgWindow.DEFAULT_HEIGHT-1) - (FSize/2);
+
+  FSpeed.x := Math.RandomRange(1, 7);
+  FSpeed.y := Math.RandomRange(1, 7);
+
+  LR := Math.RandomRange(1, 255);
+  LG := Math.RandomRange(1, 255);
+  LB := Math.RandomRange(1, 255);
+  FColor.Red := LR/$FF;
+  FColor.Green := LG/$FF;
+  FColor.Blue := LB/$FF;
+  FColor.Alpha := 1;
+end;
+
+destructor TMyActor.Destroy;
+begin
+  inherited;
+end;
+
+procedure TMyActor.OnUpdate();
+begin
+  // update horizontal movement
+  FPos.x := FPos.x + (FSpeed.x);
+  if (FPos.x < FRange.MinX) then
+    begin
+      FPos.x  := FRange.Minx;
+      FSpeed.x := -FSpeed.x;
+    end
+  else if (FPos.x > FRange.Maxx) then
+    begin
+      FPos.x  := FRange.Maxx;
+      FSpeed.x := -FSpeed.x;
+    end;
+
+  // update horizontal movement
+  FPos.y := FPos.y + (FSpeed.y);
+  if (FPos.y < FRange.Miny) then
+    begin
+      FPos.y  := FRange.Miny;
+      FSpeed.y := -FSpeed.y;
+    end
+  else if (FPos.y > FRange.Maxy) then
+    begin
+      FPos.y  := FRange.Maxy;
+      FSpeed.y := -FSpeed.y;
+    end;
+end;
+
+procedure TMyActor.OnRender;
+begin
+  FWindow.DrawFilledRect(FPos.X, FPos.Y, FSize, FSize, FColor, 0);
+end;
+
+procedure Test15();
+var
+  LWindow: TlgWindow;
+  LFont: TlgFont;
+  LHudPos: TlgPoint;
+  LActorList: TlgActorList;
+
+  procedure Spawn();
+  var
+    I, LCount: Integer;
+    LActor: TMyActor;
+  begin
+    LActorList.Clear([]);
+    LCount := Math.RandomRange(3, 25);
+    for I := 1 to LCount do
+    begin
+      LActor := TMyActor.Create();
+      LActor.Window := LWindow;
+      LActorList.Add(LActor);
+    end;
+  end;
+
+begin
+  // show LGT version info
+  Terminal.PrintLn(LGT_PROJECT);
+
+  // init window
+  LWindow := TlgWindow.Init('Luna Game Toolkit: Actor & ActorList');
+
+  // show gamepad info
+  Terminal.PrintLn('Gamepad: %s', [LWindow.GetGamepadName(GAMEPAD_1)]);
+
+  // init default font
+  LFont := TlgFont.LoadDefault(LWindow, 10);
+
+  // init actor list
+  LActorList := TlgActorList.Create();
+
+  // spaw actors
+  Spawn();
+
+  // enter game loop
+  while not LWindow.ShouldClose() do
+  begin
+    // start frame
+    LWindow.StartFrame();
+
+      // keyboard processing
+      if LWindow.GetKey(KEY_ESCAPE, isWasPressed) then
+        LWindow.SetShouldClose(True);
+
+      // KEY_SPACE - spawn actors
+      if LWindow.GetKey(KEY_SPACE, isWasPressed) then
+        Spawn();
+
+      // mouse processing
+      if LWindow.GetMouseButton(MOUSE_BUTTON_LEFT, isWasPressed) then
+        LWindow.SetShouldClose(True);
+
+      // gamepad processing
+      if LWindow.GetGamepadButton(GAMEPAD_1, GAMEPAD_BUTTON_X, isWasReleased) then
+        LWindow.SetShouldClose(True);
+
+      LActorList.Update([]);
+
+      // start drawing
+      LWindow.StartDrawing();
+
+        // clear window
+        LWindow.Clear(DARKSLATEBROWN);
+
+        LActorList.Render([]);
+
+        // display hud
+        LHudPos := Math.Point(3,3);
+        LFont.DrawText(LWindow, LHudPos.x, LHudPos.y, 0, WHITE, haLeft,  '%d fps', [Timer.FrameRate()]);
+        LFont.DrawText(LWindow, LHudPos.x, LHudPos.y, 0, GREEN, haLeft,  Utils.HudTextItem('ESC','Quit'), []);
+        LFont.DrawText(LWindow, LHudPos.x, LHudPos.y, 0, GREEN, haLeft,  Utils.HudTextItem('SPACE', 'Spawn actors'), []);
+        LFont.DrawText(LWindow, LHudPos.x, LHudPos.y, 0, YELLOW, haLeft, Utils.HudTextItem('Count', '%d', 20, ' '), [LActorList.Count()]);
+
+      // end drawing
+      LWindow.EndDrawing();
+
+    // end frame
+    LWindow.EndFrame();
+  end;
+
+  LActorList.Free();
+
+  // free font
+  LFont.Free();
+
+  // free window
+  LWindow.Free();
+end;
+
 procedure RunTests();
 begin
+  lgInit();
+  if not lgIsInit() then Exit;
+
   //Test01();
   //Test02();
   //Test03();
@@ -1310,8 +1499,10 @@ begin
   //Test11();
   //Test12();
   //Test13();
-  Test14();
+  //Test14();
+  Test15();
   Terminal.Pause();
+  lgQuit();
 end;
 
 end.

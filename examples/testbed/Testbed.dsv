@@ -1,8 +1,8 @@
 ﻿[ClosedView_QzpcRGV2XERlbHBoaVxQcm9qZWN0c1xMR1RccmVwb1xtYWluXHNyY1xMR1QuRGVwcy5wYXM=]
 Module=C:\Dev\Delphi\Projects\LGT\repo\main\src\LGT.Deps.pas
 CursorX=1
-CursorY=4492
-TopLine=4438
+CursorY=3282
+TopLine=3248
 LeftCol=1
 Elisions=
 Bookmarks=
@@ -10,11 +10,11 @@ EditViewName=C:\Dev\Delphi\Projects\LGT\repo\main\src\LGT.Deps.pas
 
 [ClosedView_QzpcRGV2XERlbHBoaVxQcm9qZWN0c1xMR1RccmVwb1xtYWluXHNyY1xMR1QucGFz]
 Module=C:\Dev\Delphi\Projects\LGT\repo\main\src\LGT.pas
-CursorX=33
-CursorY=2534
-TopLine=2512
+CursorX=68
+CursorY=2367
+TopLine=2331
 LeftCol=1
-Elisions={{603,0},{761,11},{'Common Colors'}}{{765,0},{889,11},{' Key Codes '}}{{891,0},{905,11},{' Mouse Buttons '}}{{907,0},{926,11},{' Gamepads '}}{{928,0},{950,11},{' Gamepad Buttons '}}{{952,0},{961,11},{' Gamepad Axis '}}{{7528,0},{7780,11},{' Loaders '}}
+Elisions={{610,0},{768,11},{'Common Colors'}}{{772,0},{896,11},{' Key Codes '}}{{898,0},{912,11},{' Mouse Buttons '}}{{914,0},{933,11},{' Gamepads '}}{{935,0},{957,11},{' Gamepad Buttons '}}{{959,0},{968,11},{' Gamepad Axis '}}{{7643,0},{7895,11},{' Loaders '}}
 Bookmarks=
 EditViewName=C:\Dev\Delphi\Projects\LGT\repo\main\src\LGT.pas
 [ClosedView_QzpcRGV2XERlbHBoaVxQcm9qZWN0c1xMR1RccmVwb1xtYWluXGV4YW1wbGVzXHRlc3RiZWRcVVRl
@@ -53,6 +53,36 @@ Module=C:\Dev\Delphi\Projects\LGT\repo\main\examples\testbed\UTestbed.pas
 CursorX=1
 CursorY=1249
 TopLine=1203
+LeftCol=1
+Elisions=
+Bookmarks=
+EditViewName=C:\Dev\Delphi\Projects\LGT\repo\main\examples\testbed\UTestbed.pas
+[ClosedView_QzpcRGV2XERlbHBoaVxQcm9qZWN0c1xMR1RccmVwb1xtYWluXGV4YW1wbGVzXHRlc3RiZWRcVVRl
+c3RiZWQucGFz]
+Module=C:\Dev\Delphi\Projects\LGT\repo\main\examples\testbed\UTestbed.pas
+CursorX=65
+CursorY=1198
+TopLine=1207
+LeftCol=1
+Elisions=
+Bookmarks=
+EditViewName=C:\Dev\Delphi\Projects\LGT\repo\main\examples\testbed\UTestbed.pas
+[ClosedView_QzpcRGV2XERlbHBoaVxQcm9qZWN0c1xMR1RccmVwb1xtYWluXGV4YW1wbGVzXHRlc3RiZWRcVVRl
+c3RiZWQucGFz]
+Module=C:\Dev\Delphi\Projects\LGT\repo\main\examples\testbed\UTestbed.pas
+CursorX=29
+CursorY=1442
+TopLine=1432
+LeftCol=1
+Elisions=
+Bookmarks=
+EditViewName=C:\Dev\Delphi\Projects\LGT\repo\main\examples\testbed\UTestbed.pas
+[ClosedView_QzpcRGV2XERlbHBoaVxQcm9qZWN0c1xMR1RccmVwb1xtYWluXGV4YW1wbGVzXHRlc3RiZWRcVVRl
+c3RiZWQucGFz]
+Module=C:\Dev\Delphi\Projects\LGT\repo\main\examples\testbed\UTestbed.pas
+CursorX=66
+CursorY=1413
+TopLine=1438
 LeftCol=1
 Elisions=
 Bookmarks=

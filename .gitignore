@@ -57,6 +57,7 @@
 *.tvsconfig
 *.dsk
 
+
 # Delphi history and backups
 __history/
 __recovery/
@@ -475,3 +476,4 @@ src/deps/externs/LGT.Deps/post/LGT.Deps.txt
 !examples/bin/res/
 examples/bin/Data.zip
 examples/bin/*.png
+examples/testbed/Testbed.dsv

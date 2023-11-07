@@ -1,6 +1,8 @@
 ### >>> CHANGELOG <<<
 
 ### Version 0.2.0:
+- Added lgActor, lgActorList, lgActorScene, lgEntityActor and example
+- Added lgInit, lgIsInit and lgQuit for manual control of toolkit init/shutdown
 - Added TlgSprite, TlgEntity classes and example
 - Add TlgTimer record and example
 - Fix TlgMath.ClipValueInt/ClipValueFloat/ClipValueDouble not return the proper range when usnig Wrap mode
