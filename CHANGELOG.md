@@ -1,5 +1,8 @@
 ### >>> CHANGELOG <<<
 
+### Version 0.3.0:
+- Added more CriticalSection guards around audio routines to fix intermittent memory leaks 
+
 ### Version 0.2.0:
 - Update Testbed to use TlgTreeMenu and TlgGameApp class
 - Added TlgTreeMenu

@@ -3892,8 +3892,7 @@ begin
       while glfwGetTime() < FEndtime do
       begin
         // Busy-wait for the remaining time
-        //ProcessMessages;
-        Sleep(0);
+        Sleep(0); // allow other background tasks to run
       end;
     end;
 end;
@@ -4642,8 +4641,13 @@ procedure TlgAudio.Update();
 begin
   if not IsOpen() then Exit;
 
-  FSoundList.Visit([]);
-  FSoundList.Clear([ATTR_ONESHOT])
+  Utils.EnterCriticalSection();
+  try
+    FSoundList.Visit([]);
+    FSoundList.Clear([ATTR_ONESHOT])
+  finally
+    Utils.LeaveCriticalSection();
+  end;
 end;
 
 { --- TlgSound -------------------------------------------------------------- }
@@ -4754,82 +4758,87 @@ begin
 
   Unload();
 
-  case ALoad of
-    slMemory:
-    begin
-      FStream := TlgMemoryStream.Create();
-      AStream.Seek(0, smStart);
-      while not AStream.Eos() do
+  Utils.EnterCriticalSection();
+  try
+    case ALoad of
+      slMemory:
       begin
-        AStream.Read(Utils.GetStaticBuffer(), Utils.GetStaticBufferSize());
-        FStream.Write(Utils.GetStaticBuffer(), Utils.GetStaticBufferSize());
+        FStream := TlgMemoryStream.Create();
+        AStream.Seek(0, smStart);
+        while not AStream.Eos() do
+        begin
+          AStream.Read(Utils.GetStaticBuffer(), Utils.GetStaticBufferSize());
+          FStream.Write(Utils.GetStaticBuffer(), Utils.GetStaticBufferSize());
+        end;
+        FStream.Seek(0, smStart);
       end;
-      FStream.Seek(0, smStart);
-    end;
 
-    slStream:
-    begin
-      FStream := AStream;
-      FStream.Seek(0, smStart);
-      AStream := nil;
-    end;
-  end;
-  FLoad := ALoad;
-
-  FVorbisCallbacks.read_func := Vorbis_Read;
-  FVorbisCallbacks.seek_func := Vorbis_Seek;
-  FVorbisCallbacks.close_func := Vorbis_Close;
-  FVorbisCallbacks.tell_func := Vorbis_Tell;
-
-  if ov_open_callbacks(FStream, @FVorbisFile, nil, 0, FVorbisCallbacks) <> 0 then
-  begin
-    if FLoad = slMemory then
-      FStream.Free;
-    Exit;
-  end;
-
-  alGenSources(1, @FSource); FAudio.CheckErrors();
-  alGenBuffers(NUM_BUFFERS, @FBuffers); FAudio.CheckErrors();
-
-  // Determine the audio format and frequency
-  if FVorbisFile.vi.channels = 1 then
-    FFormat := AL_FORMAT_MONO16
-  else
-    FFormat := AL_FORMAT_STEREO16;
-  FFreq := FVorbisFile.vi.rate;
-  FChans := FVorbisFile.vi.channels;
-
-  // Initial buffer fill
-  for I := 0 to NUM_BUFFERS - 1 do
-  begin
-    LDataSoFar := 0;
-    while(LDataSoFar < FAudio.GetPCMBufferSize()) do
-    begin
-      LBytesRead := ov_read(@FVorbisFile,  PAnsiChar(FAudio.GetPCMBuffer()+LDataSoFar), FAudio.GetPCMBufferSize() - LDataSoFar, 0, 2, 1, nil);
-      if LBytesRead = 0 then
+      slStream:
       begin
-        //TODO: review this to make sure error conditions are handled properly
-        Break;
+        FStream := AStream;
+        FStream.Seek(0, smStart);
+        AStream := nil;
       end;
-      Inc(LDataSoFar, LBytesRead);
     end;
-    alBufferData(FBuffers[i], FFormat, FAudio.GetPCMBuffer(), LDataSoFar, FFreq); FAudio.CheckErrors();
+    FLoad := ALoad;
+
+    FVorbisCallbacks.read_func := Vorbis_Read;
+    FVorbisCallbacks.seek_func := Vorbis_Seek;
+    FVorbisCallbacks.close_func := Vorbis_Close;
+    FVorbisCallbacks.tell_func := Vorbis_Tell;
+
+    if ov_open_callbacks(FStream, @FVorbisFile, nil, 0, FVorbisCallbacks) <> 0 then
+    begin
+      if FLoad = slMemory then
+        FStream.Free;
+      Exit;
+    end;
+
+    alGenSources(1, @FSource); FAudio.CheckErrors();
+    alGenBuffers(NUM_BUFFERS, @FBuffers); FAudio.CheckErrors();
+
+    // Determine the audio format and frequency
+    if FVorbisFile.vi.channels = 1 then
+      FFormat := AL_FORMAT_MONO16
+    else
+      FFormat := AL_FORMAT_STEREO16;
+    FFreq := FVorbisFile.vi.rate;
+    FChans := FVorbisFile.vi.channels;
+
+    // Initial buffer fill
+    for I := 0 to NUM_BUFFERS - 1 do
+    begin
+      LDataSoFar := 0;
+      while(LDataSoFar < FAudio.GetPCMBufferSize()) do
+      begin
+        LBytesRead := ov_read(@FVorbisFile,  PAnsiChar(FAudio.GetPCMBuffer()+LDataSoFar), FAudio.GetPCMBufferSize() - LDataSoFar, 0, 2, 1, nil);
+        if LBytesRead = 0 then
+        begin
+          //TODO: review this to make sure error conditions are handled properly
+          Break;
+        end;
+        Inc(LDataSoFar, LBytesRead);
+      end;
+      alBufferData(FBuffers[i], FFormat, FAudio.GetPCMBuffer(), LDataSoFar, FFreq); FAudio.CheckErrors();
+    end;
+    alSourceQueueBuffers(FSource, NUM_BUFFERS, @FBuffers[0]); FAudio.CheckErrors();
+
+    alSource3f(FSource, AL_POSITION, 0, 0, 0); FAudio.CheckErrors();
+    alSource3f(FSource, AL_VELOCITY, 0, 0, 0); FAudio.CheckErrors();
+
+    FStatus := asStopped;
+
+    SetVolume(1);
+    SetPan(0.0);
+    SetLooping(False);
+
+    FOneShot := AOneShot;
+    if FOneShot then Self.SetAttribute(FAudio.ATTR_ONESHOT, True);
+
+    Result := True;
+  finally
+    Utils.LeaveCriticalSection();
   end;
-  alSourceQueueBuffers(FSource, NUM_BUFFERS, @FBuffers[0]); FAudio.CheckErrors();
-
-  alSource3f(FSource, AL_POSITION, 0, 0, 0); FAudio.CheckErrors();
-  alSource3f(FSource, AL_VELOCITY, 0, 0, 0); FAudio.CheckErrors();
-
-  FStatus := asStopped;
-
-  SetVolume(1);
-  SetPan(0.0);
-  SetLooping(False);
-
-  FOneShot := AOneShot;
-  if FOneShot then Self.SetAttribute(FAudio.ATTR_ONESHOT, True);
-
-  Result := True;
 end;
 
 function  TlgSound.IsLoaded(): Boolean;
@@ -4843,13 +4852,18 @@ begin
   if not IsLoaded() then Exit;
   if FSource = 0 then Exit;
 
-  FStatus := asStopped;
-  alSourceStop(FSource);
-  alDeleteSources(1, @FSource);
-  FSource := 0;
-  alDeleteBuffers(NUM_BUFFERS, @FBuffers);
-  ov_clear(@FVorbisFile);
-  FStream := nil;
+  Utils.EnterCriticalSection();
+  try
+    FStatus := asStopped;
+    alSourceStop(FSource);
+    alDeleteSources(1, @FSource);
+    FSource := 0;
+    alDeleteBuffers(NUM_BUFFERS, @FBuffers);
+    ov_clear(@FVorbisFile);
+    FStream := nil;
+  finally
+    Utils.LeaveCriticalSection();
+  end;
 end;
 
 procedure TlgSound.Play(const APlay: Boolean);
@@ -4857,16 +4871,21 @@ begin
   if not FAudio.IsOpen() then Exit;
   if not IsLoaded() then Exit;
 
-  if APlay then
-    begin
-      alSourcePlay(FSource);
-      FStatus := asPlaying;
-    end
-  else
-    begin
-      alSourceStop(FSource);
-      FStatus := asStopped;
-    end;
+  Utils.EnterCriticalSection();
+  try
+    if APlay then
+      begin
+        alSourcePlay(FSource);
+        FStatus := asPlaying;
+      end
+    else
+      begin
+        alSourceStop(FSource);
+        FStatus := asStopped;
+      end;
+  finally
+    Utils.LeaveCriticalSection();
+  end;
 end;
 
 function  TlgSound.GetStatus(): TlgAudioStatus;
@@ -4879,7 +4898,12 @@ begin
   if not FAudio.IsOpen() then Exit;
   if not IsLoaded() then Exit;
 
-  ov_raw_seek(@FVorbisFile, 0);
+  Utils.EnterCriticalSection();
+  try
+    ov_raw_seek(@FVorbisFile, 0);
+  finally
+    Utils.LeaveCriticalSection();
+  end;
 end;
 
 procedure TlgSound.Pause(const APause: Boolean);
@@ -4887,16 +4911,21 @@ begin
   if not FAudio.IsOpen() then Exit;
   if not IsLoaded() then Exit;
 
-  if APause then
-    begin
-      alSourcePlay(FSource);
-      FStatus := asPlaying;
-    end
-  else
-    begin
-      alSourceStop(FSource);
-      FStatus := asPaused;
-    end;
+  Utils.EnterCriticalSection();
+  try
+    if APause then
+      begin
+        alSourcePlay(FSource);
+        FStatus := asPlaying;
+      end
+    else
+      begin
+        alSourceStop(FSource);
+        FStatus := asPaused;
+      end;
+  finally
+    Utils.LeaveCriticalSection();
+  end;
 end;
 
 function  TlgSound.GetVolume(): Single;
@@ -4909,8 +4938,13 @@ begin
   if not FAudio.IsOpen() then Exit;
   if not IsLoaded() then Exit;
 
-  FVolume := AVolume;
-  alSourcef(FSource, AL_GAIN, TlgMath.UnitToScalarValue(FVolume, 1)); FAudio.CheckErrors();
+  Utils.EnterCriticalSection();
+  try
+    FVolume := AVolume;
+    alSourcef(FSource, AL_GAIN, TlgMath.UnitToScalarValue(FVolume, 1)); FAudio.CheckErrors();
+  finally
+    Utils.LeaveCriticalSection();
+  end;
 end;
 
 function  TlgSound.IsLooping(): Boolean;
@@ -4929,7 +4963,12 @@ begin
   if not FAudio.IsOpen() then Exit;
   if not IsLoaded() then Exit;
 
-  alGetSource3f(FSource, AL_POSITION, @Result, nil, nil); FAudio.CheckErrors();
+  Utils.EnterCriticalSection();
+  try
+    alGetSource3f(FSource, AL_POSITION, @Result, nil, nil); FAudio.CheckErrors();
+  finally
+    Utils.LeaveCriticalSection();
+  end;
 end;
 
 procedure TlgSound.SetPan(const APan: Single);
@@ -4937,7 +4976,12 @@ begin
   if not FAudio.IsOpen() then Exit;
   if not IsLoaded() then Exit;
 
-  alSource3f(FSource, AL_POSITION, EnsureRange(-APan, -1.0, 1.0), 0, 0); FAudio.CheckErrors();
+  Utils.EnterCriticalSection();
+  try
+    alSource3f(FSource, AL_POSITION, EnsureRange(-APan, -1.0, 1.0), 0, 0); FAudio.CheckErrors();
+  finally
+    Utils.LeaveCriticalSection();
+  end;
 end;
 
 function  TlgSound.GetChans(): Integer;

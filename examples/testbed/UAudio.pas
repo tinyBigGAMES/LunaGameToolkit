@@ -153,7 +153,7 @@ procedure TAudioMultiChannel.OnShutdown();
 var
   I: Integer;
 begin
-  for I := 0 to 2 do
+  for I := 0 to 6 do
   begin
     LSound[i].Free();
   end;
