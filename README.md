@@ -146,6 +146,6 @@ Our development motto:
   <br>
   Proud to be an <strong>Embarcadero Technical Partner</strong>.
 </p>
-<span style="font-size: 0.85em;">As an Embarcadero Technical Partner, I'm committed to providing high-quality Delphi components and tools that enhance developer productivity and harness the power of Embarcadero's developer tools.</span>
+<sub>As an Embarcadero Technical Partner, I'm committed to providing high-quality Delphi components and tools that enhance developer productivity and harness the power of Embarcadero's developer tools.</sub>
 
 
