@@ -36,12 +36,29 @@ program Testbed;
 
 {$R *.res}
 
+
+
+
+
+{$R *.dres}
+
 uses
   System.SysUtils,
-  UTestbed in 'UTestbed.pas',
   LGT in '..\..\src\LGT.pas',
   LGT.Deps in '..\..\src\LGT.Deps.pas',
-  LGT.OGL in '..\..\src\LGT.OGL.pas';
+  LGT.OGL in '..\..\src\LGT.OGL.pas',
+  LGT.TreeMenuForm in '..\..\src\LGT.TreeMenuForm.pas' {lgTreeMenuForm},
+  LGT.TreeMenu in '..\..\src\LGT.TreeMenu.pas',
+  UTestbed in 'UTestbed.pas',
+  UCommon in 'UCommon.pas',
+  UMisc in 'UMisc.pas',
+  UAudio in 'UAudio.pas',
+  UVideo in 'UVideo.pas',
+  UTexture in 'UTexture.pas',
+  UFont in 'UFont.pas',
+  UGUI in 'UGUI.pas',
+  UWindow in 'UWindow.pas',
+  UActor in 'UActor.pas';
 
 begin
   try

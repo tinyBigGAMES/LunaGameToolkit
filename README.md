@@ -7,6 +7,7 @@
 Allows you make games and other multimedia applications in Object Pascal.
 
 ### Overview
+<img src="media/made-with-delphi.png" alt="Your Logo" width="64" height="64" align="left"  style="padding: 5px;" />
 Luna Game Toolkit&trade; (LGT) is a indie game toolkit that allows you to do 2D game development in <a href="https://www.embarcadero.com/products/delphi" target="_blank"> Embarcadero Delphi®</a> for desktop PC's running Microsoft Windows® and uses OpenGL® for hardware accelerated rendering.
 
 It's robust, designed for easy use and suitable for making all types of 2D games and other graphic simulations. You access the features from a simple and intuitive API, to allow you to develop your projects rapidly and efficiently. There is support for textures, audio samples, streaming music, video playback, loading resources directly from a compressed and encrypted archive and much more. It's easy, fast & fun!
@@ -41,7 +42,7 @@ if you wish to learn more about the Delphi language visit <a href="https://learn
 - Should work on Windows 10+ (64 bits)
 - Should work on any Delphi version that support generics and can target Win64/Unicode
 
-**NOTE: Made/tested on Windows/Delphi 11.**
+**NOTE: Made in Delphi 12/Windows 11, tested in Delphi CE, 11-12.**
 
 ### How to use in Delphi
 - Unzip the archive to a desired location.
@@ -122,22 +123,16 @@ end.
 
 ### Media
 
-https://github.com/tinyBigGAMES/LunaGameToolkit/assets/69952438/f46dd961-7639-4c66-89e8-140d0c3850b8
-
-https://github.com/tinyBigGAMES/LunaGameToolkit/assets/69952438/8eee1e24-f436-4b33-81df-c9cb5cd31bc5
-
-https://github.com/tinyBigGAMES/LunaGameToolkit/assets/69952438/97563b7e-956f-49ee-ba80-2f8022de91bf
-
-https://github.com/tinyBigGAMES/LunaGameToolkit/assets/69952438/c76093b6-5ce3-4007-a411-e7f3b658df53
-
-https://github.com/tinyBigGAMES/LunaGameToolkit/assets/69952438/6291d9d4-ae02-4404-9016-fe8d17f6b175
-
 ### Support
 - <a href="https://github.com/tinyBigGAMES/LunaGameToolkit/issues" target="_blank">Issues</a>
 - <a href="https://github.com/tinyBigGAMES/LunaGameToolkit/discussions" target="_blank">Discussions</a>
 - <a href="https://learndelphi.org/" target="_blank">learndelphi.org</a>
 
 <p align="center">
- <a href="https://www.embarcadero.com/products/delphi" target="_blank"><img src="media/Delphi.png"></a><br/>
- <b>Made with ❤️ for Delphi</b>
+  <img src="media/techpartner-white.png" alt="Embarcadero Technical Partner Logo" width="200"/>
+  <br>
+  Proud to be an <strong>Embarcadero Technical Partner</strong>.
 </p>
+<small>As an Embarcadero Technical Partner, I'm committed to providing high-quality Delphi components and tools that enhance developer productivity and harness the power of Embarcadero's developer tools.</small>
+
+

@@ -533,6 +533,7 @@ type
     FPCM: array[0..BUFFER_SIZE] of byte;
     FSoundList: TlgObjectList;
     FTaskID: TlgTaskID;
+    FIsOpen: Boolean;
     procedure CheckErrors();
     procedure Update();
   public const
@@ -1804,68 +1805,105 @@ type
 type
   { TlgGame }
   TlgGame = class(TlgObject)
-  public type
-    // hud
-    PHud = ^THud;
-    THud = record
-      Pos: TlgPoint;
-      Linespace: Cardinal;
-    end;
-
-    // settings
-    PSettings = ^TSettings;
-    TSettings = record
-      // window
-      WindowWidth: Cardinal;
-      WindowHeight: Cardinal;
-      WindowTitle: string;
-      WindowClearColor: TlgColor;
-
-      // default font
-      DefaultFontSize: Cardinal;
-      DefaultFontGlyphs: string;
-
-      // zipfile
-      ZipFilePassword: string;
-      ZipFilename: string;
-
-      // hud
-      HudPos: TlgPoint;
-      HudLinespace: Cardinal;
-    end;
-  protected
-    FZipFile: TlgZipFile;
-    FWindow: TlgWindow;
-    FDefaultFont: TlgFont;
-    FSettings: TSettings;
-    FHud: THud;
   public
-    property Window: TlgWindow read FWindow;
-    property DefaultFont: TlgFont read FDefaultFont;
-    property ZipFile: TlgZipFile read FZipFile;
     constructor Create(); override;
     destructor Destroy(); override;
-    procedure OnDefineSettings(var ASettings: TSettings); virtual;
-    function  OnInitSettings(): Boolean; virtual;
-    procedure OnQuitSettings(); virtual;
-    function  OnStartup(): Boolean; virtual;
-    procedure OnShutdown(); virtual;
-    procedure OnUpdate(); virtual;
-    procedure OnRender(); virtual;
-    procedure OnRenderHud(); virtual;
-    function  Settings: PSettings;
-    function  Hud: PHud;
-    procedure HudReset();
-    procedure HudPrint(const AColor: TlgColor; const AMsg: string; const AArgs: array of const);
     procedure Run(); virtual;
   end;
 
   { TlgGameClass }
   TlgGameClass = class of TlgGame;
 
-var
-  { Game }
-  Game: TlgGame = nil;
+  { TlgBaseGameApp }
+  TlgBaseGameApp = class(TlgGame)
+  public
+    constructor Create(); override;
+    destructor Destroy(); override;
+    procedure Run(); override;
+    function  OnStartup(): Boolean; virtual;
+    procedure OnShutdown(); virtual;
+    function  OnShouldTerminate(): Boolean; virtual;
+    procedure OnUpdate(); virtual;
+    procedure OnRender(); virtual;
+    procedure OnRenderHud(); virtual;
+  end;
+
+  // settings
+  PlgGameAppSettings = ^TlgGameAppSettings;
+  TlgGameAppSettings = record
+    // window
+    WindowWidth: Cardinal;
+    WindowHeight: Cardinal;
+    WindowTitle: string;
+    WindowClearColor: TlgColor;
+
+    // default font
+    DefaultFontSize: Cardinal;
+    DefaultFontGlyphs: string;
+
+    // zipfile
+    ZipFilePassword: string;
+    ZipFilename: string;
+
+    // hud
+    HudPos: TlgPoint;
+    HudLinespace: Cardinal;
+    HudItemPadWidth: Cardinal;
+    HudItemSeperator: string;
+
+    // actor
+    ActorSceneCount: Integer;
+    ActorSceneAttrs: TlgObjectAttributeSet;
+    ActorSceneBefore: TlgActorSceneEvent;
+    ActorSceneAfter: TlgActorSceneEvent;
+  end;
+
+  { TlgGameApp }
+  TlgGameApp = class(TlgBaseGameApp)
+  public type
+    // hud
+    PHud = ^THud;
+    THud = record
+      Pos: TlgPoint;
+      Linespace: Cardinal;
+      ItemSeperator: string;
+      ItemPadWidth: Cardinal;
+    end;
+  protected
+    FZipFile: TlgZipFile;
+    FWindow: TlgWindow;
+    FAudio: TlgAudio;
+    FScene: TlgActorScene;
+    FSprite: TlgSprite;
+    FDefaultFont: TlgFont;
+    FSettings: TlgGameAppSettings;
+    FHudPos: TlgPoint;
+    FMousePos: TlgPoint;
+  public
+    property Window: TlgWindow read FWindow;
+    property DefaultFont: TlgFont read FDefaultFont;
+    property ZipFile: TlgZipFile read FZipFile;
+    property Audio: TlgAudio read FAudio;
+    property Scene: TlgActorScene read FScene;
+    property Sprite: TlgSprite read FSprite;
+    property MousePos: TlgPoint read FMousePos;
+    constructor Create(); override;
+    destructor Destroy(); override;
+    procedure Run(); override;
+    function  OnStartup(): Boolean; override;
+    procedure OnShutdown(); override;
+    function  OnShouldTerminate(): Boolean; override;
+    procedure OnUpdate(); override;
+    procedure OnRender(); override;
+    procedure OnRenderHud(); override;
+    procedure OnDefineSettings(var ASettings: TlgGameAppSettings); virtual;
+    function  OnInitSettings(): Boolean; virtual;
+    procedure OnQuitSettings(); virtual;
+    function  Settings: PlgGameAppSettings;
+    procedure HudReset();
+    procedure HudPrint(const AColor: TlgColor; const AMsg: string; const AArgs: array of const);
+    function  HudTextItem(const AKey: string; const AValue: string; const ASeperator: string='-'): string;
+end;
 
 { lgRunGame }
 procedure lgRunGame(const AGame: TlgGameClass);
@@ -2659,9 +2697,9 @@ var
   LAngle: Single;
 begin
   LAngle := AAngle;
-  ClipValueFloat(LAngle, 0, 359, True);
+  ClipValueFloat(LAngle, 0, 360, True);
 
-  LIA := Round(LAngle);
+  LIA := Abs(Round(LAngle));
 
   LNX := X * FCosTable[LIA] - Y * FSinTable[LIA];
   LNY := Y * FCosTable[LIA] + X * FSinTable[LIA];
@@ -4493,8 +4531,6 @@ end;
 constructor TlgAudio.Create();
 begin
   inherited;
-  //FSounds := TlgLinkedList<TlgSound>.Create();
-  //FOneShotSounds := TList<TlgSound>.Create();
   FSoundList := TlgObjectList.Create();
 end;
 
@@ -4502,8 +4538,6 @@ destructor TlgAudio.Destroy();
 begin
   Close();
   FSoundList.Free();
-  //FOneShotSounds.Free();
-  //FSounds.Free();
   inherited;
 end;
 
@@ -4522,6 +4556,7 @@ begin
   end;
 
   alcMakeContextCurrent(FContext); CheckErrors();
+  FIsOpen := Boolean(alcGetCurrentContext <> nil);
 
   // reset to "known" default state
   Reset();
@@ -4538,7 +4573,7 @@ end;
 
 function TlgAudio.IsOpen(): Boolean;
 begin
-  Result := Boolean(alcGetCurrentContext <> nil);
+  Result := FIsOpen;
 end;
 
 procedure TlgAudio.Close();
@@ -4548,7 +4583,6 @@ begin
   TaskList.Remove(FTaskID);
 
   // free any dangling sounds
-  //FSounds.Clear(True);
   FSoundList.Clean();
 
   if Assigned(FContext) then
@@ -4563,6 +4597,8 @@ begin
     alcCloseDevice(FDevice); CheckErrors();
     FDevice := nil;
   end;
+
+  FIsOpen := False;
 end;
 
 procedure TlgAudio.Reset();
@@ -4572,8 +4608,6 @@ begin
   if not IsOpen() then Exit;
 
   // free any dangling sounds
-  //FSounds.Clear(True);
-  //FOneShotSounds.Clear();
   FSoundList.Clean();
 
   // set default 2d orientation
@@ -4603,49 +4637,6 @@ function TlgAudio.GetPCMBuffer(): PByte;
 begin
   Result := @FPCM[0];
 end;
-
-(*
-procedure TlgAudio.Update();
-var
-  LSound: TlgSound;
-begin
-  if not IsOpen() then Exit;
-
-  // clear oneshot sound list
-  FOneShotSounds.Clear();
-
-  // reset to start of sound list
-  FSounds.Reset();
-  repeat
-    // check of valid sound
-    if Assigned(FSounds.GetCurrent()) then
-    begin
-      // update this sound
-      FSounds.GetCurrent().Update();
-
-      // process oneshot sounds
-      if FSounds.GetCurrent().FOneShot then
-      begin
-        // check if sound has stopped
-        if FSounds.GetCurrent().GetStatus() = asStopped then
-        begin
-          // add to oneshot sound list
-          FOneShotSounds.Add(FSounds.GetCurrent());
-        end;
-      end;
-    end;
-  until not FSounds.MoveNext();
-
-  // remove all ones shot sounds
-  for LSound in FOneShotSounds do
-  begin
-    LSound.Free();
-  end;
-
-  // clear oneshot sound list
-  FOneShotSounds.Clear();
-end;
-*)
 
 procedure TlgAudio.Update();
 begin
@@ -4706,7 +4697,6 @@ begin
   FAudio := AAudio;
 
   // add self to audio sounds list
-  //FAudio.FSounds.Add(Self);
   FAudio.FSoundList.Add(Self);
 end;
 
@@ -4714,7 +4704,6 @@ destructor TlgSound.Destroy();
 begin
   // remove self from audio sounds list
   FAudio.FSoundList.Remove(Self, False);
-  //FAudio.FSounds.Remove(Self);
   Unload();
   inherited;
 end;
@@ -11204,7 +11193,74 @@ begin
   inherited;
 end;
 
-procedure TlgGame.OnDefineSettings(var ASettings: TSettings);
+procedure TlgGame.Run();
+begin
+end;
+
+{ --- TlgBaseGameApp -------------------------------------------------------- }
+constructor TlgBaseGameApp.Create();
+begin
+  inherited;
+end;
+
+destructor TlgBaseGameApp.Destroy();
+begin
+  inherited;
+end;
+
+procedure TlgBaseGameApp.Run();
+begin
+  try
+    if not OnStartup() then Exit;
+    while not OnShouldTerminate() do
+    begin
+      OnUpdate();
+      OnRender();
+      OnRenderHud();
+    end;
+  finally
+    OnShutdown();
+  end;
+end;
+
+function  TlgBaseGameApp.OnStartup(): Boolean;
+begin
+  result := False;
+end;
+
+procedure TlgBaseGameApp.OnShutdown();
+begin
+end;
+
+function  TlgBaseGameApp.OnShouldTerminate(): Boolean;
+begin
+  Result := True;
+end;
+
+procedure TlgBaseGameApp.OnUpdate();
+begin
+end;
+
+procedure TlgBaseGameApp.OnRender();
+begin
+end;
+
+procedure TlgBaseGameApp.OnRenderHud();
+begin
+end;
+
+{ --- TlgGameApp ------------------------------------------------------------ }
+constructor TlgGameApp.Create();
+begin
+  inherited;
+end;
+
+destructor TlgGameApp.Destroy();
+begin
+  inherited;
+end;
+
+procedure TlgGameApp.OnDefineSettings(var ASettings: TlgGameAppSettings);
 begin
   // window
   ASettings.WindowWidth := TlgWindow.DEFAULT_WIDTH;
@@ -11218,14 +11274,22 @@ begin
 
   // zipfile
   ASettings.ZipFilePassword := TlgZipStream.DEFAULT_PASSWORD;
-  ASettings.ZipFilename := 'Data.zip';
+  ASettings.ZipFilename := '';
 
   // hud
   ASettings.HudPos := Math.Point(3, 3);
   ASettings.HudLinespace := 0;
+  ASettings.HudItemPadWidth := 20;
+  ASettings.HudItemSeperator := '-';
+
+  // actor
+  ASettings.ActorSceneCount := 1;
+  ASettings.ActorSceneAttrs := [];
+  ASettings.ActorSceneBefore := nil;
+  ASettings.ActorSceneAfter := nil;
 end;
 
-function  TlgGame.OnInitSettings(): Boolean;
+function  TlgGameApp.OnInitSettings(): Boolean;
 begin
   Result := False;
 
@@ -11238,18 +11302,46 @@ begin
   if not Assigned(FDefaultFont) then Exit;
 
   // zipfile
-  FZipFile := TlgZipFile.Init(FSettings.ZipFilename, FSettings.ZipFilePassword);
-  if not Assigned(FZipFile) then Exit;
+  FZipFile := TlgZipFile.Create();
+  FZipFile.Open(FSettings.ZipFilename, FSettings.ZipFilePassword);
 
-  // hud
-  FHud.Pos := FSettings.HudPos;
-  FHud.Linespace := FSettings.HudLinespace;
+  // audio
+  FAudio := TlgAudio.Create();
+  FAudio.Open();
+
+  // sprite
+  FSprite := TlgSprite.Create();
+
+  // actor
+  FScene := TlgActorScene.Create();
+  FScene.Alloc(FSettings.ActorSceneCount);
 
   Result := True;
 end;
 
-procedure TlgGame.OnQuitSettings();
+procedure TlgGameApp.OnQuitSettings();
 begin
+  // actor
+  if Assigned(FScene) then
+  begin
+    FScene.Free();
+    FScene := nil;
+  end;
+
+  // sprite
+  if Assigned(FSprite) then
+  begin
+    FSprite.Free();
+    FSprite := nil;
+  end;
+
+  // audio
+  if Assigned(FAudio) then
+  begin
+    FAudio.Free();
+    FAudio := nil;
+  end;
+
   // zipFile
   if Assigned(FZipFile) then
   begin
@@ -11272,57 +11364,70 @@ begin
   end;
 end;
 
-function  TlgGame.OnStartup(): Boolean;
+function  TlgGameApp.OnStartup(): Boolean;
 begin
   Result := True;
 end;
 
-procedure TlgGame.OnShutdown();
+procedure TlgGameApp.OnShutdown();
 begin
 end;
 
-procedure TlgGame.OnUpdate();
+function  TlgGameApp.OnShouldTerminate(): Boolean;
+begin
+  Result := FWindow.ShouldClose();
+end;
+
+procedure TlgGameApp.OnUpdate();
 begin
   // quit on escape
   if FWindow.GetKey(KEY_ESCAPE, isWasPressed) then
-    FWindow.SetShouldClose(True)
+    FWindow.SetShouldClose(True);
+
+  // get mouse position
+  FMousePos := FWindow.GetMousePos();
+
+  // update scene
+  FScene.Update(FSettings.ActorSceneAttrs);
 end;
 
-procedure TlgGame.OnRender();
+procedure TlgGameApp.OnRender();
 begin
+  // render scene
+  FScene.Render(FSettings.ActorSceneAttrs, FSettings.ActorSceneBefore, FSettings.ActorSceneAfter);
 end;
 
-procedure TlgGame.OnRenderHud();
+procedure TlgGameApp.OnRenderHud();
 begin
   // reset hud
   HudReset();
 
   // default display hud info
   HudPrint(WHITE, '%d fps', [Timer.FrameRate()]);
-  HudPrint(GREEN, 'ESC - Quit', []);
+  HudPrint(GREEN, HudTextItem('ESC', 'Quit'), []);
 end;
 
-function  TlgGame.Settings: PSettings;
+function  TlgGameApp.Settings: PlgGameAppSettings;
 begin
   Result := @FSettings;
 end;
 
-function  TlgGame.Hud: PHud;
+procedure TlgGameApp.HudReset();
 begin
-  Result := @FHud;
+  FHudPos := FSettings.HudPos;
 end;
 
-procedure TlgGame.HudReset();
+procedure TlgGameApp.HudPrint(const AColor: TlgColor; const AMsg: string; const AArgs: array of const);
 begin
-  FHud.Pos := FSettings.HudPos;
+  FDefaultFont.DrawText(FWindow, FHudPos.x, FHudPos.y, FSettings.HudLinespace, AColor, haLeft, AMsg, AArgs);
 end;
 
-procedure TlgGame.HudPrint(const AColor: TlgColor; const AMsg: string; const AArgs: array of const);
+function  TlgGameApp.HudTextItem(const AKey: string; const AValue: string; const ASeperator: string): string;
 begin
-  FDefaultFont.DrawText(FWindow, FHud.Pos.x, FHud.Pos.y, FHud.Linespace, AColor, haLeft, AMsg, AArgs);
+  Result := Utils.HudTextItem(AKey, aValue, FSettings.HudItemPadWidth, ASeperator);
 end;
 
-procedure TlgGame.Run();
+procedure TlgGameApp.Run();
 begin
   // define settings
   OnDefineSettings(FSettings);
@@ -11337,8 +11442,11 @@ begin
       // process startup
       if not OnStartup() then Exit;
 
+      // reset timing
+      Timer.Reset();
+
       // enter game loop
-      while not FWindow.ShouldClose() do
+      while not OnShouldTerminate() do
       begin
         // start frame
         FWindow.StartFrame();
@@ -11381,20 +11489,13 @@ procedure lgRunGame(const AGame: TlgGameClass);
 var
   LGame: TlgGame;
 begin
-  LGame := Game;
+  LGame := AGame.Create;
   try
-    Game := AGame.Create;
-    try
-      Game.Run();
-    finally
-      Game.Free();
-    end;
+    LGame.Run();
   finally
-    Game := LGame;
+    LGame.Free();
   end;
 end;
-
-
 
 { === STARTUP =============================================================== }
 var

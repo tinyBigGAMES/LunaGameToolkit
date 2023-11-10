@@ -5,7 +5,7 @@
 - Added lgInit, lgIsInit and lgQuit for manual control of toolkit init/shutdown
 - Added TlgSprite, TlgEntity classes and example
 - Add TlgTimer record and example
-- Fix TlgMath.ClipValueInt/ClipValueFloat/ClipValueDouble not return the proper range when usnig Wrap mode
+- Fix TlgMath.ClipValueInt/ClipValueFloat/ClipValueDouble not return the proper range when using Wrap mode
 - Replaced pocketlang with LuaJIT integration 
 - Added TlgTexture.CollideAABB/CollideOBB collision detection and example
 - Added TlgStarfield class and example
