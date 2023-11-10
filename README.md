@@ -7,14 +7,18 @@
 Allows you make games and other multimedia applications in Object Pascal.
 
 ### Overview
-<img src="media/made-with-delphi.png" alt="Your Logo" width="64" height="64" align="left"  style="padding: 5px;" />
-Luna Game Toolkit&trade; (LGT) is a indie game toolkit that allows you to do 2D game development in <a href="https://www.embarcadero.com/products/delphi" target="_blank"> Embarcadero Delphi®</a> for desktop PC's running Microsoft Windows® and uses OpenGL® for hardware accelerated rendering.
+<img src="media/made-with-delphi.png" alt="Your Logo" width="64" height="64" align="left"  style="padding: 5px;" />The Luna Game Toolkit&trade; (LGT) represents a premier independent toolkit tailored for the creation of 2D games utilizing <a href="https://www.embarcadero.com/products/delphi" target="_blank">Embarcadero Delphi®</a>, optimized for desktop PCs operating on Microsoft Windows® and leveraging OpenGL® for enhanced hardware-accelerated rendering.
 
-It's robust, designed for easy use and suitable for making all types of 2D games and other graphic simulations. You access the features from a simple and intuitive API, to allow you to develop your projects rapidly and efficiently. There is support for textures, audio samples, streaming music, video playback, loading resources directly from a compressed and encrypted archive and much more. It's easy, fast & fun!
+Crafted for robust performance and user-friendly operation, LGT is versatile enough to facilitate the development of a wide array of 2D gaming genres and graphical simulations. It offers a straightforward and intuitive API, enabling rapid and efficient project development. The toolkit encompasses comprehensive support for textures, audio sampling, music streaming, video playback, and the capability to load resources seamlessly from compressed and encrypted archives, among other features. With LGT, the experience of game development is streamlined, swift, and enjoyable.
 
 <b>*Please star this repo by clicking the Star box in the top right corner and tell others about it if you find it useful!*</b>
 
 if you wish to learn more about the Delphi language visit <a href="https://learndelphi.org/" target="_blank">learndelphi.org</a>.
+
+### Downloads
+<a href="https://github.com/tinyBigGAMES/LunaGameToolkit/archive/refs/heads/main.zip" target="_blank">**Development**</a> - This build represents the most recent development state an as such may or may not be as stable as the official release versions. If you like living on the bleeding edge, it's updated frequently (often daily) and will contain bug fixes and new features.
+
+<a href="https://github.com/tinyBigGAMES/LunaGameToolkit/releases" target="_blank">**Releases**</a> - These are the official release versions and deemed to be the most stable.
 
 ### Features
 - **Free** and open-source with a <a href="https://github.com/tinyBigGAMES/LunaGameToolkit/blob/main/LICENSE" target="_blank">BSD 3-Clause</a> license agreement.
@@ -32,11 +36,12 @@ if you wish to learn more about the Delphi language visit <a href="https://learn
 - **Math** (point, vector, rect and other useful routines for 2D graphics)
 - **Stream** (memory, file and zip, all resources can be loaded from any valid stream source)
 - **Buffer** (virtual memory buffer, ring-buffer)
-- **Timer** (deterministic, stop, start)
+- **Timer** (deterministic, start, stop, check elapsed time)
 - **Lists** (double linked list, background task list)
 - **Terminal** (routines to printing to and interacting with the app console)
 - **Polygon** (local/world coordinates, scale, rotate, control segment visibility)
 - **Starfield** (general purpose, 3D starfield)
+- **Actor** (Actor, ActorList, ActorScene and EntityActor, allows object and scene management )
 
 ### Minimum Requirements 
 - Should work on Windows 10+ (64 bits)
@@ -45,16 +50,16 @@ if you wish to learn more about the Delphi language visit <a href="https://learn
 **NOTE: Made in Delphi 12/Windows 11, tested in Delphi CE, 11-12.**
 
 ### How to use in Delphi
-- Unzip the archive to a desired location.
-- Add `installdir\src`, folder to Delphi's library path so the library source files can be found for any project or for a specific project add to its search path.
-- In Delphi, load `DelphiGamekit.groupproj` to load and compile the examples/demos/tools, which will showcase the toolkit features and how to use them.
-- See examples in the `installdir\examples` folder for more information about usage.
-- The dependencies DLL can be built using the VS2022 solution located in `installdir\src\deps\externs\LGT.Deps`. Build the solution and it will build the DLL, automatically convert it to `LGT.Deps.res` and place it inside `installdir\src`. It will then be linked directly into your project when you reference `LGT.pas`, thus no external DLLs that you have to manage.
+- Please extract the contents of the archive to your preferred directory.
+- Incorporate the `installdir\src` directory into Delphi’s library path to ensure the library's source files are discoverable for any project. For project-specific access, append the same to the project's search path.
+- Proceed to open `DelphiGamekit.groupproj` in Delphi to compile and execute the examples, demonstrations, and tools. This will provide a comprehensive display of the toolkit's capabilities and its application methodology.
+- For further insights into utilization, refer to the samples provided within the `installdir\examples` directory. To observe the Luna Game Toolkit features in action, compile and execute the `Testbed` application. It is imperative to construct the `Data.zip` archive since it is a prerequisite for most examples. To assemble the archive, initiate `Testbed`, and navigate to `Misc->Build Zip Archive`.
+- Should there be a necessity to reconstruct the dependency DLLs, they can be generated using the Visual Studio 2022 solution found at `installdir\src\deps\externs\LGT.Deps`. Compiling this solution will produce the dependency DLL, which is then automatically transformed into `LGT.Deps.res` and placed in the `installdir\src` directory. Consequently, it will be embedded directly into your project upon referencing `LGT.pas`, obviating the need to handle external DLLs manually.
 
 ### Known Issues
-- This project is in active development so changes will be frequent 
-- Documentation is WIP. They will continue to evolve
-- More examples will continually be added over time
+- This project is currently undergoing active development, and as such, frequent updates can be expected. The primary repository will be consistently updated with the latest features and bug fixes. Although this version is less stable, it is generally secure to use as we diligently strive to maintain its stability and currency.
+- The project's documentation is a work in progress, reflecting the ongoing evolution of the project itself. It will be refined and expanded to ensure clarity and comprehensiveness.
+- Additionally, we will be progressively augmenting our repository with a broader range of examples to facilitate a deeper understanding and more extensive utilization of the toolkit.
 
 ### Minimal Example
 ```Pascal
@@ -124,6 +129,14 @@ end.
 ### Media
 
 ### Support
+Our development motto: 
+- We will not release products that are buggy, incomplete, adding new features over not fixing underlying issues.
+- We will strive to fix issues found with our products in a timely manner.
+- We will maintain an attitude of quality over quantity for our products.
+- We will establish a great rapport with users/customers, with communication, transparency and respect, always encouragingng feedback to help shape the direction of our products.
+- We will be decent, fair, remain humble and committed to the craft.
+
+### Links
 - <a href="https://github.com/tinyBigGAMES/LunaGameToolkit/issues" target="_blank">Issues</a>
 - <a href="https://github.com/tinyBigGAMES/LunaGameToolkit/discussions" target="_blank">Discussions</a>
 - <a href="https://learndelphi.org/" target="_blank">learndelphi.org</a>
@@ -133,6 +146,6 @@ end.
   <br>
   Proud to be an <strong>Embarcadero Technical Partner</strong>.
 </p>
-<small>As an Embarcadero Technical Partner, I'm committed to providing high-quality Delphi components and tools that enhance developer productivity and harness the power of Embarcadero's developer tools.</small>
+<span style="font-size: 0.85em;">As an Embarcadero Technical Partner, I'm committed to providing high-quality Delphi components and tools that enhance developer productivity and harness the power of Embarcadero's developer tools.</span>
 
 

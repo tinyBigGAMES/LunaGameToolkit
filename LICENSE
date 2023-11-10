@@ -26,16 +26,3 @@ SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
 CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
-Includes the following open-sources libraries:
------------------------------------------------------------------------------
-* clog          - https://github.com/mmueller/clog
-* cute_headers  - https://github.com/RandyGaul/cute_headers
-* glfw          - https://github.com/glfw/glfw
-* minivorbis    - https://github.com/edubart/minivorbis
-* nuklear       - https://github.com/Immediate-Mode-UI/Nuklear
-* OpenAL        - https://github.com/kcat/openal-soft
-* pl_mpeg       - https://github.com/phoboslab/pl_mpeg
-* pocketlang    - https://github.com/ThakeeNathees/pocketlang
-* stb           - https://github.com/nothings/stb
-* zlib/minizip  - https://github.com/madler/zlib/tree/develop/contrib/minizip
