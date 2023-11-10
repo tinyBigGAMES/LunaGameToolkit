@@ -1,6 +1,9 @@
 ### >>> CHANGELOG <<<
 
 ### Version 0.2.0:
+- Update Testbed to use TlgTreeMenu and TlgGameApp class
+- Added TlgTreeMenu
+- Update TlgGame, added TlgBaseGame, TlgGameApp
 - Added TlgActor, TlgActorList, TlgActorScene, TlgEntityActor and example
 - Added lgInit, lgIsInit and lgQuit for manual control of toolkit init/shutdown
 - Added TlgSprite, TlgEntity classes and example
