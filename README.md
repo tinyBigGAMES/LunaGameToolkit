@@ -2,7 +2,7 @@
 
 [![Chat on Discord](https://img.shields.io/discord/754884471324672040.svg?logo=discord)](https://discord.gg/tPWjMwK) [![Twitter Follow](https://img.shields.io/twitter/follow/tinyBigGAMES?style=social)](https://twitter.com/tinyBigGAMES)
 # Luna Game Toolkit
-### The easy, fast and fun 2D game development toolkit!
+### The easy, fast and fun 2D game development framework!
 
 Allows you make games and other multimedia applications in Object Pascal.
 
@@ -21,27 +21,28 @@ if you wish to learn more about the Delphi language visit <a href="https://learn
 <a href="https://github.com/tinyBigGAMES/LunaGameToolkit/releases" target="_blank">**Releases**</a> - These are the official release versions and deemed to be the most stable.
 
 ### Features
-- **Free** and open-source with a <a href="https://github.com/tinyBigGAMES/LunaGameToolkit/blob/main/LICENSE" target="_blank">BSD 3-Clause</a> license agreement.
-- Written in **Object Pascal**
-- Support Windows 64 bit platform
-- Hardware accelerated with **OpenGL**
-- You interact with the toolkit's classes and routines in the `LGT` unit.
-- **Archive** (standard ZIP format, can be password protected)
-- **Window** (OpenGL 2.x, vsync, primitives)
-- **Texture** (JPG, PNG, TGA, GIF and more, image formats, color key transparency, scaling, rotation, flipped, tiled)
-- **Input** (keyboard, mouse and game controller)
-- **Video** (play, pause, rewind, MPEG-1 format)
-- **Audio** (samples, streams, OGG/Vorbis format)
-- **Font** (true type, glyphs are cached for efficiency)
-- **Math** (point, vector, rect and other useful routines for 2D graphics)
-- **Stream** (memory, file and zip, all resources can be loaded from any valid stream source)
-- **Buffer** (virtual memory buffer, ring-buffer)
-- **Timer** (deterministic, start, stop, check elapsed time)
-- **Lists** (double linked list, background task list)
-- **Terminal** (routines to printing to and interacting with the app console)
-- **Polygon** (local/world coordinates, scale, rotate, control segment visibility)
-- **Starfield** (general purpose, 3D starfield)
-- **Actor** (Actor, ActorList, ActorScene and EntityActor, allows object and scene management )
+LGT offers an extensive suite of features:
+- It is distributed freely as an open-source solution, under the permissive <a href="https://github.com/tinyBigGAMES/LunaGameToolkit/blob/main/LICENSE" target="_blank">BSD 3-Clause</a> License.
+- The toolkit is developed in Object Pascal, ensuring a high level of performance and reliability.
+- Exclusively supports the Windows 64-bit platform, providing a focused and optimized development environment.
+- Incorporates hardware acceleration through OpenGL, ensuring optimal rendering performance.
+- Facilitates interaction with a comprehensive set of classes and routines encapsulated within the LGT unit.
+- Features an archive system compatible with standard ZIP format, including support for password protection.
+- Provides a windowing system with OpenGL 2.x support, vertical synchronization, and primitive shapes.
+- Offers a texture management system, supporting a variety of image formats (JPG, PNG, TGA, GIF, etc.), with capabilities such as color key transparency, scaling, rotation, and tiling.
+- Includes input handling for keyboards, mice, and game controllers.
+- Video support encompasses playback controls and compatibility with MPEG-1 format.
+- Audio functionalities include sample playback, streaming capabilities, and support for OGG/Vorbis format.
+- Font rendering is efficient, with true type font support and glyph caching.
+- A math library is available for points, vectors, rectangles, and other utilities essential for 2D graphics.
+- Streams for memory, files, and zip archives allow for resource loading from any valid stream source.
+- Implements buffer management, including a virtual memory buffer and ring-buffer.
+- Features a precise timer system for event management, with deterministic operations to start, stop, and check elapsed time.
+- Incorporates list management, including double-linked lists and background task lists.
+- Terminal utilities for outputting to and interacting with the application console are provided.
+- Polygon manipulation is detailed, with support for local/world coordinates, scaling, rotating, and segment visibility control.
+- Actor management is robust, featuring Actor, ActorList, ActorScene, and EntityActor for comprehensive object and scene management.
+- The toolkit encompasses a versatile 3D starfield module, alongside an array of readily-integrable classes, designed to accelerate the development process.
 
 ### Minimum Requirements 
 - Should work on Windows 10+ (64 bits)
