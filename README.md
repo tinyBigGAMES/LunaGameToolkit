@@ -76,7 +76,7 @@ begin
   LWindow := TlgWindow.Init('Luna Game Toolkit: Minimal Example', 960, 540);
 
   // show gamepad info
-  Console.PrintLn('Gamepad: %s', [LWindow.GetGamepadName(GAMEPAD_1)]);
+  Terminal.PrintLn('Gamepad: %s', [LWindow.GetGamepadName(GAMEPAD_1)]);
 
   // init default font
   LFont := TlgFont.LoadDefault(LWindow, 10);
