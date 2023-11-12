@@ -92,8 +92,6 @@ implementation
 
 { TMyActor }
 constructor TMyActor.Create;
-var
-  LR,LG,LB: Byte;
 begin
   inherited;
 
@@ -111,13 +109,7 @@ begin
   FSpeed.x := Math.RandomRange(1, 7);
   FSpeed.y := Math.RandomRange(1, 7);
 
-  LR := Math.RandomRange(1, 255);
-  LG := Math.RandomRange(1, 255);
-  LB := Math.RandomRange(1, 255);
-  FColor.Red := LR/$FF;
-  FColor.Green := LG/$FF;
-  FColor.Blue := LB/$FF;
-  FColor.Alpha := 1;
+  FColor.Make(Byte(Math.RandomRange(1, 255)), Byte(Math.RandomRange(1, 255)), Byte(Math.RandomRange(1, 255)), 255);
 end;
 
 destructor TMyActor.Destroy;

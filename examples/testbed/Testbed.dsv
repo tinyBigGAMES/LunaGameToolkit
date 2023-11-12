@@ -10,11 +10,11 @@ EditViewName=C:\Dev\Delphi\Projects\LGT\repo\main\src\LGT.Deps.pas
 
 [ClosedView_QzpcRGV2XERlbHBoaVxQcm9qZWN0c1xMR1RccmVwb1xtYWluXHNyY1xMR1QucGFz]
 Module=C:\Dev\Delphi\Projects\LGT\repo\main\src\LGT.pas
-CursorX=23
-CursorY=4622
-TopLine=4584
+CursorX=1
+CursorY=610
+TopLine=582
 LeftCol=1
-Elisions=
+Elisions={{616,0},{774,11},{'Common Colors'}}{{778,0},{902,11},{' Key Codes '}}{{904,0},{918,11},{' Mouse Buttons '}}{{920,0},{939,11},{' Gamepads '}}{{941,0},{963,11},{' Gamepad Buttons '}}{{965,0},{974,11},{' Gamepad Axis '}}
 Bookmarks=
 EditViewName=C:\Dev\Delphi\Projects\LGT\repo\main\src\LGT.pas
 [ClosedView_QzpcRGV2XERlbHBoaVxQcm9qZWN0c1xMR1RccmVwb1xtYWluXGV4YW1wbGVzXHRlc3RiZWRcVVRl
@@ -1667,4 +1667,34 @@ LeftCol=1
 Elisions=
 Bookmarks=
 EditViewName=C:\Dev\Delphi\Projects\LGT\repo\main\examples\testbed\UTestbed.pas
+[ClosedView_QzpcRGV2XERlbHBoaVxQcm9qZWN0c1xMR1RccmVwb1xtYWluXGV4YW1wbGVzXHRlc3RiZWRcVVRl
+c3RiZWQucGFz]
+Module=C:\Dev\Delphi\Projects\LGT\repo\main\examples\testbed\UTestbed.pas
+CursorX=53
+CursorY=187
+TopLine=149
+LeftCol=1
+Elisions=
+Bookmarks=
+EditViewName=C:\Dev\Delphi\Projects\LGT\repo\main\examples\testbed\UTestbed.pas
+[ClosedView_QzpcRGV2XERlbHBoaVxQcm9qZWN0c1xMR1RccmVwb1xtYWluXGV4YW1wbGVzXHRlc3RiZWRcVUFj
+dG9yLnBhcw==]
+Module=C:\Dev\Delphi\Projects\LGT\repo\main\examples\testbed\UActor.pas
+CursorX=114
+CursorY=110
+TopLine=86
+LeftCol=1
+Elisions=
+Bookmarks=
+EditViewName=C:\Dev\Delphi\Projects\LGT\repo\main\examples\testbed\UActor.pas
+[ClosedView_QzpcRGV2XERlbHBoaVxQcm9qZWN0c1xMR1RccmVwb1xtYWluXGV4YW1wbGVzXHRlc3RiZWRcVU1p
+c2MucGFz]
+Module=C:\Dev\Delphi\Projects\LGT\repo\main\examples\testbed\UMisc.pas
+CursorX=45
+CursorY=327
+TopLine=180
+LeftCol=1
+Elisions=
+Bookmarks=
+EditViewName=C:\Dev\Delphi\Projects\LGT\repo\main\examples\testbed\UMisc.pas
 

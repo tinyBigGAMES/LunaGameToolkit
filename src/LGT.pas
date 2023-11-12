@@ -61,7 +61,7 @@ const
   LGT_NAME          = 'Luna Game Toolkit™';
   LGT_CODENAME      = 'Aurora';
   LGT_MAJOR_VERSION = '0';
-  LGT_MINOR_VERSION = '2';
+  LGT_MINOR_VERSION = '3';
   LGT_PATCH_VERSION = '0';
   LGT_VERSION       = LGT_MAJOR_VERSION+'.'+LGT_MINOR_VERSION+'.'+LGT_PATCH_VERSION;
   LGT_PROJECT       = LGT_NAME+' ('+LGT_CODENAME+') v'+LGT_MAJOR_VERSION+'.'+LGT_MINOR_VERSION+'.'+LGT_PATCH_VERSION;
@@ -524,8 +524,9 @@ type
 
   TlgAudio = class(TlgObject)
   protected const
-    BUFFER_CHUCK = 1024*2;
-    BUFFER_SIZE = BUFFER_CHUCK*2*sizeof(smallint);
+    BUFFER_CHUNK = 44100;
+    //BUFFER_CHUNK = 48000;
+    BUFFER_SIZE = BUFFER_CHUNK*2*sizeof(smallint);
   protected
     FDevice: PALCdevice;
     FContext: PALCcontext;
@@ -606,6 +607,10 @@ type
   PlgColor = ^TlgColor;
   TlgColor = record
     Red,Green,Blue,Alpha: Single;
+    function Make(const ARed, AGreen, ABlue, AAlpha: Byte): TlgColor; overload;
+    function Make(const ARed, AGreen, ABlue, AAlpha: Single): TlgColor; overload;
+    function Fade(const ATo: TlgColor; const APos: Single): TlgColor;
+    function Equal(AColor: TlgColor): Boolean;
   end;
 
 {$REGION 'Common Colors'}
@@ -4723,12 +4728,16 @@ begin
   if not FAudio.IsOpen() then Exit;
   if not IsLoaded() then Exit;
 
-  Result := TlgSound.Create(FAudio);
-
-  if not Result.Copy(Self, AOneShot) then
-  begin
-    Result.Free();
-    Result := nil;
+  Utils.EnterCriticalSection();
+  try
+    Result := TlgSound.Create(FAudio);
+    if not Result.Copy(Self, AOneShot) then
+    begin
+      Result.Free();
+      Result := nil;
+    end;
+  finally
+    Utils.LeaveCriticalSection();
   end;
 end;
 
@@ -4739,10 +4748,14 @@ begin
   Result := False;
   if not FAudio.IsOpen() then Exit;
   if ASound.FLoad <> slMemory then Exit;
-
-  LStream := TlgMemoryStream(ASound.FStream).Duplicate();
-  Result := Load(LStream, slMemory, AOneShot);
-  LStream.Free();
+  Utils.EnterCriticalSection();
+  try
+    LStream := TlgMemoryStream(ASound.FStream).Duplicate();
+    Result := Load(LStream, slMemory, AOneShot);
+    LStream.Free();
+  finally
+    Utils.LeaveCriticalSection();
+  end;
 end;
 
 function  TlgSound.Load(var AStream: TlgStream; const ALoad: TlgSoundLoad; const AOneShot: Boolean): Boolean;
@@ -5095,6 +5108,52 @@ begin
   end;
   if ALoad = slMemory then
     LStream.Free();
+end;
+
+{ === COLOR ================================================================= }
+{ --- TlgColor -------------------------------------------------------------- }
+function TlgColor.Make(const ARed, AGreen, ABlue, AAlpha: Byte): TlgColor;
+begin
+  Red := EnsureRange(ARed, 0, 255) / $FF;
+  Green := EnsureRange(AGreen, 0, 255) / $FF;
+  Blue := EnsureRange(ABlue, 0, 255) / $FF;
+  Alpha := EnsureRange(AAlpha, 0, 255) / $FF;
+end;
+
+function TlgColor.Make(const ARed, AGreen, ABlue, AAlpha: Single): TlgColor;
+begin
+  Red := EnsureRange(ARed, 0, 1);
+  Green := EnsureRange(AGreen, 0, 1);
+  Blue := EnsureRange(ABlue, 0, 1);
+  Alpha := EnsureRange(AAlpha, 0, 1);
+end;
+
+function TlgColor.Fade(const ATo: TlgColor; const APos: Single): TlgColor;
+var
+  LColor: TlgColor;
+  LPos: Single;
+begin
+  LPos := EnsureRange(APos, 0, 1);
+
+  // fade colors
+  LColor.Alpha := Alpha + ((ATo.Alpha - Alpha) * LPos);
+  LColor.Blue := Blue + ((ATo.Blue - Blue) * LPos);
+  LColor.Green := Green + ((ATo.Green - Green) * LPos);
+  LColor.Red := Red + ((ATo.Red - Red) * LPos);
+  Result := Make(LColor.Red, LColor.Green, LColor.Blue, LColor.Alpha);
+  Red := LColor.Red;
+  Green := LColor.Green;
+  Blue := LColor.Blue;
+  Alpha := LColor.Alpha;
+end;
+
+function TlgColor.Equal(AColor: TlgColor): Boolean;
+begin
+  if (Red = AColor.Red) and (Green = AColor.Green) and
+    (Blue = AColor.Blue) and (Alpha = AColor.Alpha) then
+    Result := True
+  else
+    Result := False;
 end;
 
 { === WINDOW ================================================================ }
@@ -7502,16 +7561,11 @@ begin
     Exit;
   LCV := round(255.0 - (((1.0 / FMax.Z) / (1.0 / Z)) * 255.0));
 
-  //LColor.Make(LCV, LCV, LCV, LCV);
-  LColor.Red   := LCV / $FF;
-  LColor.Green := LCV / $FF;
-  LColor.Blue  := LCV / $FF;
-  LColor.Alpha := LCV / $FF;
+  LColor.Make(LCV, LCV, LCV, LCV);
 
   LX := LX - FVirtualPos.X;
   LY := LY - FVirtualPos.Y;
 
-  //GV.Display.DrawFilledRectangle(LX, LY, LSW, LSH, LColor);
   AWindow.DrawFilledRect(LX, LY, LSW, LSH, LColor, 0);
 end;
 

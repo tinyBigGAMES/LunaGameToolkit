@@ -1,6 +1,7 @@
 ### >>> CHANGELOG <<<
 
 ### Version 0.3.0:
+- Added Make, Fade and Equal methods to TlgColor record
 - Added more CriticalSection guards around audio routines to fix intermittent memory leaks 
 
 ### Version 0.2.0:
