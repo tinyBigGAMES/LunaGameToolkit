@@ -41,6 +41,7 @@ uses
   WinApi.Windows,
   LGT,
   LGT.TreeMenu,
+  LGT.StartupDialog,
   UCommon,
   UMisc,
   UAudio,
@@ -55,7 +56,12 @@ procedure RunTests;
 
 implementation
 
-procedure RunTests();
+procedure StartupDialogMore();
+begin
+  MessageBox(0, 'You can process additional custom dialog operations here', 'StartupDialog MORE', MB_OK);
+end;
+
+procedure StartupDialogRun();
 type
   TMenuItem = (
     // audio
@@ -104,17 +110,10 @@ var
   LActorMenu: Pointer;
   LSelItem: Integer;
 begin
-  // set custom style
-  TStyleManager.TrySetStyle('Aqua Light Slate');
-
-  // init toolkit
-  lgInit();
-  if not lgIsInit() then Exit;
-
   LTreeMenu := TlgTreeMenu.Create();
   try
-    LTreeMenu.SetTitle('Testbed');
-    LTreeMenu.SetStatus(LGT_PROJECT);
+    LTreeMenu.SetTitle('Example Menu');
+    //LTreeMenu.SetStatus('v'+LGT_VERSION+' ('+LGT_CODENAME+')');
 
     // audio
     LAudioMenu := LTreeMenu.AddItem(nil, 'Audio', TREEMENU_NONE, True);
@@ -212,9 +211,49 @@ begin
   finally
     LTreeMenu.Free();
   end;
+end;
 
-  // pause
-  Terminal.Pause();
+procedure RunTests;
+var
+  LZipFile: TlgZipFile;
+  LStartupDialog: TlgStartupDialog;
+  LState: TlgStartupDialogState;
+begin
+  // set custom style
+  TStyleManager.TrySetStyle('Aqua Light Slate');
+
+  // init toolkit
+  lgInit();
+  if not lgIsInit() then Exit;
+
+  // init zipfile
+  LZipFile := TlgZipFile.Init(CZipFilename);
+
+  LStartupDialog := TlgStartupDialog.Create();
+  try
+    LStartupDialog.SetCaption('Luna Game Toolkit: Testbed');
+    LStartupDialog.SetLogo(LZipFile, 'res/startupdialog/banner.png');
+    LStartupDialog.SetLogoClickUrl('https://github.com/tinyBigGAMES/LunaGameToolkit');
+    LStartupDialog.SetReadme(LZipFile, 'res/startupdialog/readme.rtf');
+    LStartupDialog.SetLicense(LZipFile, 'res/startupdialog/license.rtf');
+    LStartupDialog.SetReleaseInfo('v'+LGT_VERSION+' ('+LGT_CODENAME+')');
+
+    // process startupdialog
+    repeat
+      LState := LStartupDialog.Show();
+      case LState of
+        sdsMore: StartupDialogMore();
+        sdsRun : StartupDialogRun();
+        sdsQuit: ;
+      end;
+    until LState = sdsQuit;
+
+  finally
+    LStartupDialog.Free();
+  end;
+
+  // free zipfile
+  LZipFile.Free();
 
   // shutdown toolkit
   lgQuit();

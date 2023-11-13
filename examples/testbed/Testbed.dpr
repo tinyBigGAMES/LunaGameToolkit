@@ -58,7 +58,9 @@ uses
   UFont in 'UFont.pas',
   UGUI in 'UGUI.pas',
   UWindow in 'UWindow.pas',
-  UActor in 'UActor.pas';
+  UActor in 'UActor.pas',
+  LGT.StartupDialogForm in '..\..\src\LGT.StartupDialogForm.pas' {lgStartupDialogForm},
+  LGT.StartupDialog in '..\..\src\LGT.StartupDialog.pas';
 
 begin
   try

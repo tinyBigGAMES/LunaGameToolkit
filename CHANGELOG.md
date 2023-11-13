@@ -1,6 +1,10 @@
 ### >>> CHANGELOG <<<
 
 ### Version 0.3.0:
+- Added startup dialog to Testbed app
+- Added [res] folder,  [startupdialog] folder with banner.png, README.rtf and LICENSE.rtf
+- Added TlgStartupDialog
+- Added methods to TlgUtils: GotoURL, GetComputerName, GetLoggedUserName, GetOSVersion, GetNow, GetDiskFreeSpace, GetMemoryFree, GetVideoCardName, GetAppName, GetAppPath, GetCPUCount, GetAppVersionStr, GetAppVersionFullStr, GetModuleVersionFullStr, GetModuleVersionFullStr
 - Added Make, Fade and Equal methods to TlgColor record
 - Added more CriticalSection guards around audio routines to fix intermittent memory leaks 
 

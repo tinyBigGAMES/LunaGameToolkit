@@ -46,8 +46,12 @@ uses
   System.IOUtils,
   System.SyncObjs,
   System.Math,
+  System.Variants,
+  System.Win.ComObj,
   WinApi.Windows,
   WinApi.Messages,
+  WinApi.ShellAPI,
+  WinApi.ActiveX,
   LGT.Deps,
   LGT.OGL;
 
@@ -79,6 +83,9 @@ type
 
   { TlgVAlign }
   TVAlign = (vaTop, vaCenter, vaBottom);
+
+  { TStartupDialogState }
+  TlgStartupDialogState = (sdsMore = 0, sdsRun = 1, sdsQuit = 2);
 
 { === OBJECT ================================================================ }
 type
@@ -181,7 +188,21 @@ type
     class function  RemoveDuplicates(const aText: string): string;
     class function  ResourceExists(aInstance: THandle; const aResName: string): Boolean;
     class function  HudTextItem(const AKey: string; const AValue: string; const APaddingWidth: Cardinal=20; const ASeperator: string='-'): string;
-
+    class procedure GotoURL(const AURL: string);
+    class function  GetComputerName(): string;
+    class function  GetLoggedUserName(): string;
+    class function  GetOSVersion(): string;
+    class function  GetNow(): string;
+    class procedure GetDiskFreeSpace(const APath: string; var AFreeSpace: Int64; var ATotalSpace: Int64);
+    class procedure GetMemoryFree(var AAvailMem: UInt64; var ATotalMem: UInt64);
+    class function  GetVideoCardName(): string;
+    class function  GetAppName(): string;
+    class function  GetAppPath(): string;
+    class function  GetCPUCount(): Integer;
+    class function  GetAppVersionStr(): string;
+    class function  GetAppVersionFullStr(): string;
+    class function  GetModuleVersionFullStr(): string; overload;
+    class function  GetModuleVersionFullStr(AFilename: string): string; overload;
   end;
 
 { === MATH ================================================================== }
@@ -510,6 +531,7 @@ type
     function  IsOpen(): Boolean;
     procedure Close();
     function  OpenFile(const AFilename: string): TlgZipStream;
+    function  OpenFileToStream(const AFilename: string): TStream;
     class function Init(const AZipFilename: string; const APassword: string=TlgZipStream.DEFAULT_PASSWORD): TlgZipFile;
   end;
 
@@ -2414,6 +2436,176 @@ begin
   Result := Format('%s %s %s', [aKey.PadRight(APaddingWidth), aSeperator, aValue]);
 end;
 
+class procedure TlgUtils.GotoURL(const AURL: string);
+begin
+  if AURL.IsEmpty then Exit;
+  ShellExecute(0, 'OPEN', PChar(AURL), '', '', SW_SHOWNORMAL);
+end;
+
+class function  TlgUtils.GetComputerName(): string;
+var
+  LLength: dword;
+begin
+  LLength := 253;
+  SetLength(Result, LLength+1);
+  if not WinApi.Windows.GetComputerName(PChar(Result), LLength) then Result := 'Not detected!';
+  Result := PChar(result);
+end;
+
+class function  TlgUtils.GetLoggedUserName(): string;
+const
+  cnMaxUserNameLen = 254;
+var
+  sUserName     : string;
+  dwUserNameLen : DWord;
+begin
+  dwUserNameLen := cnMaxUserNameLen-1;
+  SetLength( sUserName, cnMaxUserNameLen );
+  GetUserName(PChar( sUserName ),dwUserNameLen );
+  SetLength( sUserName, dwUserNameLen );
+  Result := sUserName;
+end;
+
+class function  TlgUtils.GetOSVersion(): string;
+begin
+  Result := TOSVersion.ToString;
+end;
+
+class function  TlgUtils.GetNow(): string;
+begin
+  Result := DateTimeToStr(Now());
+end;
+
+class procedure TlgUtils.GetDiskFreeSpace(const APath: string; var AFreeSpace: Int64; var ATotalSpace: Int64);
+begin
+  GetDiskFreeSpaceEx(PChar(aPath), aFreeSpace, aTotalSpace, nil);
+end;
+
+class procedure TlgUtils.GetMemoryFree(var AAvailMem: UInt64; var ATotalMem: UInt64);
+var
+  LMemStatus: MemoryStatusEx;
+begin
+ FillChar (LMemStatus, SizeOf(MemoryStatusEx), #0);
+ LMemStatus.dwLength := SizeOf(MemoryStatusEx);
+ GlobalMemoryStatusEx (LMemStatus);
+ aAvailMem := LMemStatus.ullAvailPhys;
+ aTotalMem := LMemStatus.ullTotalPhys;
+end;
+
+class function  TlgUtils.GetVideoCardName(): string;
+const
+  WbemUser = '';
+  WbemPassword = '';
+  WbemComputer = 'localhost';
+  wbemFlagForwardOnly = $00000020;
+var
+  LFSWbemLocator: OLEVariant;
+  LFWMIService: OLEVariant;
+  LFWbemObjectSet: OLEVariant;
+  LFWbemObject: OLEVariant;
+  LEnum: IEnumvariant;
+  LValue: LongWord;
+begin;
+  try
+    LFSWbemLocator := CreateOleObject('WbemScripting.SWbemLocator');
+    LFWMIService := LFSWbemLocator.ConnectServer(WbemComputer, 'root\CIMV2',
+      WbemUser, WbemPassword);
+    LFWbemObjectSet := LFWMIService.ExecQuery
+      ('SELECT Name,PNPDeviceID  FROM Win32_VideoController', 'WQL',
+      wbemFlagForwardOnly);
+    LEnum := IUnknown(LFWbemObjectSet._NewEnum) as IEnumvariant;
+    while LEnum.Next(1, LFWbemObject, LValue) = 0 do
+    begin
+      result := String(LFWbemObject.Name);
+      LFWbemObject := Unassigned;
+    end;
+  except
+  end;
+end;
+
+class function  TlgUtils.GetAppName(): string;
+begin
+  Result := Format('%s %s',[TPath.GetFileNameWithoutExtension(ParamStr(0)),GetAppVersionFullStr]);
+end;
+
+class function  TlgUtils.GetAppPath(): string;
+begin
+  Result := ExtractFilePath(ParamStr(0));
+end;
+
+class function  TlgUtils.GetCPUCount(): Integer;
+begin
+  Result := CPUCount;
+end;
+
+class function  TlgUtils.GetAppVersionStr(): string;
+var
+  LRec: LongRec;
+  LVer : Cardinal;
+begin
+  LVer := GetFileVersion(ParamStr(0));
+  if LVer <> Cardinal(-1) then
+  begin
+    LRec := LongRec(LVer);
+    Result := Format('%d.%d', [LRec.Hi, LRec.Lo]);
+  end
+  else Result := '';
+end;
+
+class function  TlgUtils.GetAppVersionFullStr(): string;
+begin
+  GetModuleVersionFullStr(ParamStr(0));
+end;
+
+class function  TlgUtils.GetModuleVersionFullStr(): string;
+begin
+  Result := GetModuleVersionFullStr(GetModuleName(HInstance));
+end;
+
+class function  TlgUtils.GetModuleVersionFullStr(AFilename: string): string;
+var
+  LExe: string;
+  LSize, LHandle: DWORD;
+  LBuffer: TBytes;
+  LFixedPtr: PVSFixedFileInfo;
+begin
+  Result := '';
+  if not TFile.Exists(aFilename) then Exit;
+  LExe := aFilename;
+  LSize := GetFileVersionInfoSize(PChar(LExe), LHandle);
+  if LSize = 0 then
+  begin
+    //RaiseLastOSError;
+    //no version info in file
+    Exit;
+  end;
+  SetLength(LBuffer, LSize);
+  if not GetFileVersionInfo(PChar(LExe), LHandle, LSize, LBuffer) then
+    RaiseLastOSError;
+  if not VerQueryValue(LBuffer, '\', Pointer(LFixedPtr), LSize) then
+    RaiseLastOSError;
+  if (LongRec(LFixedPtr.dwFileVersionLS).Hi = 0) and (LongRec(LFixedPtr.dwFileVersionLS).Lo = 0) then
+  begin
+    Result := Format('%d.%d',
+    [LongRec(LFixedPtr.dwFileVersionMS).Hi,   //major
+     LongRec(LFixedPtr.dwFileVersionMS).Lo]); //minor
+  end
+  else if (LongRec(LFixedPtr.dwFileVersionLS).Lo = 0) then
+  begin
+    Result := Format('%d.%d.%d',
+    [LongRec(LFixedPtr.dwFileVersionMS).Hi,   //major
+     LongRec(LFixedPtr.dwFileVersionMS).Lo,   //minor
+     LongRec(LFixedPtr.dwFileVersionLS).Hi]); //release
+  end
+  else
+  begin
+    Result := Format('%d.%d.%d.%d',
+    [LongRec(LFixedPtr.dwFileVersionMS).Hi,   //major
+     LongRec(LFixedPtr.dwFileVersionMS).Lo,   //minor
+     LongRec(LFixedPtr.dwFileVersionLS).Hi,   //release
+     LongRec(LFixedPtr.dwFileVersionLS).Lo]); //build
+  end;
+end;
 
 { === MATH ================================================================== }
 
@@ -4506,6 +4698,27 @@ end;
 function  TlgZipFile.OpenFile(const AFilename: string): TlgZipStream;
 begin
   Result := TlgZipStream.Open(FZipFilename, AFilename, FPassword);
+end;
+
+function  TlgZipFile.OpenFileToStream(const AFilename: string): TStream;
+var
+  LZipStream: TlgZipStream;
+  LMemoryStream: TMemoryStream;
+begin
+  Result := nil;
+
+  LZipStream := OpenFile(AFilename);
+  try
+    if not Assigned(LZipStream) then Exit;
+    LMemoryStream := TMemoryStream.Create();
+    LMemoryStream.SetSize(LZipStream.Size);
+    LZipStream.Read(LMemoryStream.Memory, LMemoryStream.Size);
+    LMemoryStream.Position := 0;
+    Result := LMemoryStream;
+  finally
+    if Assigned(LZipStream) then
+      LZipStream.Free();
+  end;
 end;
 
 class function TlgZipFile.Init(const AZipFilename: string; const APassword: string=TlgZipStream.DEFAULT_PASSWORD): TlgZipFile;

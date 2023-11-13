@@ -4,7 +4,7 @@
         <ProjectVersion>20.1</ProjectVersion>
         <FrameworkType>VCL</FrameworkType>
         <Base>True</Base>
-        <Config Condition="'$(Config)'==''">Debug</Config>
+        <Config Condition="'$(Config)'==''">Release</Config>
         <Platform Condition="'$(Platform)'==''">Win64</Platform>
         <TargetedPlatforms>2</TargetedPlatforms>
         <AppType>Console</AppType>
@@ -134,6 +134,11 @@
         <DCCReference Include="UGUI.pas"/>
         <DCCReference Include="UWindow.pas"/>
         <DCCReference Include="UActor.pas"/>
+        <DCCReference Include="..\..\src\LGT.StartupDialogForm.pas">
+            <Form>lgStartupDialogForm</Form>
+            <FormType>dfm</FormType>
+        </DCCReference>
+        <DCCReference Include="..\..\src\LGT.StartupDialog.pas"/>
         <None Include="Readme.md"/>
         <RcItem Include="..\..\tools\AquaLightSlate.vsf">
             <ContainerId>ResourceItem</ContainerId>
