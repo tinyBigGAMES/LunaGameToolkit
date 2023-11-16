@@ -36,7 +36,8 @@ interface
 
 uses
   System.SysUtils,
-  LGT;
+  LGT.Core,
+  LGT.Game;
 
 const
   CZipFilename = 'Data.zip';

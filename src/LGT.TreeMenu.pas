@@ -40,7 +40,7 @@ uses
   System.SysUtils,
   System.Math,
   VCL.ComCtrls,
-  LGT,
+  LGT.Core,
   LGT.TreeMenuForm;
 
 const

@@ -30,7 +30,7 @@ Email  : support@tinybiggames.com
 See LICENSE for license information
 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *)
 
-unit LGT;
+unit LGT.Core;
 
 {$I LGT.Defines.inc}
 
@@ -46,8 +46,10 @@ uses
   System.IOUtils,
   System.SyncObjs,
   System.Math,
+  System.Net.HttpClient,
   System.Variants,
   System.Win.ComObj,
+  System.IniFiles,
   WinApi.Windows,
   WinApi.Messages,
   WinApi.ShellAPI,
@@ -59,6 +61,7 @@ uses
 function  lgInit(): Boolean;
 function  lgIsInit(): Boolean;
 procedure lgQuit();
+procedure lgReset();
 
 { === MISC ================================================================== }
 const
@@ -125,6 +128,8 @@ type
     FTail: TlgObject;
     FCount: Integer;
   public
+    property Head: TlgObject read FHead;
+    property Tail: TlgObject read FTail;
     property Count: Integer read FCount;
     constructor Create(); virtual;
     destructor Destroy(); override;
@@ -163,15 +168,96 @@ type
     procedure Exec(AAttrs: TlgObjectAttributeSet);
   end;
 
+{=== ASYNC ================================================================== }
+type
+  { TlgAsyncProc }
+  TlgAsyncProc = reference to procedure;
+
+  { TlgAsyncThread }
+  TlgAsyncThread = class(TThread)
+  protected
+    FTask: TlgAsyncProc;
+    FWait: TlgAsyncProc;
+    FFinished: Boolean;
+  public
+    property TaskProc: TlgAsyncProc read FTask write FTask;
+    property WaitProc: TlgAsyncProc read FWait write FWait;
+    property Finished: Boolean read FFinished;
+    constructor Create(); virtual;
+    destructor Destroy(); override;
+    procedure Execute(); override;
+  end;
+
+  { TlgAsync }
+  TlgAsync = record
+  private type
+    TBusyData = record
+      Name: string;
+      Thread: Pointer;
+      Flag: Boolean;
+    end;
+  private class var
+    FQueue: TList<TlgAsyncThread>;
+    FBusy: TDictionary<string, TBusyData>;
+  public
+    class operator Initialize(out ADest: TlgAsync);
+    class operator Finalize(var ADest: TlgAsync);
+    class procedure Clear(); static;
+    class procedure Process(); static;
+    class procedure Run(const AName: string; const ABackgroundTask: TlgAsyncProc; const AWaitForgroundTask: TlgAsyncProc); static;
+    class function  Busy(const AName: string): Boolean; static;
+    class procedure Suspend(); static;
+    class procedure Resume(); static;
+    class procedure Enter(); static;
+    class procedure Leave(); static;
+  end;
+
+{ === BUFFER ================================================================ }
+type
+  { TlgVirtualBuffer }
+  TlgVirtualBuffer = class(TCustomMemoryStream)
+  protected
+    FHandle: THandle;
+    FName: string;
+    procedure Clear;
+  public
+    constructor Create(aSize: Cardinal);
+    destructor Destroy; override;
+    function Write(const ABuffer; ACount: Longint): Longint; override;
+    function Write(const ABuffer: TBytes; AOffset, ACount: Longint): Longint; override;
+    procedure SaveToFile(const AFilename: string);
+    property Name: string read FName;
+    function  Eof: Boolean;
+    function  ReadString: string;
+    class function LoadFromFile(const AFilename: string): TlgVirtualBuffer;
+  end;
+
+  { TlgRingBuffer }
+  TlgRingBuffer<T> = class
+  private type
+    PType = ^T;
+  private
+    FBuffer: array of T;
+    FReadIndex, FWriteIndex, FCapacity: Integer;
+  public
+    constructor Create(const ACapacity: Integer);
+    function Write(const AData: array of T; const ACount: Integer): Integer;
+    function Read(var AData: array of T; const ACount: Integer): Integer;
+    function DirectReadPointer(const ACount: Integer): Pointer;
+    function AvailableBytes(): Integer;
+    procedure Clear();
+  end;
+
 { === UTILS ================================================================= }
 type
+
   { TlgUtils }
   TlgUtils = class
   protected const
     CStaticBufferSize = 8192;
   protected class var
     FCriticalSection: TCriticalSection;
-    FStaticBuffer: array[0..CStaticBufferSize-1] of Byte;
+    FStaticBuffer: TlgVirtualBuffer;
     FMarshal: TMarshaller;
   protected
     class constructor Create();
@@ -203,6 +289,39 @@ type
     class function  GetAppVersionFullStr(): string;
     class function  GetModuleVersionFullStr(): string; overload;
     class function  GetModuleVersionFullStr(AFilename: string): string; overload;
+    class function  HttpGet(const aURL: string; const aStatus: PString=nil): string;
+    class function  RemoveQuotes(const AText: string): string;
+  end;
+
+{=== CONFIGFILE ============================================================= }
+type
+  { TlgConfigFile }
+  TlgConfigFile = class(TlgObject)
+  private
+    FHandle: TIniFile;
+    FFilename: string;
+    FSection: TStringList;
+  public
+    constructor Create; override;
+    destructor Destroy; override;
+    function  Open(const AFilename: string=''): Boolean;
+    procedure Close();
+    function  Opened(): Boolean;
+    procedure Update();
+    function  RemoveSection(const AName: string): Boolean;
+    procedure SetValue(const ASection, AKey, AValue: string);  overload;
+    procedure SetValue(const ASection, AKey: string; AValue: Integer); overload;
+    procedure SetValue(const ASection, AKey: string; AValue: Boolean); overload;
+    procedure SetValue(const ASection, AKey: string; AValue: Pointer; AValueSize: Cardinal); overload;
+    function  GetValue(const ASection, AKey, ADefaultValue: string): string; overload;
+    function  GetValue(const ASection, AKey: string; ADefaultValue: Integer): Integer; overload;
+    function  GetValue(const ASection, AKey: string; ADefaultValue: Boolean): Boolean; overload;
+    procedure GetValue(const ASection, AKey: string; AValue: Pointer; AValueSize: Cardinal); overload;
+    function  RemoveKey(const ASection, AKey: string): Boolean;
+    function  GetSectionValues(const ASection: string): Integer;
+    function  GetSectionValue(const AIndex: Integer; const ADefaultValue: string): string; overload;
+    function  GetSectionValue(const AIndex, ADefaultValue: Integer): Integer; overload;
+    function  GetSectionValue(const AIndex: Integer; const ADefaultValue: Boolean): Boolean; overload;
   end;
 
 { === MATH ================================================================== }
@@ -321,42 +440,6 @@ type
     class function  EaseValue(ACurrentTime: Double; const AStartValue, AChangeInValue, ADuration: Double; AEase: TlgEase): Double;
     class function  EasePosition(const AStartPos, AEndPos, ACurrentPos: Double; AEase: TlgEase): Double;
     class function  OBBIntersect(const AObbA, AObbB: TlgOBB): Boolean;
-  end;
-
-{ === BUFFER ================================================================ }
-type
-  { TlgVirtualBuffer }
-  TlgVirtualBuffer = class(TCustomMemoryStream)
-  protected
-    FHandle: THandle;
-    FName: string;
-    procedure Clear;
-  public
-    constructor Create(aSize: Cardinal);
-    destructor Destroy; override;
-    function Write(const aBuffer; aCount: Longint): Longint; override;
-    function Write(const aBuffer: TBytes; aOffset, aCount: Longint): Longint; override;
-    procedure SaveToFile(aFilename: string);
-    property Name: string read FName;
-    function  Eof: Boolean;
-    function  ReadString: WideString;
-    class function LoadFromFile(const aFilename: string): TlgVirtualBuffer;
-  end;
-
-  { TlgRingBuffer }
-  TlgRingBuffer<T> = class
-  private type
-    PType = ^T;
-  private
-    FBuffer: array of T;
-    FReadIndex, FWriteIndex, FCapacity: Integer;
-  public
-    constructor Create(ACapacity: Integer);
-    function Write(const AData: array of T; ACount: Integer): Integer;
-    function Read(var AData: array of T; ACount: Integer): Integer;
-    function DirectReadPointer(ACount: Integer): Pointer;
-    function AvailableBytes: Integer;
-    procedure Clear;
   end;
 
 { === TERMINAL ============================================================== }
@@ -543,17 +626,16 @@ type
   { TlgAudioStatus }
   TlgAudioStatus = (asStopped, asPlaying, asPaused);
 
-
+  { TlgAudio }
   TlgAudio = class(TlgObject)
   protected const
-    BUFFER_CHUNK = 44100;
-    //BUFFER_CHUNK = 48000;
+    BUFFER_CHUNK = 48000;
     BUFFER_SIZE = BUFFER_CHUNK*2*sizeof(smallint);
   protected
     FDevice: PALCdevice;
     FContext: PALCcontext;
     FError: string;
-    FPCM: array[0..BUFFER_SIZE] of byte;
+    FPCM: TlgVirtualBuffer;
     FSoundList: TlgObjectList;
     FTaskID: TlgTaskID;
     FIsOpen: Boolean;
@@ -1730,211 +1812,6 @@ type
     class function New(const ASprite: TlgSprite; const aGroup: Integer): TlgEntity;
   end;
 
-{ === ACTOR ================================================================= }
-type
-  // class forwards
-  TlgActorList = class;
-
-  { TlgActorMessage }
-  PlgActorMessage = ^TlgActorMessage;
-  TlgActorMessage = record
-    Id: Integer;
-    Data: Pointer;
-    DataSize: Cardinal;
-  end;
-
-  { TlgActor }
-  TlgActor = class(TlgObject)
-  protected
-    FOwner: TlgActor;
-    FTerminated: Boolean;
-    FActorList: TlgActorList;
-    FCanCollide: Boolean;
-    FChildren: TlgActorList;
-  public
-    property Terminated: Boolean read FTerminated write FTerminated;
-    property Children: TlgActorList read FChildren write FChildren;
-    property ActorList: TlgActorList read FActorList write FActorList;
-    property CanCollide: Boolean read FCanCollide write FCanCollide;
-    constructor Create(); override;
-    destructor Destroy(); override;
-    procedure OnVisit(const ASender: TlgActor; const AEventId: Integer; var ADone: Boolean); reintroduce; overload; virtual;
-    procedure OnUpdate(); virtual;
-    procedure OnRender(); virtual;
-    function  OnMessage(const AMsg: PlgActorMessage): TlgActor; virtual;
-    procedure OnCollide(const AActor: TlgActor); virtual;
-    function  Overlap(const X, Y, ARadius, AShrinkFactor: Single): Boolean; overload; virtual;
-    function  Overlap(const AActor: TlgActor): Boolean; overload; virtual;
-  end;
-
-  { TlgActorList }
-  TlgActorList = class(TlgObject)
-  protected
-    FList: TlgObjectList;
-  public
-    constructor Create(); override;
-    destructor Destroy(); override;
-    procedure Clean();
-    procedure Add(aActor: TlgActor);
-    function  Count(): Integer;
-    procedure Remove(const AActor: TlgActor; const ADispose: Boolean);
-    procedure Clear(const AAttrs: TlgObjectAttributeSet);
-    procedure ForEach(const ASender: TlgActor; const AAttrs: TlgObjectAttributeSet; const AEventId: Integer; var ADone: Boolean);
-    procedure Update(const AAttrs: TlgObjectAttributeSet);
-    procedure Render(const AAttrs: TlgObjectAttributeSet);
-    function  SendMessage(const AAttrs: TlgObjectAttributeSet; const AMsg: PlgActorMessage; const ABroadcast: Boolean): TlgActor;
-    procedure CheckCollision(const AAttrs: TlgObjectAttributeSet; AActor: TlgActor);
-  end;
-
-  { TlgActorSceneEvent }
-  TlgActorSceneEvent = procedure(ASceneNum: Integer) of object;
-
-  { TlgActorScene }
-  TlgActorScene = class(TlgObject)
-  protected
-    FLists: array of TlgActorList;
-    FCount: Integer;
-    function GetList(AIndex: Integer): TlgActorList;
-    function GetCount(): Integer;
-  public
-    property Lists[AIndex: Integer]: TlgActorList read GetList; default;
-    property Count: Integer read GetCount;
-    constructor Create(); override;
-    destructor Destroy(); override;
-    procedure Alloc(const ANum: Integer);
-    procedure Dealloc();
-    procedure Clean(const AIndex: Integer);
-    procedure Clear(const AIndex: Integer; const AAttrs: TlgObjectAttributeSet);
-    procedure ClearAll();
-    procedure Update(const AAttrs: TlgObjectAttributeSet);
-    procedure Render(const AAttrs: TlgObjectAttributeSet; const aBefore, aAfter: TlgActorSceneEvent);
-    function  SendMessage(const AAttrs: TlgObjectAttributeSet; const AMsg: PlgActorMessage; const ABroadcast: Boolean): TlgActor;
-  end;
-
-  { TlgEntityActor }
-  TlgEntityActor = class(TlgActor)
-  protected
-    FEntity: TlgEntity;
-    FEntityOverlap: TEntityOverlap;
-  public
-    property Entity: TlgEntity read FEntity write FEntity;
-    property EntityOverlap: TEntityOverlap read FEntityOverlap write FEntityOverlap;
-    constructor Create(); override;
-    destructor Destroy(); override;
-    procedure Init(const ASprite: TlgSprite; const AGroup: Integer); virtual;
-    function Overlap(const X, Y, ARadius, AShrinkFactor: Single): Boolean; override;
-    function Overlap(const AActor: TlgActor): Boolean; override;
-    procedure OnRender(); override;
-    class function New(ASprite: TlgSprite; AGroup: Integer): TlgEntityActor;
-  end;
-
-{ === GAME ================================================================== }
-type
-  { TlgGame }
-  TlgGame = class(TlgObject)
-  public
-    constructor Create(); override;
-    destructor Destroy(); override;
-    procedure Run(); virtual;
-  end;
-
-  { TlgGameClass }
-  TlgGameClass = class of TlgGame;
-
-  { TlgBaseGameApp }
-  TlgBaseGameApp = class(TlgGame)
-  public
-    constructor Create(); override;
-    destructor Destroy(); override;
-    procedure Run(); override;
-    function  OnStartup(): Boolean; virtual;
-    procedure OnShutdown(); virtual;
-    function  OnShouldTerminate(): Boolean; virtual;
-    procedure OnUpdate(); virtual;
-    procedure OnRender(); virtual;
-    procedure OnRenderHud(); virtual;
-  end;
-
-  // settings
-  PlgGameAppSettings = ^TlgGameAppSettings;
-  TlgGameAppSettings = record
-    // window
-    WindowWidth: Cardinal;
-    WindowHeight: Cardinal;
-    WindowTitle: string;
-    WindowClearColor: TlgColor;
-
-    // default font
-    DefaultFontSize: Cardinal;
-    DefaultFontGlyphs: string;
-
-    // zipfile
-    ZipFilePassword: string;
-    ZipFilename: string;
-
-    // hud
-    HudPos: TlgPoint;
-    HudLinespace: Cardinal;
-    HudItemPadWidth: Cardinal;
-    HudItemSeperator: string;
-
-    // actor
-    ActorSceneCount: Integer;
-    ActorSceneAttrs: TlgObjectAttributeSet;
-    ActorSceneBefore: TlgActorSceneEvent;
-    ActorSceneAfter: TlgActorSceneEvent;
-  end;
-
-  { TlgGameApp }
-  TlgGameApp = class(TlgBaseGameApp)
-  public type
-    // hud
-    PHud = ^THud;
-    THud = record
-      Pos: TlgPoint;
-      Linespace: Cardinal;
-      ItemSeperator: string;
-      ItemPadWidth: Cardinal;
-    end;
-  protected
-    FZipFile: TlgZipFile;
-    FWindow: TlgWindow;
-    FAudio: TlgAudio;
-    FScene: TlgActorScene;
-    FSprite: TlgSprite;
-    FDefaultFont: TlgFont;
-    FSettings: TlgGameAppSettings;
-    FHudPos: TlgPoint;
-    FMousePos: TlgPoint;
-  public
-    property Window: TlgWindow read FWindow;
-    property DefaultFont: TlgFont read FDefaultFont;
-    property ZipFile: TlgZipFile read FZipFile;
-    property Audio: TlgAudio read FAudio;
-    property Scene: TlgActorScene read FScene;
-    property Sprite: TlgSprite read FSprite;
-    property MousePos: TlgPoint read FMousePos;
-    constructor Create(); override;
-    destructor Destroy(); override;
-    procedure Run(); override;
-    function  OnStartup(): Boolean; override;
-    procedure OnShutdown(); override;
-    function  OnShouldTerminate(): Boolean; override;
-    procedure OnUpdate(); override;
-    procedure OnRender(); override;
-    procedure OnRenderHud(); override;
-    procedure OnDefineSettings(var ASettings: TlgGameAppSettings); virtual;
-    function  OnInitSettings(): Boolean; virtual;
-    procedure OnQuitSettings(); virtual;
-    function  Settings: PlgGameAppSettings;
-    procedure HudReset();
-    procedure HudPrint(const AColor: TlgColor; const AMsg: string; const AArgs: array of const);
-    function  HudTextItem(const AKey: string; const AValue: string; const ASeperator: string='-'): string;
-end;
-
-{ lgRunGame }
-procedure lgRunGame(const AGame: TlgGameClass);
-
 { =========================================================================== }
 var
   Utils: TlgUtils = nil;
@@ -1942,6 +1819,7 @@ var
   Terminal: TlgTerminal = nil;
   Timer: TlgDeterministicTimer = nil;
   TaskList: TlgTaskList = nil;
+  Async: TlgAsync;
 
 implementation
 
@@ -2356,6 +2234,376 @@ begin
   FHandle.Visit(AAttrs);
 end;
 
+{ === ASYNC ================================================================= }
+{ --- TlgAsyncThread -------------------------------------------------------- }
+constructor TlgAsyncThread.Create();
+begin
+  inherited Create(True);
+
+  FTask := nil;
+  FWait := nil;
+  FFinished := False;
+end;
+
+destructor TlgAsyncThread.Destroy();
+begin
+  inherited;
+end;
+
+procedure TlgAsyncThread.Execute();
+begin
+  FFinished := False;
+
+  if Assigned(FTask) then
+  begin
+    FTask();
+  end;
+
+  FFinished := True;
+end;
+
+{ --- TlgAsync -------------------------------------------------------------- }
+class operator TlgAsync.Initialize(out ADest: TlgAsync);
+begin
+  ADest.FQueue := TList<TlgAsyncThread>.Create;
+  ADest.FBusy := TDictionary<string, TBusyData>.Create;
+end;
+
+class operator TlgAsync.Finalize(var ADest: TlgAsync);
+begin
+  FreeAndNil(ADest.FBusy);
+  FreeAndNil(ADest.FQueue);
+end;
+
+class procedure TlgAsync.Clear();
+begin
+  FBusy.Clear();
+  FQueue.Clear();
+end;
+
+class procedure TlgAsync.Process();
+var
+  LAsyncThread: TlgAsyncThread;
+  LAsyncThread2: TlgAsyncThread;
+  LIndex: TBusyData;
+  LBusy: TBusyData;
+begin
+  Enter();
+
+  if TThread.CurrentThread.ThreadID = MainThreadID then
+  begin
+    for LAsyncThread in FQueue do
+    begin
+      if Assigned(LAsyncThread) then
+      begin
+        if LAsyncThread.Finished then
+        begin
+          LAsyncThread.WaitFor();
+          LAsyncThread.WaitProc();
+          FQueue.Remove(LAsyncThread);
+          for LIndex in FBusy.Values do
+          begin
+            if Lindex.Thread = LAsyncThread then
+            begin
+              LBusy := LIndex;
+              LBusy.Flag := False;
+              FBusy.AddOrSetValue(LBusy.Name, LBusy);
+              Break;
+            end;
+          end;
+          LAsyncThread2 := LAsyncThread;
+          FreeAndNil(LAsyncThread2);
+        end;
+      end;
+    end;
+    FQueue.Pack;
+  end;
+
+  Leave();
+end;
+
+class procedure TlgAsync.Run(const AName: string; const ABackgroundTask: TlgAsyncProc; const AWaitForgroundTask: TlgAsyncProc);
+var
+  LAsyncThread: TlgAsyncThread;
+  LBusy: TBusyData;
+begin
+  if not Assigned(ABackgroundTask) then Exit;
+  if not Assigned(AWaitForgroundTask) then Exit;
+  if AName.IsEmpty then Exit;
+  if Busy(AName) then Exit;
+  Enter;
+  LAsyncThread := TlgAsyncThread.Create;
+  LAsyncThread.TaskProc := ABackgroundTask;
+  LAsyncThread.WaitProc := AWaitForgroundTask;
+  FQueue.Add(LAsyncThread);
+  LBusy.Name := AName;
+  LBusy.Thread := LAsyncThread;
+  LBusy.Flag := True;
+  FBusy.AddOrSetValue(AName, LBusy);
+  LAsyncThread.Start;
+  Leave;
+end;
+
+class function  TlgAsync.Busy(const AName: string): Boolean;
+var
+  LBusy: TBusyData;
+begin
+  Result := False;
+  if AName.IsEmpty then Exit;
+  Enter;
+  FBusy.TryGetValue(AName, LBusy);
+  Leave;
+  Result := LBusy.Flag;
+end;
+
+class procedure TlgAsync.Suspend();
+var
+  LAsyncThread: TlgAsyncThread;
+begin
+  for LAsyncThread in FQueue do
+  begin
+    if not LAsyncThread.Suspended then
+      LAsyncThread.Suspend;
+  end;
+end;
+
+class procedure TlgAsync.Resume();
+var
+  LAsyncThread: TlgAsyncThread;
+begin
+  for LAsyncThread in FQueue do
+  begin
+    if LAsyncThread.Suspended then
+      LAsyncThread.Resume;
+  end;
+end;
+
+class procedure TlgAsync.Enter();
+begin
+  Utils.EnterCriticalSection();
+end;
+
+class procedure TlgAsync.Leave();
+begin
+  Utils.LeaveCriticalSection();
+end;
+
+{ === BUFFER ================================================================ }
+
+{ --- TlgVirtualBuffer ------------------------------------------------------ }
+procedure TlgVirtualBuffer.Clear;
+begin
+  if (Memory <> nil) then
+  begin
+    if not UnmapViewOfFile(Memory) then
+      raise Exception.Create('Error deallocating mapped memory');
+  end;
+
+  if (FHandle <> 0) then
+  begin
+    if not CloseHandle(FHandle) then
+      raise Exception.Create('Error freeing memory mapping handle');
+  end;
+end;
+
+constructor TlgVirtualBuffer.Create(aSize: Cardinal);
+var
+  P: Pointer;
+begin
+  inherited Create;
+  FName := TPath.GetGUIDFileName;
+  FHandle := CreateFileMapping(INVALID_HANDLE_VALUE, nil, PAGE_READWRITE, 0, aSize, PChar(FName));
+  if FHandle = 0 then
+    begin
+      Clear;
+      raise Exception.Create('Error creating memory mapping');
+      FHandle := 0;
+    end
+  else
+    begin
+      P := MapViewOfFile(FHandle, FILE_MAP_ALL_ACCESS, 0, 0, 0);
+      if P = nil then
+        begin
+          Clear;
+          raise Exception.Create('Error creating memory mapping');
+        end
+      else
+        begin
+          Self.SetPointer(P, aSize);
+          Position := 0;
+        end;
+    end;
+end;
+
+destructor TlgVirtualBuffer.Destroy;
+begin
+  Clear;
+  inherited;
+end;
+
+function TlgVirtualBuffer.Write(const ABuffer; ACount: Longint): Longint;
+var
+  Pos: Int64;
+begin
+  if (Position >= 0) and (ACount >= 0) then
+  begin
+    Pos := Position + ACount;
+    if Pos > 0 then
+    begin
+      if Pos > Size then
+      begin
+        Result := 0;
+        Exit;
+      end;
+      System.Move(ABuffer, (PByte(Memory) + Position)^, ACount);
+      Position := Pos;
+      Result := ACount;
+      Exit;
+    end;
+  end;
+  Result := 0;
+end;
+
+function TlgVirtualBuffer.Write(const ABuffer: TBytes; AOffset, ACount: Longint): Longint;
+var
+  Pos: Int64;
+begin
+  if (Position >= 0) and (ACount >= 0) then
+  begin
+    Pos := Position + ACount;
+    if Pos > 0 then
+    begin
+      if Pos > Size then
+      begin
+        Result := 0;
+        Exit;
+      end;
+      System.Move(ABuffer[AOffset], (PByte(Memory) + Position)^, ACount);
+      Position := Pos;
+      Result := ACount;
+      Exit;
+    end;
+  end;
+  Result := 0;
+end;
+
+procedure TlgVirtualBuffer.SaveToFile(const AFilename: string);
+var
+  LStream: TFileStream;
+begin
+  LStream := TFile.Create(AFilename);
+  try
+    LStream.Write(Memory^, Size);
+  finally
+    LStream.Free;
+  end;
+end;
+
+class function TlgVirtualBuffer.LoadFromFile(const AFilename: string): TlgVirtualBuffer;
+var
+  LStream: TStream;
+  LBuffer: TlgVirtualBuffer;
+begin
+  Result := nil;
+  if AFilename.IsEmpty then Exit;
+  if not TFile.Exists(AFilename) then Exit;
+  LStream := TFile.OpenRead(AFilename);
+  try
+    LBuffer := TlgVirtualBuffer.Create(LStream.Size);
+    if LBuffer <> nil then
+    begin
+      LBuffer.CopyFrom(LStream);
+    end;
+  finally
+    FreeAndNil(LStream);
+  end;
+  Result := LBuffer;
+end;
+
+function  TlgVirtualBuffer.Eof: Boolean;
+begin
+  Result := Boolean(Position >= Size);
+end;
+
+function  TlgVirtualBuffer.ReadString: string;
+var
+  LLength: LongInt;
+begin
+  Read(LLength, SizeOf(LLength));
+  SetLength(Result, LLength);
+  if LLength > 0 then Read(Result[1], LLength * SizeOf(Char));
+end;
+
+{ --- TlgRingBuffer --------------------------------------------------------- }
+constructor TlgRingBuffer<T>.Create(const ACapacity: Integer);
+begin
+  SetLength(FBuffer, ACapacity);
+  FReadIndex := 0;
+  FWriteIndex := 0;
+  FCapacity := ACapacity;
+  Clear;
+end;
+
+function TlgRingBuffer<T>.Write(const AData: array of T; const ACount: Integer): Integer;
+var
+  i, WritePos: Integer;
+begin
+  Utils.EnterCriticalSection();
+  try
+    for i := 0 to ACount - 1 do
+    begin
+      WritePos := (FWriteIndex + i) mod FCapacity;
+      FBuffer[WritePos] := AData[i];
+    end;
+    FWriteIndex := (FWriteIndex + ACount) mod FCapacity;
+    Result := ACount;
+  finally
+    Utils.LeaveCriticalSection();
+  end;
+end;
+
+function TlgRingBuffer<T>.Read(var AData: array of T; const ACount: Integer): Integer;
+var
+  i, ReadPos: Integer;
+begin
+  for i := 0 to ACount - 1 do
+  begin
+    ReadPos := (FReadIndex + i) mod FCapacity;
+    AData[i] := FBuffer[ReadPos];
+  end;
+  FReadIndex := (FReadIndex + ACount) mod FCapacity;
+  Result := ACount;
+end;
+
+function TlgRingBuffer<T>.DirectReadPointer(const ACount: Integer): Pointer;
+begin
+  Result := @FBuffer[FReadIndex mod FCapacity];
+  FReadIndex := (FReadIndex + ACount) mod FCapacity;
+end;
+
+function TlgRingBuffer<T>.AvailableBytes: Integer;
+begin
+  Result := (FCapacity + FWriteIndex - FReadIndex) mod FCapacity;
+end;
+
+procedure TlgRingBuffer<T>.Clear;
+var
+  I: Integer;
+begin
+  Utils.EnterCriticalSection();
+  try
+    for I := Low(FBuffer) to High(FBuffer) do
+    begin
+     FBuffer[i] := Default(T);
+    end;
+
+    FReadIndex := 0;
+    FWriteIndex := 0;
+  finally
+    Utils.LeaveCriticalSection();
+  end;
+end;
+
 { === UTILS ================================================================= }
 
 { --- TlgUtils -------------------------------------------------------------- }
@@ -2363,10 +2611,12 @@ class constructor TlgUtils.Create();
 begin
   FCriticalSection := TCriticalSection.Create();
   FillChar(FStaticBuffer, SizeOf(FStaticBuffer), 0);
+  FStaticBuffer := TlgVirtualBuffer.Create(CStaticBufferSize);
 end;
 
 class destructor TlgUtils.Destroy();
 begin
+  FStaticBuffer.Free();
   FCriticalSection.Free();
 end;
 
@@ -2377,12 +2627,12 @@ end;
 
 class function  TlgUtils.GetStaticBuffer(): PByte;
 begin
-  Result := @FStaticBuffer[0];
+  Result := FStaticBuffer.Memory;
 end;
 
 class procedure  TlgUtils.ClearStaticBuffer();
 begin
-  FillChar(FStaticBuffer, SizeOf(FStaticBuffer), 0);
+  FillChar(FStaticBuffer.Memory^, CStaticBufferSize, 0);
 end;
 
 class procedure TlgUtils.EnterCriticalSection();
@@ -2605,6 +2855,221 @@ begin
      LongRec(LFixedPtr.dwFileVersionLS).Hi,   //release
      LongRec(LFixedPtr.dwFileVersionLS).Lo]); //build
   end;
+end;
+
+class function  TlgUtils.HttpGet(const aURL: string; const aStatus: PString=nil): string;
+var
+  LHttp: THTTPClient;
+  LResponse: IHTTPResponse;
+begin
+  LHttp := THTTPClient.Create;
+  try
+    LResponse := LHttp.Get(aURL);
+    Result := LResponse.ContentAsString;
+    if Assigned(aStatus) then
+      aStatus^ := LResponse.StatusText;
+  finally
+    LHttp.Free();
+  end;
+end;
+
+class function  TlgUtils.RemoveQuotes(const AText: string): string;
+var
+  S: string;
+begin
+  S := AnsiDequotedStr(aText, '"');
+  Result := AnsiDequotedStr(S, '''');
+end;
+
+
+{=== CONFIGFILE ============================================================= }
+{ --- TlgConfigFile --------------------------------------------------------- }
+constructor TlgConfigFile.Create;
+begin
+  inherited;
+  FHandle := nil;
+  FSection := TStringList.Create;
+end;
+
+destructor TlgConfigFile.Destroy;
+begin
+  Close;
+  FSection.Free();
+  inherited;
+end;
+
+function  TlgConfigFile.Open(const AFilename: string=''): Boolean;
+var
+  LFilename: string;
+begin
+  Close;
+  LFilename := AFilename;
+  if LFilename.IsEmpty then LFilename := TPath.ChangeExtension(ParamStr(0), 'ini');
+  FHandle := TIniFile.Create(LFilename);
+  Result := Boolean(FHandle <> nil);
+  FFilename := LFilename;
+end;
+
+procedure TlgConfigFile.Close();
+begin
+  if not Opened then Exit;
+  FHandle.UpdateFile;
+  FreeAndNil(FHandle);
+end;
+
+function  TlgConfigFile.Opened(): Boolean;
+begin
+  Result := Boolean(FHandle <> nil);
+end;
+
+procedure TlgConfigFile.Update();
+begin
+  if not Opened then Exit;
+  FHandle.UpdateFile;
+end;
+
+function  TlgConfigFile.RemoveSection(const AName: string): Boolean;
+var
+  LName: string;
+begin
+  Result := False;
+  if not Opened then Exit;
+  LName := AName;
+  if LName.IsEmpty then Exit;
+  FHandle.EraseSection(LName);
+  Result := True;
+end;
+
+procedure TlgConfigFile.SetValue(const ASection, AKey, AValue: string);
+begin
+  if not Opened then Exit;
+  FHandle.WriteString(ASection, AKey, AValue);
+end;
+
+procedure TlgConfigFile.SetValue(const ASection, AKey: string; AValue: Integer);
+begin
+  if not Opened then Exit;
+  SetValue(ASection, AKey, AValue.ToString);
+end;
+
+procedure TlgConfigFile.SetValue(const ASection, AKey: string; AValue: Boolean);
+begin
+  if not Opened then Exit;
+  SetValue(ASection, AKey, AValue.ToInteger);
+end;
+
+procedure TlgConfigFile.SetValue(const ASection, AKey: string; AValue: Pointer; AValueSize: Cardinal);
+var
+  LValue: TMemoryStream;
+begin
+  if not Opened then Exit;
+  if AValue = nil then Exit;
+  LValue := TMemoryStream.Create;
+  try
+    LValue.Position := 0;
+    LValue.Write(AValue^, AValueSize);
+    LValue.Position := 0;
+    FHandle.WriteBinaryStream(ASection, AKey, LValue);
+  finally
+    FreeAndNil(LValue);
+  end;
+end;
+
+function  TlgConfigFile.GetValue(const ASection, AKey, ADefaultValue: string): string;
+begin
+  Result := '';
+  if not Opened then Exit;
+  Result := FHandle.ReadString(ASection, AKey, ADefaultValue);
+end;
+
+function  TlgConfigFile.GetValue(const ASection, AKey: string; ADefaultValue: Integer): Integer;
+var
+  LResult: string;
+begin
+  Result := ADefaultValue;
+  if not Opened then Exit;
+  LResult := GetValue(ASection, AKey, ADefaultValue.ToString);
+  Integer.TryParse(LResult, Result);
+end;
+
+function  TlgConfigFile.GetValue(const ASection, AKey: string; ADefaultValue: Boolean): Boolean;
+begin
+  Result := ADefaultValue;
+  if not Opened then Exit;
+  Result := GetValue(ASection, AKey, ADefaultValue.ToInteger).ToBoolean;
+end;
+
+procedure TlgConfigFile.GetValue(const ASection, AKey: string; AValue: Pointer; AValueSize: Cardinal);
+var
+  LValue: TMemoryStream;
+  LSize: Cardinal;
+begin
+  if not Opened then Exit;
+  if not Assigned(AValue) then Exit;
+  if AValueSize = 0 then Exit;
+  LValue := TMemoryStream.Create;
+  try
+    LValue.Position := 0;
+    FHandle.ReadBinaryStream(ASection, AKey, LValue);
+    LSize := AValueSize;
+    if AValueSize > LValue.Size then
+      LSize := LValue.Size;
+    LValue.Position := 0;
+    LValue.Write(AValue^, LSize);
+  finally
+    FreeAndNil(LValue);
+  end;
+end;
+
+function  TlgConfigFile.RemoveKey(const ASection, AKey: string): Boolean;
+var
+  LSection: string;
+  LKey: string;
+begin
+  Result := False;
+  if not Opened then Exit;
+  LSection := ASection;
+  LKey := AKey;
+  if LSection.IsEmpty then Exit;
+  if LKey.IsEmpty then Exit;
+  FHandle.DeleteKey(LSection, LKey);
+  Result := True;
+end;
+
+function  TlgConfigFile.GetSectionValues(const ASection: string): Integer;
+var
+  LSection: string;
+begin
+  Result := 0;
+  if not Opened then Exit;
+  LSection := ASection;
+  if LSection.IsEmpty then Exit;
+  FSection.Clear;
+  FHandle.ReadSectionValues(LSection, FSection);
+  Result := FSection.Count;
+end;
+
+function  TlgConfigFile.GetSectionValue(const AIndex: Integer; const ADefaultValue: string): string;
+begin
+  Result := '';
+  if not Opened then Exit;
+  if (AIndex < 0) or (AIndex > FSection.Count - 1) then Exit;
+  Result := FSection.ValueFromIndex[AIndex];
+  if Result = '' then Result := ADefaultValue;
+end;
+
+function  TlgConfigFile.GetSectionValue(const AIndex, ADefaultValue: Integer): Integer;
+begin
+  Result := ADefaultValue;
+  if not Opened then Exit;
+  Result := string(GetSectionValue(AIndex, ADefaultValue.ToString)).ToInteger;
+end;
+
+function  TlgConfigFile.GetSectionValue(const AIndex: Integer; const ADefaultValue: Boolean): Boolean;
+begin
+  Result := ADefaultValue;
+  if not Opened then Exit;
+  Result := string(GetSectionValue(AIndex, ADefaultValue.ToString)).ToBoolean
 end;
 
 { === MATH ================================================================== }
@@ -3607,223 +4072,6 @@ begin
   Result := True;
 end;
 
-{ === BUFFER ================================================================ }
-
-{ --- TlgVirtualBuffer ------------------------------------------------------ }
-procedure TlgVirtualBuffer.Clear;
-begin
-  if (Memory <> nil) then
-  begin
-    if not UnmapViewOfFile(Memory) then
-      raise Exception.Create('Error deallocating mapped memory');
-  end;
-
-  if (FHandle <> 0) then
-  begin
-    if not CloseHandle(FHandle) then
-      raise Exception.Create('Error freeing memory mapping handle');
-  end;
-end;
-
-constructor TlgVirtualBuffer.Create(aSize: Cardinal);
-var
-  P: Pointer;
-begin
-  inherited Create;
-  FName := TPath.GetGUIDFileName;
-  FHandle := CreateFileMapping(INVALID_HANDLE_VALUE, nil, PAGE_READWRITE, 0, aSize, PChar(FName));
-  if FHandle = 0 then
-    begin
-      Clear;
-      raise Exception.Create('Error creating memory mapping');
-      FHandle := 0;
-    end
-  else
-    begin
-      P := MapViewOfFile(FHandle, FILE_MAP_ALL_ACCESS, 0, 0, 0);
-      if P = nil then
-        begin
-          Clear;
-          raise Exception.Create('Error creating memory mapping');
-        end
-      else
-        begin
-          Self.SetPointer(P, aSize);
-          Position := 0;
-        end;
-    end;
-end;
-
-destructor TlgVirtualBuffer.Destroy;
-begin
-  Clear;
-  inherited;
-end;
-
-function TlgVirtualBuffer.Write(const aBuffer; aCount: Longint): Longint;
-var
-  Pos: Int64;
-begin
-  if (Position >= 0) and (aCount >= 0) then
-  begin
-    Pos := Position + aCount;
-    if Pos > 0 then
-    begin
-      if Pos > Size then
-      begin
-        Result := 0;
-        Exit;
-      end;
-      System.Move(aBuffer, (PByte(Memory) + Position)^, aCount);
-      Position := Pos;
-      Result := aCount;
-      Exit;
-    end;
-  end;
-  Result := 0;
-end;
-
-function TlgVirtualBuffer.Write(const aBuffer: TBytes; aOffset, aCount: Longint): Longint;
-var
-  Pos: Int64;
-begin
-  if (Position >= 0) and (aCount >= 0) then
-  begin
-    Pos := Position + aCount;
-    if Pos > 0 then
-    begin
-      if Pos > Size then
-      begin
-        Result := 0;
-        Exit;
-      end;
-      System.Move(aBuffer[aOffset], (PByte(Memory) + Position)^, aCount);
-      Position := Pos;
-      Result := aCount;
-      Exit;
-    end;
-  end;
-  Result := 0;
-end;
-
-procedure TlgVirtualBuffer.SaveToFile(aFilename: string);
-var
-  LStream: TFileStream;
-begin
-  LStream := TFile.Create(aFilename);
-  try
-    LStream.Write(Memory^, Size);
-  finally
-    LStream.Free;
-  end;
-end;
-
-class function TlgVirtualBuffer.LoadFromFile(const aFilename: string): TlgVirtualBuffer;
-var
-  LStream: TStream;
-  LBuffer: TlgVirtualBuffer;
-begin
-  Result := nil;
-  if aFilename.IsEmpty then Exit;
-  if not TFile.Exists(aFilename) then Exit;
-  LStream := TFile.OpenRead(aFilename);
-  try
-    LBuffer := TlgVirtualBuffer.Create(LStream.Size);
-    if LBuffer <> nil then
-    begin
-      LBuffer.CopyFrom(LStream);
-    end;
-  finally
-    FreeAndNil(LStream);
-  end;
-  Result := LBuffer;
-end;
-
-function  TlgVirtualBuffer.Eof: Boolean;
-begin
-  Result := Boolean(Position >= Size);
-end;
-
-function  TlgVirtualBuffer.ReadString: WideString;
-var
-  LLength: LongInt;
-begin
-  Read(LLength, SizeOf(LLength));
-  SetLength(Result, LLength);
-  if LLength > 0 then Read(Result[1], LLength * SizeOf(Char));
-end;
-
-{ --- TlgRingBuffer --------------------------------------------------------- }
-constructor TlgRingBuffer<T>.Create(ACapacity: Integer);
-begin
-  SetLength(FBuffer, ACapacity);
-  FReadIndex := 0;
-  FWriteIndex := 0;
-  FCapacity := ACapacity;
-  Clear;
-end;
-
-function TlgRingBuffer<T>.Write(const AData: array of T;
-  ACount: Integer): Integer;
-var
-  i, WritePos: Integer;
-begin
-  Utils.EnterCriticalSection();
-  try
-    for i := 0 to ACount - 1 do
-    begin
-      WritePos := (FWriteIndex + i) mod FCapacity;
-      FBuffer[WritePos] := AData[i];
-    end;
-    FWriteIndex := (FWriteIndex + ACount) mod FCapacity;
-    Result := ACount;
-  finally
-    Utils.LeaveCriticalSection();
-  end;
-end;
-
-function TlgRingBuffer<T>.Read(var AData: array of T; ACount: Integer): Integer;
-var
-  i, ReadPos: Integer;
-begin
-  for i := 0 to ACount - 1 do
-  begin
-    ReadPos := (FReadIndex + i) mod FCapacity;
-    AData[i] := FBuffer[ReadPos];
-  end;
-  FReadIndex := (FReadIndex + ACount) mod FCapacity;
-  Result := ACount;
-end;
-
-function TlgRingBuffer<T>.DirectReadPointer(ACount: Integer): Pointer;
-begin
-  Result := @FBuffer[FReadIndex mod FCapacity];
-  FReadIndex := (FReadIndex + ACount) mod FCapacity;
-end;
-
-function TlgRingBuffer<T>.AvailableBytes: Integer;
-begin
-  Result := (FCapacity + FWriteIndex - FReadIndex) mod FCapacity;
-end;
-
-procedure TlgRingBuffer<T>.Clear;
-var
-  I: Integer;
-begin
-  Utils.EnterCriticalSection();
-  try
-    for I := Low(FBuffer) to High(FBuffer) do
-    begin
-     FBuffer[i] := Default(T);
-    end;
-
-    FReadIndex := 0;
-    FWriteIndex := 0;
-  finally
-    Utils.LeaveCriticalSection();
-  end;
-end;
-
 { === TERMINAL ============================================================== }
 class constructor TlgTerminal.Create();
 begin
@@ -4749,11 +4997,13 @@ constructor TlgAudio.Create();
 begin
   inherited;
   FSoundList := TlgObjectList.Create();
+  FPCM := TlgVirtualBuffer.Create(BUFFER_SIZE);
 end;
 
 destructor TlgAudio.Destroy();
 begin
   Close();
+  FPCM.Free();
   FSoundList.Free();
   inherited;
 end;
@@ -4852,7 +5102,7 @@ end;
 
 function TlgAudio.GetPCMBuffer(): PByte;
 begin
-  Result := @FPCM[0];
+  Result := FPCM.Memory;
 end;
 
 procedure TlgAudio.Update();
@@ -5611,6 +5861,7 @@ end;
 procedure TlgWindow.StartFrame();
 begin
   Timer.Start();
+  Async.Process();
 end;
 
 procedure TlgWindow.EndFrame();
@@ -10904,910 +11155,6 @@ begin
   end;
 end;
 
-{ === ACTOR ================================================================= }
-{ --- TlgActor -------------------------------------------------------------- }
-constructor TlgActor.Create();
-begin
-  inherited;
-  FCanCollide := False;
-  FChildren := TlgActorList.Create;
-end;
-
-destructor TlgActor.Destroy();
-begin
-  if Assigned(FChildren) then
-  begin
-    FChildren.Free();
-    FChildren := nil;
-  end;
-  inherited;
-end;
-
-procedure TlgActor.OnVisit(const ASender: TlgActor; const AEventId: Integer; var ADone: Boolean);
-begin
-  ADone := False;
-end;
-
-procedure TlgActor.OnUpdate();
-begin
-  // update all children by default
-  FChildren.Update([]);
-end;
-
-procedure TlgActor.OnRender();
-begin
-  // render all children by default
-  FChildren.Render([]);
-end;
-
-function TlgActor.OnMessage(const AMsg: PlgActorMessage): TlgActor;
-begin
-  Result := nil;
-end;
-
-procedure TlgActor.OnCollide(const AActor: TlgActor);
-begin
-end;
-
-function TlgActor.Overlap(const X, Y, ARadius, AShrinkFactor: Single): Boolean;
-begin
-  Result := False;
-end;
-
-function TlgActor.Overlap(const AActor: TlgActor): Boolean;
-begin
-  Result := False;
-end;
-
-
-{ --- TlgActorList ---------------------------------------------------------- }
-constructor TlgActorList.Create();
-begin
-  inherited;
-  FList := TlgObjectList.Create();
-end;
-
-destructor TlgActorList.Destroy();
-begin
-  if Assigned(FList) then
-  begin
-    Clear([]);
-    FList.Free();
-    FList := nil;
-  end;
-  inherited;
-end;
-
-procedure TlgActorList.Clean();
-var
-  LPtr: TlgActor;
-  LNext: TlgActor;
-begin
-  // get pointer to head
-  LPtr := TlgActor(FList.FHead);
-
-  // exit if list is empty
-  if LPtr = nil then
-    Exit;
-
-  repeat
-    // save pointer to next object
-    LNext := TlgActor(LPtr.Next);
-
-    if LPtr.Terminated then
-    begin
-      Remove(LPtr, True);
-    end;
-
-    // get pointer to next object
-    LPtr := LNext;
-
-  until LPtr = nil;
-end;
-
-procedure TlgActorList.Add(aActor: TlgActor);
-begin
-  FList.Add(AActor);
-end;
-
-function  TlgActorList.Count(): Integer;
-begin
-  Result := FList.Count;
-end;
-
-procedure TlgActorList.Remove(const AActor: TlgActor; const ADispose: Boolean);
-begin
-  FList.Remove(AActor, ADispose);
-end;
-
-procedure TlgActorList.Clear(const AAttrs: TlgObjectAttributeSet);
-begin
-  FList.Clear(AAttrs);
-end;
-
-procedure TlgActorList.ForEach(const ASender: TlgActor; const AAttrs: TlgObjectAttributeSet; const AEventId: Integer; var ADone: Boolean);
-var
-  LPtr: TlgActor;
-  LNext: TlgActor;
-  LNoAttrs: Boolean;
-begin
-  Utils.EnterCriticalSection();
-  try
-    // get pointer to head
-    LPtr := TlgActor(FList.FHead);
-
-    // exit if list is empty
-    if LPtr = nil then
-      Exit;
-
-    // check if we should check for attrs
-    LNoAttrs := Boolean(AAttrs = []);
-
-    repeat
-      // save pointer to next actor
-      LNext := TlgActor(LPtr.Next);
-
-      // destroy actor if not terminated
-      if not LPtr.Terminated then
-      begin
-        // no attributes specified so update this actor
-        if LNoAttrs then
-        begin
-          ADone := False;
-          LPtr.OnVisit(ASender, AEventId, ADone);
-          if ADone then
-          begin
-            Exit;
-          end;
-        end
-        else
-        begin
-          // update this actor if it has specified attribute
-          if LPtr.AttributesAreSet(AAttrs) then
-          begin
-            ADone := False;
-            LPtr.OnVisit(ASender, AEventId, ADone);
-            if ADone then
-            begin
-              Exit;
-            end;
-          end;
-        end;
-      end;
-
-      // get pointer to next actor
-      LPtr := LNext;
-
-    until LPtr = nil;
-  finally
-    Utils.LeaveCriticalSection();
-  end;
-end;
-
-procedure TlgActorList.Update(const AAttrs: TlgObjectAttributeSet);
-var
-  LPtr: TlgActor;
-  LNext: TlgActor;
-  LNoAttrs: Boolean;
-begin
-  Utils.EnterCriticalSection();
-  try
-    // get pointer to head
-    LPtr := TlgActor(FList.FHead);
-
-    // exit if list is empty
-    if LPtr = nil then  Exit;
-
-    // check if we should check for attrs
-    LNoAttrs := Boolean(AAttrs = []);
-
-    repeat
-      // save pointer to next actor
-      LNext := TlgActor(LPtr.Next);
-
-      // destroy actor if not terminated
-      if not LPtr.Terminated then
-      begin
-        // no attributes specified so update this actor
-        if LNoAttrs then
-        begin
-          // call actor's OnUpdate method
-          LPtr.OnUpdate();
-        end
-        else
-        begin
-          // update this actor if it has specified attribute
-          if LPtr.AttributesAreSet(AAttrs) then
-          begin
-            // call actor's OnUpdate method
-            LPtr.OnUpdate();
-          end;
-        end;
-      end;
-
-      // get pointer to next actor
-      LPtr := LNext;
-
-    until LPtr = nil;
-
-    // perform garbage collection
-    Clean();
-  finally
-    Utils.LeaveCriticalSection();
-  end;
-end;
-
-procedure TlgActorList.Render(const AAttrs: TlgObjectAttributeSet);
-var
-  LPtr: TlgActor;
-  LNext: TlgActor;
-  LNoAttrs: Boolean;
-begin
-  Utils.EnterCriticalSection();
-  try
-    // get pointer to head
-    LPtr := TlgActor(FList.FHead);
-
-    // exit if list is empty
-    if LPtr = nil then Exit;
-
-    // check if we should check for attrs
-    LNoAttrs := Boolean(AAttrs = []);
-
-    repeat
-      // save pointer to next actor
-      LNext := TlgActor(LPtr.Next);
-
-      // destroy actor if not terminated
-      if not LPtr.Terminated then
-      begin
-        // no attributes specified so update this actor
-        if LNoAttrs then
-        begin
-          // call actor's OnRender method
-          LPtr.OnRender;
-        end
-        else
-        begin
-          // update this actor if it has specified attribute
-          if LPtr.AttributesAreSet(AAttrs) then
-          begin
-            // call actor's OnRender method
-            LPtr.OnRender;
-          end;
-        end;
-      end;
-
-      // get pointer to next actor
-      LPtr := LNext;
-
-    until LPtr = nil;
-  finally
-    Utils.LeaveCriticalSection();
-  end;
-end;
-
-function  TlgActorList.SendMessage(const AAttrs: TlgObjectAttributeSet; const AMsg: PlgActorMessage; const ABroadcast: Boolean): TlgActor;
-var
-  LPtr: TlgActor;
-  LNext: TlgActor;
-  LNoAttrs: Boolean;
-begin
-  Utils.EnterCriticalSection();
-  try
-    Result := nil;
-
-    // get pointer to head
-    LPtr := TlgActor(FList.FHead);
-
-    // exit if list is empty
-    if LPtr = nil then Exit;
-
-    // check if we should check for attrs
-    LNoAttrs := Boolean(AAttrs = []);
-
-    repeat
-      // save pointer to next actor
-      LNext := TlgActor(LPtr.Next);
-
-      // destroy actor if not terminated
-      if not LPtr.Terminated then
-      begin
-        // no attributes specified so update this actor
-        if LNoAttrs then
-        begin
-          // send message to object
-          Result := LPtr.OnMessage(AMsg);
-          if not ABroadcast then
-          begin
-            if Result <> nil then
-            begin
-              Exit;
-            end;
-          end;
-        end
-        else
-        begin
-          // update this actor if it has specified attribute
-          if LPtr.AttributesAreSet(AAttrs) then
-          begin
-            // send message to object
-            Result := LPtr.OnMessage(AMsg);
-            if not ABroadcast then
-            begin
-              if Result <> nil then
-              begin
-                Exit;
-              end;
-            end;
-
-          end;
-        end;
-      end;
-
-      // get pointer to next actor
-      LPtr := LNext;
-
-    until LPtr = nil;
-  finally
-    Utils.LeaveCriticalSection();
-  end;
-end;
-
-procedure TlgActorList.CheckCollision(const AAttrs: TlgObjectAttributeSet; AActor: TlgActor);
-var
-  LPtr: TlgActor;
-  LNext: TlgActor;
-  LNoAttrs: Boolean;
-begin
-  Utils.EnterCriticalSection();
-  try
-    // check if terminated
-    if AActor.Terminated then Exit;
-
-    // check if can collide
-    if not AActor.CanCollide then Exit;
-
-    // get pointer to head
-    LPtr := TlgActor(FList.FHead);
-
-    // exit if list is empty
-    if LPtr = nil then Exit;
-
-    // check if we should check for attrs
-    LNoAttrs := Boolean(AAttrs = []);
-
-    repeat
-      // save pointer to next actor
-      LNext := TlgActor(LPtr.Next);
-
-      // destroy actor if not terminated
-      if not LPtr.Terminated then
-      begin
-        // no attributes specified so check collision with this actor
-        if LNoAttrs then
-        begin
-
-          if LPtr.CanCollide then
-          begin
-            if AActor.Overlap(LPtr) then
-            begin
-              LPtr.OnCollide(AActor);
-              AActor.OnCollide(LPtr);
-              // Exit;
-            end;
-          end;
-
-        end
-        else
-        begin
-          // check collision with this actor if it has specified attribute
-          if LPtr.AttributesAreSet(AAttrs) then
-          begin
-            if LPtr.CanCollide then
-            begin
-              if AActor.Overlap(LPtr) then
-              begin
-                LPtr.OnCollide(AActor);
-                AActor.OnCollide(LPtr);
-                // Exit;
-              end;
-            end;
-
-          end;
-        end;
-      end;
-
-      // get pointer to next actor
-      LPtr := LNext;
-
-    until LPtr = nil;
-  finally
-    Utils.LeaveCriticalSection();
-  end;
-end;
-
-{ --- TlgActorScene ---------------------------------------------------------- }
-function TlgActorScene.GetList(AIndex: Integer): TlgActorList;
-begin
-  Result := FLists[AIndex];
-end;
-
-function TlgActorScene.GetCount(): Integer;
-begin
-  Result := FCount;
-end;
-
-constructor TlgActorScene.Create();
-begin
-  inherited;
-  FLists := nil;
-  FCount := 0;
-end;
-
-destructor TlgActorScene.Destroy();
-begin
-  Dealloc();
-  inherited;
-end;
-
-procedure TlgActorScene.Alloc(const ANum: Integer);
-var
-  I: Integer;
-begin
-  Dealloc;
-  FCount := ANum;
-  SetLength(FLists, FCount);
-  for I := 0 to FCount - 1 do
-  begin
-    FLists[I] := TlgActorList.Create;
-  end;
-end;
-
-procedure TlgActorScene.Dealloc();
-var
-  I: Integer;
-begin
-  ClearAll;
-  for I := 0 to FCount - 1 do
-  begin
-    FLists[I].Free();
-  end;
-  FLists := nil;
-  FCount := 0;
-end;
-
-procedure TlgActorScene.Clean(const AIndex: Integer);
-begin
-  if not InRange(AIndex, 0, FCount-1) then Exit;
-  FLists[AIndex].Clean();
-end;
-
-procedure TlgActorScene.Clear(const AIndex: Integer; const AAttrs: TlgObjectAttributeSet);
-begin
-  if not InRange(AIndex, 0, FCount-1) then Exit;
-  FLists[AIndex].Clear(AAttrs);
-end;
-
-procedure TlgActorScene.ClearAll();
-var
-  I: Integer;
-begin
-  for I := 0 to FCount - 1 do
-  begin
-    FLists[I].Clear([]);
-  end;
-end;
-
-procedure TlgActorScene.Update(const AAttrs: TlgObjectAttributeSet);
-var
-  I: Integer;
-begin
-  for I := 0 to FCount - 1 do
-  begin
-    FLists[I].Update(AAttrs);
-  end;
-end;
-
-procedure TlgActorScene.Render(const AAttrs: TlgObjectAttributeSet; const aBefore, aAfter: TlgActorSceneEvent);
-var
-  I: Integer;
-begin
-  for I := 0 to FCount - 1 do
-  begin
-    if Assigned(aBefore) then aBefore(I);
-    FLists[I].Render(AAttrs);
-    if Assigned(aAfter) then aAfter(I);
-  end;
-end;
-
-function TlgActorScene.SendMessage(const AAttrs: TlgObjectAttributeSet; const AMsg: PlgActorMessage; const ABroadcast: Boolean): TlgActor;
-var
-  I: Integer;
-begin
-  Result := nil;
-  for I := 0 to FCount - 1 do
-  begin
-    Result := FLists[I].SendMessage(AAttrs, AMsg, ABroadcast);
-    if not ABroadcast then
-    begin
-      if Result <> nil then
-      begin
-        Exit;
-      end;
-    end;
-  end;
-end;
-
-{ --- TlgEntityActor -------------------------------------------------------- }
-constructor TlgEntityActor.Create();
-begin
-  inherited;
-  FEntity := nil;
-end;
-
-destructor TlgEntityActor.Destroy();
-begin
-  if Assigned(FEntity) then
-  begin
-    FEntity.Free();
-    FEntity := nil;
-  end;
-  inherited;
-end;
-
-procedure TlgEntityActor.Init(const ASprite: TlgSprite; const AGroup: Integer);
-begin
-  if Assigned(FEntity) then Exit;
-  FEntity := TlgEntity.New(ASprite, AGroup);
-  FEntityOverlap := eoOBB;
-end;
-
-function TlgEntityActor.Overlap(const X, Y, ARadius, AShrinkFactor: Single): Boolean;
-begin
-  Result := FAlse;
-  if not Assigned(FEntity) then Exit;
-  Result := FEntity.Overlap(X, Y, ARadius, AShrinkFactor);
-end;
-
-function TlgEntityActor.Overlap(const AActor: TlgActor): Boolean;
-begin
-  Result := False;
-  if not Assigned(FEntity)then Exit;
-  if AActor is TlgEntityActor then
-  begin
-    Result := FEntity.Overlap(TlgEntityActor(AActor).Entity, FEntityOverlap);
-  end
-end;
-
-procedure TlgEntityActor.OnRender();
-begin
-  if not Assigned(FEntity) then Exit;
-  FEntity.Render();
-end;
-
-class function TlgEntityActor.New(ASprite: TlgSprite; AGroup: Integer): TlgEntityActor;
-begin
-  Result := TlgEntityActor.Create();
-  Result.Init(ASprite, AGroup);
-end;
-
-{ === GAME ================================================================== }
-{ --- TlgGame --------------------------------------------------------------- }
-constructor TlgGame.Create();
-begin
-  inherited;
-end;
-
-destructor TlgGame.Destroy();
-begin
-  inherited;
-end;
-
-procedure TlgGame.Run();
-begin
-end;
-
-{ --- TlgBaseGameApp -------------------------------------------------------- }
-constructor TlgBaseGameApp.Create();
-begin
-  inherited;
-end;
-
-destructor TlgBaseGameApp.Destroy();
-begin
-  inherited;
-end;
-
-procedure TlgBaseGameApp.Run();
-begin
-  try
-    if not OnStartup() then Exit;
-    while not OnShouldTerminate() do
-    begin
-      OnUpdate();
-      OnRender();
-      OnRenderHud();
-    end;
-  finally
-    OnShutdown();
-  end;
-end;
-
-function  TlgBaseGameApp.OnStartup(): Boolean;
-begin
-  result := False;
-end;
-
-procedure TlgBaseGameApp.OnShutdown();
-begin
-end;
-
-function  TlgBaseGameApp.OnShouldTerminate(): Boolean;
-begin
-  Result := True;
-end;
-
-procedure TlgBaseGameApp.OnUpdate();
-begin
-end;
-
-procedure TlgBaseGameApp.OnRender();
-begin
-end;
-
-procedure TlgBaseGameApp.OnRenderHud();
-begin
-end;
-
-{ --- TlgGameApp ------------------------------------------------------------ }
-constructor TlgGameApp.Create();
-begin
-  inherited;
-end;
-
-destructor TlgGameApp.Destroy();
-begin
-  inherited;
-end;
-
-procedure TlgGameApp.OnDefineSettings(var ASettings: TlgGameAppSettings);
-begin
-  // window
-  ASettings.WindowWidth := TlgWindow.DEFAULT_WIDTH;
-  ASettings.WindowHeight := TlgWindow.DEFAULT_HEIGHT;
-  ASettings.WindowTitle := 'Your Game';
-  ASettings.WindowClearColor := DARKSLATEBROWN;
-
-  // default font
-  ASettings.DefaultFontSize := 10;
-  ASettings.DefaultFontGlyphs := '';
-
-  // zipfile
-  ASettings.ZipFilePassword := TlgZipStream.DEFAULT_PASSWORD;
-  ASettings.ZipFilename := '';
-
-  // hud
-  ASettings.HudPos := Math.Point(3, 3);
-  ASettings.HudLinespace := 0;
-  ASettings.HudItemPadWidth := 20;
-  ASettings.HudItemSeperator := '-';
-
-  // actor
-  ASettings.ActorSceneCount := 1;
-  ASettings.ActorSceneAttrs := [];
-  ASettings.ActorSceneBefore := nil;
-  ASettings.ActorSceneAfter := nil;
-end;
-
-function  TlgGameApp.OnInitSettings(): Boolean;
-begin
-  Result := False;
-
-  // window
-  FWindow := TlgWindow.Init(FSettings.WindowTitle, FSettings.WindowWidth, FSettings.WindowHeight);
-  if not Assigned(FWindow) then Exit;
-
-  // default font
-  FDefaultFont := TlgFont.LoadDefault(FWindow, FSettings.DefaultFontSize, FSettings.DefaultFontGlyphs);
-  if not Assigned(FDefaultFont) then Exit;
-
-  // zipfile
-  FZipFile := TlgZipFile.Create();
-  FZipFile.Open(FSettings.ZipFilename, FSettings.ZipFilePassword);
-
-  // audio
-  FAudio := TlgAudio.Create();
-  FAudio.Open();
-
-  // sprite
-  FSprite := TlgSprite.Create();
-
-  // actor
-  FScene := TlgActorScene.Create();
-  FScene.Alloc(FSettings.ActorSceneCount);
-
-  Result := True;
-end;
-
-procedure TlgGameApp.OnQuitSettings();
-begin
-  // actor
-  if Assigned(FScene) then
-  begin
-    FScene.Free();
-    FScene := nil;
-  end;
-
-  // sprite
-  if Assigned(FSprite) then
-  begin
-    FSprite.Free();
-    FSprite := nil;
-  end;
-
-  // audio
-  if Assigned(FAudio) then
-  begin
-    FAudio.Free();
-    FAudio := nil;
-  end;
-
-  // zipFile
-  if Assigned(FZipFile) then
-  begin
-    FZipFile.Free();
-    FZipFile := nil;
-  end;
-
-  // default font
-  if Assigned(FDefaultFont) then
-  begin
-    FDefaultFont.Free();
-    FDefaultFont := nil;
-  end;
-
-  // window
-  if Assigned(FWindow) then
-  begin
-    FWindow.Free();
-    FWindow := nil;
-  end;
-end;
-
-function  TlgGameApp.OnStartup(): Boolean;
-begin
-  Result := True;
-end;
-
-procedure TlgGameApp.OnShutdown();
-begin
-end;
-
-function  TlgGameApp.OnShouldTerminate(): Boolean;
-begin
-  Result := FWindow.ShouldClose();
-end;
-
-procedure TlgGameApp.OnUpdate();
-begin
-  // quit on escape
-  if FWindow.GetKey(KEY_ESCAPE, isWasPressed) then
-    FWindow.SetShouldClose(True);
-
-  // get mouse position
-  FMousePos := FWindow.GetMousePos();
-
-  // update scene
-  FScene.Update(FSettings.ActorSceneAttrs);
-end;
-
-procedure TlgGameApp.OnRender();
-begin
-  // render scene
-  FScene.Render(FSettings.ActorSceneAttrs, FSettings.ActorSceneBefore, FSettings.ActorSceneAfter);
-end;
-
-procedure TlgGameApp.OnRenderHud();
-begin
-  // reset hud
-  HudReset();
-
-  // default display hud info
-  HudPrint(WHITE, '%d fps', [Timer.FrameRate()]);
-  HudPrint(GREEN, HudTextItem('ESC', 'Quit'), []);
-end;
-
-function  TlgGameApp.Settings: PlgGameAppSettings;
-begin
-  Result := @FSettings;
-end;
-
-procedure TlgGameApp.HudReset();
-begin
-  FHudPos := FSettings.HudPos;
-end;
-
-procedure TlgGameApp.HudPrint(const AColor: TlgColor; const AMsg: string; const AArgs: array of const);
-begin
-  FDefaultFont.DrawText(FWindow, FHudPos.x, FHudPos.y, FSettings.HudLinespace, AColor, haLeft, AMsg, AArgs);
-end;
-
-function  TlgGameApp.HudTextItem(const AKey: string; const AValue: string; const ASeperator: string): string;
-begin
-  Result := Utils.HudTextItem(AKey, aValue, FSettings.HudItemPadWidth, ASeperator);
-end;
-
-procedure TlgGameApp.Run();
-begin
-  // define settings
-  OnDefineSettings(FSettings);
-
-  try
-    // init settings
-    if not OnInitSettings() then Exit;
-    try
-      // check if window is open
-      if not FWindow.IsOpen then Exit;
-
-      // process startup
-      if not OnStartup() then Exit;
-
-      // reset timing
-      Timer.Reset();
-
-      // enter game loop
-      while not OnShouldTerminate() do
-      begin
-        // start frame
-        FWindow.StartFrame();
-
-        // process updates
-        OnUpdate();
-
-          // start drawing
-          FWindow.StartDrawing();
-
-            // clear window
-            FWindow.Clear(FSettings.WindowClearColor);
-
-            // render
-            OnRender();
-
-            // render hud
-            OnRenderHud();
-
-          // end drawing
-          FWindow.EndDrawing();
-
-        // end frame
-        FWindow.EndFrame();
-      end;
-
-    finally
-      // process shutdown
-      OnShutdown();
-    end;
-
-  finally
-    // process quit setting
-    OnQuitSettings();
-  end;
-end;
-
-{ lgRunGame }
-procedure lgRunGame(const AGame: TlgGameClass);
-var
-  LGame: TlgGame;
-begin
-  LGame := AGame.Create;
-  try
-    LGame.Run();
-  finally
-    LGame.Free();
-  end;
-end;
-
 { === STARTUP =============================================================== }
 var
   InputCodePage: Cardinal;
@@ -11928,6 +11275,13 @@ begin
 
   // clear init flag
   IsInit := False;
+end;
+
+procedure lgReset();
+begin
+  Timer.Reset();
+  TaskList.Clear();
+  Async.Clear();
 end;
 
 initialization

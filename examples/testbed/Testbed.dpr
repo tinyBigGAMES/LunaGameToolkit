@@ -44,7 +44,7 @@ program Testbed;
 
 uses
   System.SysUtils,
-  LGT in '..\..\src\LGT.pas',
+  LGT.Core in '..\..\src\LGT.Core.pas',
   LGT.Deps in '..\..\src\LGT.Deps.pas',
   LGT.OGL in '..\..\src\LGT.OGL.pas',
   LGT.TreeMenuForm in '..\..\src\LGT.TreeMenuForm.pas' {lgTreeMenuForm},
@@ -60,7 +60,12 @@ uses
   UWindow in 'UWindow.pas',
   UActor in 'UActor.pas',
   LGT.StartupDialogForm in '..\..\src\LGT.StartupDialogForm.pas' {lgStartupDialogForm},
-  LGT.StartupDialog in '..\..\src\LGT.StartupDialog.pas';
+  LGT.StartupDialog in '..\..\src\LGT.StartupDialog.pas',
+  LGT.SpeechLib in '..\..\src\LGT.SpeechLib.pas',
+  LGT.Speech in '..\..\src\LGT.Speech.pas',
+  LGT.Actor in '..\..\src\LGT.Actor.pas',
+  LGT.Game in '..\..\src\LGT.Game.pas',
+  LGT.CloudDb in '..\..\src\LGT.CloudDb.pas';
 
 begin
   try

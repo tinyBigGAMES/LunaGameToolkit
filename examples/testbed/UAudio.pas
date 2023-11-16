@@ -37,7 +37,8 @@ interface
 uses
   System.SysUtils,
   System.Math,
-  LGT,
+  LGT.Core,
+  LGT.Game,
   UCommon;
 
 type

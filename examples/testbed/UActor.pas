@@ -36,7 +36,9 @@ interface
 
 uses
   System.SysUtils,
-  LGT,
+  LGT.Core,
+  LGT.Actor,
+  LGT.Game,
   UCommon;
 
 type

@@ -40,7 +40,7 @@ uses
   System.SysUtils,
   System.Classes,
   LGT.StartupDialogForm,
-  LGT;
+  LGT.Core;
 
 type
 

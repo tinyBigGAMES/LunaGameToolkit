@@ -39,7 +39,7 @@ interface
 uses
   Windows, Messages, SysUtils, Variants, Classes, VCL.Graphics, VCL.Controls, VCL.Forms,
   VCL.Dialogs, VCL.Menus, VCL.ExtCtrls, VCL.StdCtrls, VCL.OleCtrls, SHDocVw, Vcl.ComCtrls,
-  Vcl.Grids, LGT;
+  Vcl.Grids, LGT.Core;
 
 type
 

@@ -39,9 +39,11 @@ uses
   Vcl.Themes,
   Vcl.Styles,
   WinApi.Windows,
-  LGT,
+  LGT.Core,
   LGT.TreeMenu,
   LGT.StartupDialog,
+  LGT.Speech,
+  LGT.Game,
   UCommon,
   UMisc,
   UAudio,
@@ -110,6 +112,9 @@ var
   LActorMenu: Pointer;
   LSelItem: Integer;
 begin
+  // reset toolkit
+  lgReset();
+
   LTreeMenu := TlgTreeMenu.Create();
   try
     LTreeMenu.SetTitle('Example Menu');

@@ -1,8 +1,11 @@
 ﻿<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
     <PropertyGroup>
-        <ProjectGuid>{F67750A0-17E6-480F-BDA8-C0B26295066F}</ProjectGuid>
+        <ProjectGuid>{80C91BF1-992E-4C82-BC62-B261923E5805}</ProjectGuid>
     </PropertyGroup>
     <ItemGroup>
+        <Projects Include="projects\ziparc\lgZipArc.dproj">
+            <Dependencies/>
+        </Projects>
         <Projects Include="..\examples\testbed\Testbed.dproj">
             <Dependencies/>
         </Projects>
@@ -14,6 +17,15 @@
             <Default.Personality/>
         </BorlandProject>
     </ProjectExtensions>
+    <Target Name="lgZipArc">
+        <MSBuild Projects="projects\ziparc\lgZipArc.dproj"/>
+    </Target>
+    <Target Name="lgZipArc:Clean">
+        <MSBuild Projects="projects\ziparc\lgZipArc.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="lgZipArc:Make">
+        <MSBuild Projects="projects\ziparc\lgZipArc.dproj" Targets="Make"/>
+    </Target>
     <Target Name="Testbed">
         <MSBuild Projects="..\examples\testbed\Testbed.dproj"/>
     </Target>
@@ -24,13 +36,13 @@
         <MSBuild Projects="..\examples\testbed\Testbed.dproj" Targets="Make"/>
     </Target>
     <Target Name="Build">
-        <CallTarget Targets="Testbed"/>
+        <CallTarget Targets="lgZipArc;Testbed"/>
     </Target>
     <Target Name="Clean">
-        <CallTarget Targets="Testbed:Clean"/>
+        <CallTarget Targets="lgZipArc:Clean;Testbed:Clean"/>
     </Target>
     <Target Name="Make">
-        <CallTarget Targets="Testbed:Make"/>
+        <CallTarget Targets="lgZipArc:Make;Testbed:Make"/>
     </Target>
     <Import Project="$(BDS)\Bin\CodeGear.Group.Targets" Condition="Exists('$(BDS)\Bin\CodeGear.Group.Targets')"/>
 </Project>

@@ -155,10 +155,6 @@ object lgStartupDialogForm: TlgStartupDialogForm
         SpellChecking = True
         TabOrder = 0
         OnLinkClick = ReadmeMemoLinkClick
-        ExplicitLeft = 0
-        ExplicitTop = 0
-        ExplicitWidth = 759
-        ExplicitHeight = 300
       end
     end
     object tbLicense: TTabSheet
@@ -194,10 +190,6 @@ object lgStartupDialogForm: TlgStartupDialogForm
         ShowURLHint = True
         TabOrder = 0
         OnLinkClick = LicenseMemoLinkClick
-        ExplicitLeft = 0
-        ExplicitTop = 0
-        ExplicitWidth = 759
-        ExplicitHeight = 300
       end
     end
     object tbConfig: TTabSheet

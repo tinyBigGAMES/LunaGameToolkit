@@ -36,7 +36,8 @@ interface
 
 uses
   System.SysUtils,
-  LGT,
+  LGT.Core,
+  LGT.Game,
   UCommon;
 
 type
@@ -109,8 +110,8 @@ begin
   // init default font
   LFont := TlgFont.LoadDefault(LWindow, 10);
 
-  // reset timing
-  Timer.Reset();
+  // reset toolkit
+  lgReset();
 
   // enter game loop
   while not LWindow.ShouldClose() do
